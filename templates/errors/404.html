@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Page not found{% endblock %}
+{% block content %}<div class="empty-state"><h1>Page not found</h1><p>The requested page could not be found.</p><a class="btn btn-primary" href="{% url 'core:home' %}">Return home</a></div>{% endblock %}

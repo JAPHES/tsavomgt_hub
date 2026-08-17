@@ -1,0 +1,5 @@
+Hello {{ user.first_name }},
+
+Your Tsavo Hub account has been deactivated. Contact the hub administrator if you believe this was an error.
+
+Tsavo Innovation & Incubation Hub

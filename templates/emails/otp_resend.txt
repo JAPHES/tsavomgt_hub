@@ -1,0 +1,7 @@
+Hello {{ user.first_name }},
+
+Your new Tsavo Hub activation code is: {{ otp }}
+
+Earlier unused codes are no longer valid. This code expires in {{ expires_minutes }} minutes and can only be used once.
+
+Tsavo Innovation & Incubation Hub
