@@ -1,1 +1,77 @@
-{% extends "base.html" %}{% load dashboard_tags %}{% block title %}Attendance records{% endblock %}{% block content %}<div class="page-heading"><div><p class="eyebrow">Administrator reporting</p><h1>Attendance records</h1><p>Filter and search across all hub visits.</p></div></div><div class="card content-card mb-4"><div class="card-body"><form method="get" class="row g-3" novalidate>{% if form.non_field_errors %}<div class="col-12"><div class="alert alert-danger">{{ form.non_field_errors }}</div></div>{% endif %}{% for field in form %}<div class="col-sm-6 col-lg-3"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>{% endfor %}<div class="col-12"><button class="btn btn-primary">Apply filters</button> <a class="btn btn-light" href="{% url 'dashboard:live-attendance' %}">Reset</a></div></form></div></div><div class="card content-card"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Innovator</th><th>Registration</th><th>Project</th><th>Check in</th><th>Check out</th><th>Duration</th><th>Status</th><th></th></tr></thead><tbody>{% for session in page_obj %}<tr><td><strong>{{ session.innovator.get_full_name }}</strong><br><small>{{ session.innovator.email }}</small></td><td>{{ session.innovator.innovator_profile.registration_number }}</td><td>{{ session.project_name }}</td><td>{{ session.check_in_at|date:"d M Y, H:i" }}</td><td>{{ session.check_out_at|date:"d M Y, H:i"|default:"—" }}</td><td>{{ session.duration|duration_hm }}</td><td><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></td><td><a href="{% url 'attendance:admin-detail' session.pk %}">View</a></td></tr>{% empty %}<tr><td colspan="8" class="empty-cell">No attendance records match these filters.</td></tr>{% endfor %}</tbody></table></div></div>{% include "includes/pagination.html" %}{% endblock %}
+{% extends "base.html" %}
+{% load dashboard_tags %}
+{% block title %}Attendance records{% endblock %}
+{% block content %}
+<div class="page-heading attendance-page-heading">
+    <div>
+        <p class="eyebrow">Attendance management</p>
+        <h1>Attendance records</h1>
+        <p>Find an innovator by name and review their complete hub attendance history.</p>
+    </div>
+</div>
+
+<section class="attendance-search-card" aria-labelledby="attendance-search-title">
+    <div class="attendance-search-intro">
+        <div class="attendance-search-icon"><i class="bi bi-person-search" aria-hidden="true"></i></div>
+        <div>
+            <h2 id="attendance-search-title">Find innovator attendance</h2>
+            <p>Search using the innovator's first name, last name, or full name.</p>
+        </div>
+    </div>
+    <form method="get" class="attendance-name-form" role="search" novalidate>
+        <div class="attendance-name-field">
+            <label class="form-label" for="{{ form.innovator_name.id_for_label }}">{{ form.innovator_name.label }}</label>
+            <div class="search-input-wrap">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                {{ form.innovator_name }}
+            </div>
+            {% for error in form.innovator_name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="attendance-search-actions">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-search me-2" aria-hidden="true"></i>Search records</button>
+            {% if form.innovator_name.value %}<a class="btn btn-light" href="{% url 'dashboard:live-attendance' %}">Clear</a>{% endif %}
+        </div>
+    </form>
+</section>
+
+<section class="card content-card attendance-results-card" aria-labelledby="attendance-results-title">
+    <div class="attendance-results-header">
+        <div>
+            <h2 id="attendance-results-title">{% if filter_applied %}Search results{% else %}All attendance records{% endif %}</h2>
+            {% if filter_applied %}<p>Showing records matching “{{ form.innovator_name.value }}”.</p>{% else %}<p>Most recent hub visits appear first.</p>{% endif %}
+        </div>
+        <span class="record-count"><i class="bi bi-journal-check" aria-hidden="true"></i>{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table attendance-records-table align-middle mb-0">
+            <thead><tr><th>Innovator</th><th>Registration</th><th>Project</th><th>Check in</th><th>Check out</th><th>Duration</th><th>Status</th><th><span class="visually-hidden">Action</span></th></tr></thead>
+            <tbody>
+            {% for session in page_obj %}
+                <tr>
+                    <td><div class="attendance-person"><span class="attendance-avatar">{{ session.innovator.first_name|first }}{{ session.innovator.last_name|first }}</span><div><strong>{{ session.innovator.get_full_name }}</strong><small>{{ session.innovator.email }}</small></div></div></td>
+                    <td><span class="registration-pill">{{ session.innovator.innovator_profile.registration_number }}</span></td>
+                    <td><strong class="project-name">{{ session.project_name }}</strong></td>
+                    <td><span class="date-stack"><strong>{{ session.check_in_at|date:"d M Y" }}</strong><small>{{ session.check_in_at|time:"H:i" }}</small></span></td>
+                    <td>{% if session.check_out_at %}<span class="date-stack"><strong>{{ session.check_out_at|date:"d M Y" }}</strong><small>{{ session.check_out_at|time:"H:i" }}</small></span>{% else %}<span class="text-muted">Not recorded</span>{% endif %}</td>
+                    <td>{{ session.duration|duration_hm }}</td>
+                    <td><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></td>
+                    <td><a class="btn btn-sm btn-outline-primary record-view-button" href="{% url 'attendance:admin-detail' session.pk %}" aria-label="View attendance record for {{ session.innovator.get_full_name }}"><i class="bi bi-arrow-right" aria-hidden="true"></i></a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="8"><div class="attendance-empty-state"><i class="bi bi-search" aria-hidden="true"></i><h3>No attendance records found</h3><p>{% if filter_applied %}Try checking the spelling of the innovator's name.{% else %}Attendance records will appear here after innovators visit the hub.{% endif %}</p></div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% if page_obj.has_other_pages %}
+<nav aria-label="Attendance result pages">
+    <ul class="pagination justify-content-center mt-4">
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?innovator_name={{ form.innovator_name.value|default:''|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a></li>{% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?innovator_name={{ form.innovator_name.value|default:''|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next</a></li>{% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

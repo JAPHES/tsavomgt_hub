@@ -2,7 +2,7 @@
 
 A secure, template-based Django application for the Tsavo Innovation & Incubation Hub at Taita Taveta University. It manages administrator-provisioned innovator accounts, email OTP activation, profiles, daily hub attendance, visit outcomes, live monitoring, corrections, and audit history.
 
-The interface uses the requested TTU green, gold, and white identity. `SITE_LOGO_URL` is configurable and defaults to a clearly marked text placeholder; no official university logo is bundled.
+The interface uses the requested TTU green, gold, and white identity with a responsive icon sidebar. The supplied Tsavo Hub logo is bundled at `static/image/tsavo_logo.jpeg`; `SITE_LOGO_URL` can override it for a deployment-specific asset.
 
 ## Main features
 
@@ -15,7 +15,7 @@ The interface uses the requested TTU green, gold, and white identity. `SITE_LOGO
 - One-active-session database constraint and automatic incomplete flagging for missed prior-day checkout
 - Innovator dashboard with live visual elapsed time and server-calculated weekly totals
 - Administrator dashboard with live occupancy, today's work, incomplete sessions, totals, and seven-day visit chart
-- Attendance search and filters by date, innovator, registration number, project, status, and general search
+- Administrator attendance search by innovator first name, last name, or full name
 - Reason-required attendance corrections with immutable correction and audit records
 - Hardened production settings for HTTPS, cookies, HSTS, framing, secrets, and allowed hosts
 - Automated coverage for authentication, OTP rules, permissions, attendance, corrections, filters, and dashboard totals
@@ -170,7 +170,7 @@ py manage.py check --deploy
 - Use a production WSGI/ASGI server suitable for the deployment platform and configure process health checks, structured logs, monitoring, and error reporting.
 - Restrict Django admin access operationally. Application records are view-only there where edits would bypass audit workflows.
 - Review retention, privacy, access, and incident-response policies with Taita Taveta University before processing real personal data.
-- Replace the placeholder only after receiving an authorized logo asset; set `SITE_LOGO_URL` to its static or hosted path.
+- Keep the supplied Tsavo Hub logo or set `SITE_LOGO_URL` to an authorized replacement asset's static or hosted path.
 
 ## Git hygiene
 
