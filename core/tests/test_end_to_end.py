@@ -20,7 +20,6 @@ class CompleteHubFlowTests(TestCase):
             "registration_number": "TTU/INN/099",
             "phone_number": "0711223344",
             "innovation_project_name": "Eco Sort",
-            "account_status": User.AccountStatus.PENDING,
         }
         with patch("accounts.services.generate_otp", return_value="246810"):
             with self.captureOnCommitCallbacks(execute=True):

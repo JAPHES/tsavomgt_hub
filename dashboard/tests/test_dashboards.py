@@ -56,7 +56,7 @@ class AdministratorDashboardTests(TestCase):
         self.assertContains(response, self.user.get_full_name())
         self.assertEqual(response.context["summary"]["incomplete"], 1)
 
-    def test_filters_return_correct_project_status_and_search(self):
+    def test_filter_uses_only_innovator_name_and_returns_correct_records(self):
         matching = self.create_session(status=AttendanceSession.Status.INCOMPLETE)
         other_user = create_innovator(
             email="other@example.com",
@@ -74,8 +74,9 @@ class AdministratorDashboardTests(TestCase):
         )
         response = self.client.get(
             reverse("dashboard:live-attendance"),
-            {"period": "all", "project": "Blue", "status": "INCOMPLETE", "search": "Amina"},
+            {"innovator_name": "Amina Juma"},
         )
+        self.assertEqual(list(response.context["form"].fields), ["innovator_name"])
         self.assertEqual(list(response.context["page_obj"].object_list), [matching])
         self.assertContains(response, "BlueWatch")
         self.assertNotContains(response, "AgriSense")

@@ -106,49 +106,28 @@ def admin_dashboard(request):
 
 
 def filter_attendance(queryset, cleaned):
-    today = timezone.localdate()
-    period = cleaned.get("period") or "today"
-    if period == "today":
-        queryset = queryset.filter(check_in_at__date=today)
-    elif period == "week":
-        queryset = queryset.filter(check_in_at__date__gte=today - timedelta(days=today.weekday()))
-    elif period == "month":
-        queryset = queryset.filter(check_in_at__year=today.year, check_in_at__month=today.month)
-    elif period == "custom":
+    innovator_name = cleaned.get("innovator_name", "")
+    for name_part in innovator_name.split():
         queryset = queryset.filter(
-            check_in_at__date__range=(cleaned["start_date"], cleaned["end_date"])
-        )
-    if cleaned.get("innovator"):
-        queryset = queryset.filter(innovator=cleaned["innovator"])
-    if cleaned.get("registration_number"):
-        queryset = queryset.filter(
-            innovator__innovator_profile__registration_number__icontains=cleaned[
-                "registration_number"
-            ]
-        )
-    if cleaned.get("project"):
-        queryset = queryset.filter(project_name__icontains=cleaned["project"])
-    if cleaned.get("status"):
-        queryset = queryset.filter(status=cleaned["status"])
-    if cleaned.get("search"):
-        search = cleaned["search"]
-        queryset = queryset.filter(
-            Q(innovator__first_name__icontains=search)
-            | Q(innovator__last_name__icontains=search)
-            | Q(innovator__email__icontains=search)
-            | Q(innovator__innovator_profile__registration_number__icontains=search)
-            | Q(project_name__icontains=search)
+            Q(innovator__first_name__icontains=name_part)
+            | Q(innovator__last_name__icontains=name_part)
         )
     return queryset
 
 
 @admin_required
 def live_attendance(request):
-    form = AttendanceFilterForm(request.GET or {"period": "today"})
+    form = AttendanceFilterForm(request.GET or None)
     sessions = _base_sessions()
     if form.is_valid():
         sessions = filter_attendance(sessions, form.cleaned_data)
     page_obj = Paginator(sessions, 30).get_page(request.GET.get("page"))
     return render(
-        request, "dashboard/live_attendance.html", {"form": form, "page_obj": page_obj}
+        request,
+        "dashboard/live_attendance.html",
+        {
+            "form": form,
+            "page_obj": page_obj,
+            "filter_applied": bool(form.is_bound and form.is_valid() and form.cleaned_data["innovator_name"]),
+        },
     )

@@ -17,7 +17,7 @@ def create_innovator(cleaned_data, *, actor, request=None):
         first_name=cleaned_data["first_name"].strip(),
         last_name=cleaned_data["last_name"].strip(),
         role=User.Role.INNOVATOR,
-        account_status=cleaned_data["account_status"],
+        account_status=User.AccountStatus.PENDING,
         is_active=False,
     )
     user.set_unusable_password()

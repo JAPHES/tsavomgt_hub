@@ -10,14 +10,9 @@ class InnovatorCreateForm(BootstrapFormMixin, forms.Form):
     first_name = forms.CharField(max_length=150)
     last_name = forms.CharField(max_length=150)
     email = forms.EmailField()
-    registration_number = forms.CharField(max_length=50, label="Registration or staff number")
+    registration_number = forms.CharField(max_length=50, label="Registration number")
     phone_number = forms.CharField(max_length=20)
     innovation_project_name = forms.CharField(max_length=200, label="Innovation / project name")
-    account_status = forms.ChoiceField(
-        choices=[(User.AccountStatus.PENDING, "Pending activation")],
-        initial=User.AccountStatus.PENDING,
-        help_text="New accounts remain pending until the innovator verifies the emailed code.",
-    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -32,7 +27,7 @@ class InnovatorCreateForm(BootstrapFormMixin, forms.Form):
     def clean_registration_number(self):
         number = self.cleaned_data["registration_number"].strip().upper()
         if InnovatorProfile.objects.filter(registration_number__iexact=number).exists():
-            raise forms.ValidationError("This registration or staff number is already in use.")
+            raise forms.ValidationError("This registration number is already in use.")
         return number
 
     def clean_phone_number(self):
@@ -79,7 +74,7 @@ class InnovatorAdminUpdateForm(BootstrapFormMixin, forms.ModelForm):
     def clean_registration_number(self):
         number = self.cleaned_data["registration_number"].strip().upper()
         if InnovatorProfile.objects.filter(registration_number__iexact=number).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError("This registration or staff number is already in use.")
+            raise forms.ValidationError("This registration number is already in use.")
         return number
 
 class InnovatorSelfUpdateForm(BootstrapFormMixin, forms.ModelForm):

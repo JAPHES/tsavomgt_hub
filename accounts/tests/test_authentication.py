@@ -171,7 +171,6 @@ class AdministratorAccountCreationTests(TestCase):
             "registration_number": "TTU/INN/099",
             "phone_number": "0711223344",
             "innovation_project_name": "Eco Sort",
-            "account_status": User.AccountStatus.PENDING,
         }
 
     def test_administrator_creates_account_and_otp(self):
