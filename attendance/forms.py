@@ -5,9 +5,6 @@ from django.utils import timezone
 
 from accounts.forms import BootstrapFormMixin
 
-from .models import AttendanceSession
-
-
 class CheckInForm(BootstrapFormMixin, forms.Form):
     project_name = forms.CharField(max_length=200, label="Project")
 
@@ -99,45 +96,4 @@ class DailyAttendanceForm(BootstrapFormMixin, forms.Form):
             self.add_error("arrival_time", "Arrival time cannot be in the future.")
         cleaned["check_in_at"] = check_in_at
         cleaned["check_out_at"] = check_out_at
-        return cleaned
-
-
-class AttendanceCorrectionForm(BootstrapFormMixin, forms.ModelForm):
-    correction_reason = forms.CharField(
-        label="Correction reason",
-        min_length=5,
-        widget=forms.Textarea(attrs={"rows": 3}),
-        help_text="Required for the permanent correction history.",
-    )
-
-    class Meta:
-        model = AttendanceSession
-        fields = ["check_in_at", "check_out_at", "status", "work_completed"]
-        widgets = {
-            "check_in_at": forms.DateTimeInput(
-                format="%Y-%m-%dT%H:%M", attrs={"type": "datetime-local"}
-            ),
-            "check_out_at": forms.DateTimeInput(
-                format="%Y-%m-%dT%H:%M", attrs={"type": "datetime-local"}
-            ),
-            "work_completed": forms.Textarea(attrs={"rows": 5}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["check_in_at"].input_formats = ["%Y-%m-%dT%H:%M"]
-        self.fields["check_out_at"].input_formats = ["%Y-%m-%dT%H:%M"]
-        self.apply_bootstrap()
-
-    def clean(self):
-        cleaned = super().clean()
-        check_in = cleaned.get("check_in_at")
-        check_out = cleaned.get("check_out_at")
-        status = cleaned.get("status")
-        if check_in and check_out and check_out < check_in:
-            self.add_error("check_out_at", "Check-out time cannot be earlier than check-in time.")
-        if status == AttendanceSession.Status.COMPLETED and not check_out:
-            self.add_error("check_out_at", "A completed session requires a check-out time.")
-        if status == AttendanceSession.Status.ACTIVE and check_out:
-            self.add_error("status", "An active session cannot have a check-out time.")
         return cleaned

@@ -5,9 +5,9 @@ from django.utils import timezone
 
 from core.permissions import admin_required, innovator_required
 
-from .forms import AttendanceCorrectionForm, CheckInForm, CheckOutForm
+from .forms import CheckInForm, CheckOutForm
 from .models import AttendanceSession
-from .services import AttendanceError, check_in, check_out, correct_attendance
+from .services import AttendanceError, check_in, check_out
 
 
 @innovator_required
@@ -81,26 +81,7 @@ def admin_session_detail(request, pk):
     session = get_object_or_404(
         AttendanceSession.objects.select_related(
             "innovator", "innovator__innovator_profile", "corrected_by"
-        ).prefetch_related("corrections__administrator"),
+        ),
         pk=pk,
     )
     return render(request, "attendance/detail.html", {"session": session})
-
-
-@admin_required
-def correct_session(request, pk):
-    session = get_object_or_404(
-        AttendanceSession.objects.select_related("innovator", "innovator__innovator_profile"), pk=pk
-    )
-    form = AttendanceCorrectionForm(request.POST or None, instance=session)
-    if request.method == "POST" and form.is_valid():
-        try:
-            corrected = correct_attendance(
-                session.pk, form.cleaned_data, administrator=request.user, request=request
-            )
-        except AttendanceError as exc:
-            form.add_error(None, str(exc))
-        else:
-            messages.success(request, "Attendance correction saved with an audit record.")
-            return redirect("attendance:admin-detail", pk=corrected.pk)
-    return render(request, "attendance/correct.html", {"form": form, "session": session})

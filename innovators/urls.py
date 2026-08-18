@@ -14,5 +14,9 @@ urlpatterns = [
     path("<int:pk>/", views.innovator_detail, name="detail"),
     path("<int:pk>/edit/", views.innovator_update, name="update"),
     path("<int:pk>/status/", views.toggle_status, name="toggle-status"),
-    path("<int:pk>/resend-otp/", views.admin_resend_otp, name="admin-resend-otp"),
+    path(
+        "<int:pk>/reissue-credentials/",
+        views.admin_reissue_credentials,
+        name="admin-reissue-credentials",
+    ),
 ]

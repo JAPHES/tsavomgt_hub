@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
-from accounts.services import OTPResendCooldown, OTPVerificationError, issue_activation_otp
+from accounts.services import TemporaryCredentialError, issue_temporary_credentials
 from auditlog.models import AuditLog
 from auditlog.services import record_audit
 from core.permissions import admin_required, innovator_required
@@ -73,7 +73,7 @@ def innovator_create(request):
         profile = create_innovator(form.cleaned_data, actor=request.user, request=request)
         messages.success(
             request,
-            f"Account added for {profile.user.get_full_name()}. The activation code was emailed.",
+            f"Account added for {profile.user.get_full_name()}. Temporary login credentials were emailed.",
         )
         return redirect("innovators:create-success", pk=profile.pk)
     return render(request, "innovators/create.html", {"form": form})
@@ -110,7 +110,7 @@ def innovator_update(request, pk):
         if email_changed:
             messages.success(
                 request,
-                "Innovator information updated. The changed email must be activated with the new code sent.",
+                "Innovator information updated. New temporary login credentials were sent to the changed email.",
             )
         else:
             messages.success(request, "Innovator information updated.")
@@ -127,17 +127,16 @@ def toggle_status(request, pk):
         previous = user.account_status
         if user.account_status == User.AccountStatus.INACTIVE:
             user.account_status = (
-                User.AccountStatus.ACTIVE if user.activation_completed else User.AccountStatus.PENDING
+                User.AccountStatus.PENDING
+                if user.must_change_password
+                else User.AccountStatus.ACTIVE
             )
-            user.is_active = user.activation_completed
+            user.is_active = True
             action = AuditLog.Action.ACCOUNT_UPDATED
             message = "Account access restored."
         else:
             user.account_status = User.AccountStatus.INACTIVE
             user.is_active = False
-            user.activation_otps.filter(
-                used_at__isnull=True, invalidated_at__isnull=True
-            ).update(invalidated_at=timezone.now())
             action = AuditLog.Action.ACCOUNT_DEACTIVATED
             message = "Account deactivated."
         user.save(update_fields=["account_status", "is_active", "date_updated"])
@@ -158,16 +157,19 @@ def toggle_status(request, pk):
 
 @admin_required
 @require_POST
-def admin_resend_otp(request, pk):
+def admin_reissue_credentials(request, pk):
     profile = get_object_or_404(InnovatorProfile.objects.select_related("user"), pk=pk)
     try:
-        issue_activation_otp(profile.user, resent=True, actor=request.user, request=request)
-    except OTPResendCooldown as exc:
-        messages.warning(request, str(exc))
-    except OTPVerificationError:
-        messages.error(request, "An activation code cannot be sent for this account.")
+        issue_temporary_credentials(
+            profile.user,
+            reissued=True,
+            actor=request.user,
+            request=request,
+        )
+    except TemporaryCredentialError as exc:
+        messages.error(request, str(exc))
     else:
-        messages.success(request, "A new activation code was emailed.")
+        messages.success(request, "New temporary login credentials were emailed.")
     return redirect("innovators:detail", pk=profile.pk)
 
 

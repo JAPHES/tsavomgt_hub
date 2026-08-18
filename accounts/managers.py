@@ -25,7 +25,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("role", "ADMIN")
         extra_fields.setdefault("account_status", "ACTIVE")
         extra_fields.setdefault("email_verified", True)
-        extra_fields.setdefault("activation_completed", True)
+        extra_fields.setdefault("must_change_password", False)
         if extra_fields.get("is_staff") is not True:
             raise ValueError("A superuser must have is_staff=True.")
         if extra_fields.get("is_superuser") is not True:

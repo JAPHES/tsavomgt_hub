@@ -1,13 +1,41 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Log in{% endblock %}
+{% block public_navigation %}{% endblock %}
+{% block public_support_banner %}{% endblock %}
 {% block content %}
-<div class="auth-wrap"><div class="card auth-card"><div class="card-body p-4 p-lg-5">
-    <p class="eyebrow">Welcome back</p><h1>Sign in to Tsavo Hub</h1>
-    <p class="text-muted">Use your registered email address and password.</p>
-    <form method="post" novalidate>{% csrf_token %}{% include "includes/form_fields.html" %}
-        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-        <button class="btn btn-primary w-100" type="submit">Log in</button>
-    </form>
-    <div class="d-flex flex-wrap justify-content-between mt-3 gap-2"><a href="{% url 'accounts:password-reset' %}">Forgot password?</a><a href="{% url 'accounts:activate' %}">Activate account</a></div>
-</div></div></div>
+<div class="login-layout">
+    <section class="login-welcome-panel" aria-labelledby="login-welcome-title">
+        <div class="login-welcome-content">
+            <span class="login-logo-frame">
+                {% if site_logo_url %}
+                    <img src="{{ site_logo_url }}" alt="Tsavo Innovation and Incubation Hub logo">
+                {% else %}
+                    <img src="{% static 'image/tsavo_logo.jpeg' %}?v={{ static_version|urlencode }}" alt="Tsavo Innovation and Incubation Hub logo">
+                {% endif %}
+            </span>
+            <p class="login-welcome-label">Welcome to</p>
+            <h1 id="login-welcome-title">Tsavo Innovation &amp; Incubation Hub</h1>
+            <strong>Tsavo Hub Management System</strong>
+            <p>Access your workspace to record hub attendance, document completed work, and manage innovation activities.</p>
+        </div>
+    </section>
+
+    <section class="login-form-panel" aria-labelledby="login-form-title">
+        <div class="login-form-content">
+            <p class="eyebrow">Account access</p>
+            <h2 id="login-form-title">Welcome back</h2>
+            <p class="login-form-intro">Sign in using your registered email address and password.</p>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% include "includes/form_fields.html" %}
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                <button class="btn btn-primary w-100 login-submit-button" type="submit">Sign in</button>
+            </form>
+            <div class="login-support-links">
+                <a href="{% url 'accounts:password-reset' %}">Forgot password?</a>
+            </div>
+        </div>
+    </section>
+</div>
 {% endblock %}

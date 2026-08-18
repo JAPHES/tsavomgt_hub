@@ -3,7 +3,7 @@ from django.db import transaction
 from django.template.loader import render_to_string
 
 from accounts.models import User
-from accounts.services import issue_activation_otp
+from accounts.services import issue_temporary_credentials
 from auditlog.models import AuditLog
 from auditlog.services import record_audit
 
@@ -29,7 +29,7 @@ def create_innovator(cleaned_data, *, actor, request=None):
         phone_number=cleaned_data["phone_number"],
         innovation_project_name=cleaned_data["innovation_project_name"],
     )
-    issue_activation_otp(user, actor=actor, request=request)
+    issue_temporary_credentials(user, actor=actor, request=request)
     record_audit(
         actor=actor,
         action=AuditLog.Action.ACCOUNT_CREATED,
@@ -64,17 +64,17 @@ def update_innovator(form, *, actor, request=None):
     user_fields = ["email", "first_name", "last_name", "date_updated"]
     if email_changed:
         user.email_verified = False
-        user.activation_completed = False
+        user.must_change_password = True
         user.account_status = User.AccountStatus.PENDING
-        user.is_active = False
+        user.is_active = True
         user.set_unusable_password()
         user_fields.extend(
-            ["email_verified", "activation_completed", "account_status", "is_active", "password"]
+            ["email_verified", "must_change_password", "account_status", "is_active", "password"]
         )
     user.save(update_fields=user_fields)
     profile = form.save()
     if email_changed:
-        issue_activation_otp(user, actor=actor, request=request)
+        issue_temporary_credentials(user, actor=actor, request=request, reissued=True)
     record_audit(
         actor=actor,
         action=AuditLog.Action.ACCOUNT_UPDATED,

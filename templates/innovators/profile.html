@@ -30,7 +30,7 @@
     </div>
     <div class="self-profile-verification">
         <span><i class="bi bi-patch-check-fill" aria-hidden="true"></i></span>
-        <div><small>Email status</small><strong>{% if profile.user.email_verified %}Verified{% else %}Not verified{% endif %}</strong></div>
+        <div><small>Email access</small><strong>{% if profile.user.email_verified %}Confirmed{% else %}Pending{% endif %}</strong></div>
     </div>
 </section>
 

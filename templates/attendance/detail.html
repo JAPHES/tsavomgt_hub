@@ -30,9 +30,6 @@
             </div>
         </div>
     </div>
-    {% if request.user.role == 'ADMIN' %}
-        <a class="btn btn-primary" href="{% url 'attendance:correct' session.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Correct record</a>
-    {% endif %}
 </section>
 
 <div class="attendance-section-heading">

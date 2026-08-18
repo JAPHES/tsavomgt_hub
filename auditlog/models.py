@@ -8,7 +8,10 @@ class AuditLog(models.Model):
         ACCOUNT_UPDATED = "ACCOUNT_UPDATED", "Account updated"
         ACCOUNT_ACTIVATED = "ACCOUNT_ACTIVATED", "Account activated"
         ACCOUNT_DEACTIVATED = "ACCOUNT_DEACTIVATED", "Account deactivated"
-        OTP_RESENT = "OTP_RESENT", "Activation code resent"
+        TEMPORARY_CREDENTIALS_REISSUED = (
+            "TEMPORARY_CREDENTIALS_REISSUED",
+            "Temporary login credentials reissued",
+        )
         ATTENDANCE_CORRECTED = "ATTENDANCE_CORRECTED", "Attendance corrected"
         INCOMPLETE_SESSION_CLOSED = "INCOMPLETE_SESSION_CLOSED", "Incomplete session closed"
         ROLE_CHANGED = "ROLE_CHANGED", "User role changed"

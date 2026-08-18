@@ -1,56 +1,141 @@
 # Tsavo Innovation & Incubation Hub Management System
 
-A secure, template-based Django application for the Tsavo Innovation & Incubation Hub at Taita Taveta University. It manages administrator-provisioned innovator accounts, email OTP activation, profiles, daily hub attendance, visit outcomes, live monitoring, corrections, and audit history.
+A secure, server-rendered Django application for managing innovator accounts and daily attendance at the Tsavo Innovation & Incubation Hub, Taita Taveta University.
 
-The interface uses the requested TTU green, gold, and white identity with a responsive icon sidebar. The supplied Tsavo Hub logo is bundled at `static/image/tsavo_logo.jpeg`; `SITE_LOGO_URL` can override it for a deployment-specific asset.
+The application uses Django templates, Bootstrap 5, JavaScript, SQLite for local development, and PostgreSQL for production. It is branded in TTU green, gold, and white and displays the bundled Tsavo Hub logo with the label **Tsavo Hub Management System**.
 
-## Main features
+## Current features
 
-- Email-only authentication with a custom Django user model and extensible roles
-- Administrator-added innovator accounts; no public registration
-- Secure six-digit activation codes generated with `secrets`, stored as password hashes, valid for 15 minutes, single use, attempt-limited, and resend-limited
-- Password creation, password reset, password change, and POST-only logout
-- Restricted innovator profile editing and full administrator profile management
-- Transactional daily attendance recording with validated Nairobi arrival and departure times
-- One-active-session database constraint and automatic incomplete flagging for missed prior-day checkout
-- Innovator dashboard with a required daily attendance/work form and weekly totals
-- Focused administrator dashboard with active-account totals and everyone who attended the hub today
-- Administrator attendance search by innovator first name, last name, or full name
-- Reason-required attendance corrections with immutable correction and audit records
-- Hardened production settings for HTTPS, cookies, HSTS, framing, secrets, and allowed hosts
-- Automated coverage for authentication, OTP rules, permissions, attendance, corrections, filters, and dashboard totals
+- Email-only authentication with a custom Django user model
+- Administrator and innovator roles, with an extensible chairperson role definition
+- Administrator-controlled innovator onboarding with no public registration
+- Strong temporary login passwords generated with Python's `secrets` module and stored only through Django's password hash
+- Mandatory first-login password replacement with server-side access enforcement and forced logout after completion
+- Professional split-layout password recovery with clear guidance, plus styled first-login and ordinary password-change forms
+- POST-only logout and server-side role authorization
+- Responsive sidebar navigation with Bootstrap icons
+- Tsavo Hub logo branding and a circular favicon across application pages
+- Professional two-panel login page with a prominent centered circular logo and branded welcome area on the left, and the sign-in form on the right
+- Professional administrator, innovator, profile, attendance-history, streamlined innovator-record, and attendance-record pages
+- Account-deactivation confirmation warning before the destructive request is submitted
+- Audit records for important administrative actions
+
+### Innovator management
+
+The **Add innovator** form collects:
+
+- First name
+- Last name
+- Email address
+- Registration number
+- Phone number
+- Innovation/project name
+
+Email addresses and registration numbers are unique. New accounts receive a cryptographically generated temporary password by email. Django stores only its secure password hash. The account can use the normal login page, but server-side middleware blocks every other page until the innovator creates a personal password. After the change, the temporary password is invalid, the innovator is signed out, and they must log in again with the new password.
+
+Administrators can:
+
+- Add and search innovators
+- View professional innovator records
+- Update approved account and project information
+- Reissue temporary login credentials for an innovator who has not completed the first-login password change
+- Deactivate accounts after an explicit confirmation warning
+- Restore inactive accounts
+- Download all innovators as a CSV containing full name, email, and project
+
+The CSV export is administrator-only, includes the complete list regardless of pagination or search, uses UTF-8 for Excel compatibility, and sanitizes spreadsheet-formula prefixes.
+
+Innovators can update only:
+
+- Phone number
+- Profile photo
+- Project description
+
+Email, registration number, role, account status, attendance history, and project name cannot be changed through the self-service profile form.
+
+### Attendance
+
+The primary innovator-dashboard form records:
+
+- Arrival time
+- Departure time
+- Work completed
+- Challenges encountered, optionally
+
+The project name comes from the innovator profile. The server combines selected times with the current `Africa/Nairobi` date and rejects reversed or future times.
+
+Attendance statuses are:
+
+- `ACTIVE`
+- `COMPLETED`
+- `INCOMPLETE`
+- `ADMIN_CLOSED`
+
+Attendance protections include:
+
+- One active session per innovator, enforced by service logic and a database constraint
+- Checkout-order validation at form, service, model, and database levels
+- Transactional attendance writes
+- Automatic `INCOMPLETE` status when a previous-day active session is superseded
+- No invented checkout time for missed checkouts
+- Innovators can view only their own attendance sessions
+- Administrators can view all attendance sessions but cannot edit innovator-submitted records
+- Historical correction metadata and audit entries remain read-only where older databases contain them
+- Ordinary attendance records cannot be deleted through the application dashboard
+
+### Dashboards and reporting
+
+The innovator workspace provides:
+
+- A centered personalized welcome to Tsavo Hub Management System
+- Daily attendance submission
+- Weekly visit and hour totals
+- Recent attendance records
+- Links to professional session-detail and attendance-history pages
+
+The administrator dashboard provides:
+
+- Total active innovator accounts
+- Total innovators who attended today
+- A table of everyone who attended on the current Nairobi date
+- Active and completed visits in the same daily view
+- Arrival, departure, duration, work completed, and status information
+
+The separate attendance management page searches by innovator name only.
 
 ## Project structure
 
 ```text
 tsavo_hub/
-├── manage.py
-├── requirements.txt
-├── .env.example
-├── README.md
-├── tsavo_hub/       # Settings, root URLs, ASGI and WSGI
-├── core/            # Shared pages, permissions and branding context
-├── accounts/        # Custom user, authentication and activation OTPs
-├── innovators/      # Innovator profiles and account management
-├── attendance/      # Sessions, transactional services and corrections
-├── dashboard/       # Role dashboards, reporting and filters
-├── auditlog/        # Administrative audit records
-├── templates/       # Shared, page and email templates
-├── static/          # TTU-themed CSS and browser-only elapsed-time JS
-└── media/           # User-uploaded profile photos
+|-- manage.py
+|-- requirements.txt
+|-- .env.example
+|-- README.md
+|-- tsavo_hub/       # Settings, root URLs, ASGI and WSGI
+|-- core/            # Shared pages, permissions, branding and test factories
+|-- accounts/        # Custom users, authentication and mandatory first-login security
+|-- innovators/      # Innovator profiles, management and CSV export
+|-- attendance/      # Attendance sessions, services and read-only administrator review
+|-- dashboard/       # Role dashboards and attendance search
+|-- auditlog/        # Administrative audit records
+|-- templates/       # Shared, page and email templates
+|-- static/          # Branding, responsive CSS and interface JavaScript
+`-- media/           # Uploaded profile photos
 ```
 
 ## Requirements
 
-- Python 3.12 or newer (developed and verified with Python 3.14)
+- Python 3.12 or newer; currently verified with Python 3.14
 - Django 6.0
-- SQLite for local development, or PostgreSQL for production
-- Pillow for profile photos
-- A working SMTP provider for production email
+- SQLite for local development or PostgreSQL for production
+- Pillow for profile-photo handling
+- A production SMTP provider when real email delivery is required
+
+Installable dependencies are pinned by compatible ranges in `requirements.txt`.
 
 ## Local installation
 
-Clone the repository, enter its directory, and create an isolated environment.
+Clone the repository and enter its root directory, where `manage.py` is located.
 
 PowerShell:
 
@@ -72,106 +157,188 @@ python -m pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Edit `.env` for the local machine. `.env` is ignored by Git and must never be committed. For local SQLite development, these values are sufficient:
+## Environment configuration
+
+Never commit a real `.env` file. For local SQLite development, configure at least:
 
 ```dotenv
-SECRET_KEY=generate-a-unique-local-secret
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 DATABASE_URL=sqlite:///db.sqlite3
 ```
 
-Generate a secret without placing it in source control:
+Generate a local secret with:
 
 ```powershell
 py -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-The settings module reads process environment variables and an optional root `.env` file. Existing process variables take precedence.
+Store that output as `SECRET_KEY` only in your ignored local `.env` file. When `DEBUG=True` and the value is blank, Django generates an ephemeral development key at process startup; setting a persistent local value prevents sessions from becoming invalid after a restart. Production refuses to start without an explicit secret key.
+
+Supported deployment variables include:
+
+```text
+SECRET_KEY
+DEBUG
+ALLOWED_HOSTS
+DATABASE_URL
+EMAIL_HOST
+EMAIL_PORT
+EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD
+EMAIL_USE_TLS
+DEFAULT_FROM_EMAIL
+PASSWORD_RESET_TIMEOUT
+SECURE_SSL_REDIRECT
+CSRF_TRUSTED_ORIGINS
+SITE_LOGO_URL
+STATIC_VERSION
+TRUST_PROXY_SSL_HEADER
+```
+
+`SITE_LOGO_URL` may point to an authorized deployment-specific logo. When it is blank, the application uses `static/image/tsavo_logo.jpeg`.
+
+`STATIC_VERSION` is appended to the shared CSS, JavaScript and local logo URLs. Change it whenever those assets change during a deployment so browsers request the current files instead of reusing stale cached copies.
+
+`PASSWORD_RESET_TIMEOUT` is measured in seconds and defaults to `3600` (one hour). The forgot-password page explains this lifetime while retaining Django's generic response so the system does not reveal whether an email address exists.
 
 ## Database and first administrator
 
-Apply migrations, then create the initial administrator. The custom manager automatically assigns the `ADMIN` role and active/verified status to a superuser.
+Apply migrations before starting the application:
 
 ```powershell
 py manage.py migrate
+```
+
+Create the first administrator with the project management command:
+
+```powershell
 py manage.py createsuperuser
 ```
 
-The prompt asks for an email address rather than a username. Start the development server:
+Do not run bare `django-admin createsuperuser` from the repository because it may not know which settings module to load. The custom superuser prompt requests an email address rather than a username.
+
+Start the local server:
 
 ```powershell
 py manage.py runserver
 ```
 
-Open `http://127.0.0.1:8000/accounts/login/`. After login, use **Add innovator**. The new user has an unusable password until they verify the emailed code and create one.
+Open `http://127.0.0.1:8000/accounts/login/`.
 
-## Development email testing
+The login page uses a responsive split layout with the Tsavo Hub logo and welcome message on the left and the sign-in form on the right at widths of 768 pixels and above. It stacks vertically on phones. The general public support banner is intentionally omitted from this page to keep the authentication experience focused.
 
-When `DEBUG=True`, Django's console email backend is selected automatically. Adding an innovator prints the complete test email to the server console, which makes the activation flow testable without SMTP. Treat console output as sensitive development data and never use this backend in a shared or production environment.
+If an updated interface is not visible, stop and restart the development server, then reload the exact page. Asset URLs include `STATIC_VERSION`, so a normal refresh should fetch the current local CSS and JavaScript. For an already-open page that predates this feature, use `Ctrl+Shift+R` once. In browser developer tools, `/static/css/app.css?v=...` should return HTTP 200. Production deployments must update `STATIC_VERSION` and run `py manage.py collectstatic --noinput` whenever local frontend assets change.
 
-Password-reset emails also use the console backend during local development. The reset response is deliberately generic whether or not an account exists.
+## Email credentials and first login
 
-## PostgreSQL and production SMTP
+When `DEBUG=True`, Django automatically uses the console email backend. Adding an innovator prints the login-credentials email to the server terminal so the flow can be tested without SMTP credentials.
 
-Set `DATABASE_URL` to a PostgreSQL connection string. URL-encode reserved characters in credentials.
+Local first-login workflow:
+
+1. Sign in as an administrator.
+2. Select **Add innovator** from the sidebar.
+3. Submit the innovator details.
+4. Read the email address and generated temporary password from the development-server terminal.
+5. Open `/accounts/login/` and sign in with those credentials.
+6. The system redirects the innovator to `/accounts/first-login/password-change/` and blocks all other authenticated pages.
+7. Create and confirm a strong personal password. The system signs the innovator out.
+8. Sign in again through `/accounts/login/` using the email address and new personal password.
+
+Treat console email output as sensitive development data because it contains the temporary password. Temporary passwords are never written to audit records or application logs. Password-reset responses remain generic whether or not an email exists, and accounts still awaiting their first password change must ask an administrator to reissue credentials.
+
+The forgot-password page uses the same branded two-panel layout as the login page. It instructs established users to enter their registered email, check spam or junk folders, and use the reset link within one hour. A reset link becomes invalid after the password is successfully changed.
+
+After upgrading an existing database, accounts that had not completed the former activation flow are preserved as pending. Open the innovator's administrator record and select **Reissue login credentials** to generate and email a usable temporary password.
+
+For production SMTP, use values similar to:
 
 ```dotenv
 DEBUG=False
-SECRET_KEY=a-long-unique-secret-from-a-secure-secret-manager
+SECRET_KEY=
 ALLOWED_HOSTS=hub.example.edu
-DATABASE_URL=postgresql://tsavo_user:encoded_password@database-host:5432/tsavo_hub
+DATABASE_URL=postgresql://tsavo_user@database-host:5432/tsavo_hub
 EMAIL_HOST=smtp.example.edu
 EMAIL_PORT=587
 EMAIL_HOST_USER=smtp-account
-EMAIL_HOST_PASSWORD=secret-from-your-secret-manager
+EMAIL_HOST_PASSWORD=
 EMAIL_USE_TLS=True
 DEFAULT_FROM_EMAIL=Tsavo Hub <noreply@example.edu>
 SECURE_SSL_REDIRECT=True
 CSRF_TRUSTED_ORIGINS=https://hub.example.edu
 ```
 
-With `DEBUG=False`, the SMTP backend is selected automatically. Verify sender-domain authentication and delivery before onboarding users.
+The blank `SECRET_KEY` and `EMAIL_HOST_PASSWORD` entries are deliberate. Supply them through the deployment platform's secret manager. Add the database password through the platform's protected `DATABASE_URL` value rather than committing it to documentation or source control.
+
+With `DEBUG=False`, the SMTP backend is selected automatically. Verify the sender domain and delivery before onboarding real users.
+
+## Main routes
+
+```text
+/accounts/login/
+/accounts/logout/
+/accounts/first-login/password-change/
+/accounts/password-reset/
+/accounts/password-change/
+
+/innovators/profile/
+/innovators/profile/edit/
+/innovators/manage/
+/innovators/export/
+/innovators/create/
+/innovators/<id>/
+
+/attendance/check-in/
+/attendance/check-out/
+/attendance/history/
+/attendance/session/<id>/
+/attendance/session/<id>/admin/
+
+/dashboard/
+/dashboard/innovator/
+/dashboard/admin/
+/dashboard/live-attendance/
+
+/audit/
+```
+
+All management, export, attendance-review, and audit routes enforce authorization on the server. Navigation visibility is not treated as a security boundary. Attendance records submitted by innovators are read-only for administrators in both the application and Django Admin.
 
 ## Tests and verification
 
 Run the complete automated suite and framework checks:
 
 ```powershell
-py manage.py test
 py manage.py check
 py manage.py makemigrations --check --dry-run
+py manage.py migrate
+py manage.py test
 py manage.py collectstatic --noinput
 ```
 
-For an explicit production settings review, provide non-placeholder environment values and run:
+Tests cover authentication, secure temporary-password generation and hashing, emailed credentials, mandatory first-login routing, password workflows, permissions, attendance validation, administrator read-only enforcement, dashboards, professional record pages, and CSV export.
+
+For a production configuration review, provide non-placeholder environment values and run:
 
 ```powershell
 py manage.py check --deploy
 ```
 
-## Attendance behavior
-
-- Innovators select today's arrival and departure times on their dashboard; the server rejects reversed or future times.
-- An innovator can have one active session. This is enforced in services and with a conditional database uniqueness constraint.
-- Starting a new visit on a later Nairobi calendar date changes the old active session to `INCOMPLETE`; it does not invent a checkout time.
-- Innovators can view only their own records and cannot edit an existing attendance record after submission.
-- Administrator corrections require a reason and preserve previous/new values in both a correction record and the audit log.
-- Ordinary attendance records cannot be deleted or edited through the Django admin; use the audited correction workflow.
-
 ## Production deployment considerations
 
-- Deploy behind a maintained HTTPS reverse proxy and keep `DEBUG=False`.
-- Store `SECRET_KEY`, database credentials, and email credentials in the platform's secret manager, not a file in the release artifact.
+- Deploy behind a maintained HTTPS reverse proxy with `DEBUG=False`.
+- Store secrets and credentials in the deployment platform's secret manager.
 - Set exact `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS`; do not use wildcards.
-- If and only if a trusted proxy sets `X-Forwarded-Proto`, set `TRUST_PROXY_SSL_HEADER=True`.
-- Run `migrate` and `collectstatic --noinput` during deployment.
-- Serve static and uploaded media separately from the Django process. Validate backup and restore procedures for both PostgreSQL and media.
-- Use a production WSGI/ASGI server suitable for the deployment platform and configure process health checks, structured logs, monitoring, and error reporting.
-- Restrict Django admin access operationally. Application records are view-only there where edits would bypass audit workflows.
-- Review retention, privacy, access, and incident-response policies with Taita Taveta University before processing real personal data.
-- Keep the supplied Tsavo Hub logo or set `SITE_LOGO_URL` to an authorized replacement asset's static or hosted path.
+- Set `TRUST_PROXY_SSL_HEADER=True` only when a trusted proxy supplies `X-Forwarded-Proto`.
+- Use PostgreSQL and test backup/restore procedures before processing real data.
+- Run migrations and `collectstatic --noinput` during deployment.
+- Serve static and uploaded media separately from the Django process.
+- Use a maintained WSGI/ASGI server with health checks, logs, monitoring, and error reporting.
+- Restrict Django Admin operationally; sensitive application records are read-only where direct edits would bypass audited workflows.
+- Review data retention, privacy, access, and incident-response policies with Taita Taveta University.
 
 ## Git hygiene
 
-The repository ignores `.env`, SQLite databases, uploaded media, collected static output, virtual environments, caches, coverage files, and logs. Commit migration files whenever models change, but never commit real credentials, activation codes, email output, or user uploads.
+The repository ignores `.env`, SQLite databases, uploaded media, collected static output, virtual environments, caches, coverage output, and logs.
+
+Commit model migrations together with their corresponding model changes. Never commit real credentials, temporary passwords, email output, database files, or user uploads.

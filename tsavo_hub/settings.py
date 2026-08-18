@@ -4,6 +4,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from django.contrib.messages import constants as message_constants
 from django.core.exceptions import ImproperlyConfigured
+from django.core.management.utils import get_random_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -39,7 +40,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     if not DEBUG:
         raise ImproperlyConfigured("SECRET_KEY must be set when DEBUG is False.")
-    SECRET_KEY = "development-only-insecure-secret-key-change-me"
+    SECRET_KEY = get_random_secret_key()
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1" if DEBUG else "")
 
@@ -64,6 +65,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.middleware.ForceFirstLoginPasswordChangeMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -141,17 +143,21 @@ TIME_ZONE = "Africa/Nairobi"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# Bump this value for deployments that change local CSS or JavaScript. The
+# version is appended to shared asset URLs so browsers do not reuse stale files.
+STATIC_VERSION = os.getenv("STATIC_VERSION", "20260818.6")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "dashboard:index"
 LOGOUT_REDIRECT_URL = "accounts:login"
+PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", "3600"))
 MESSAGE_TAGS = {message_constants.ERROR: "danger"}
 
 EMAIL_BACKEND = (
@@ -182,7 +188,4 @@ CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 if env_bool("TRUST_PROXY_SSL_HEADER", False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-OTP_EXPIRY_MINUTES = 15
-OTP_MAX_ATTEMPTS = 5
-OTP_RESEND_COOLDOWN_SECONDS = 60
 SITE_LOGO_URL = os.getenv("SITE_LOGO_URL", "")

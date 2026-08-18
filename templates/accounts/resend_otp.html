@@ -1,6 +1,0 @@
-{% extends "base.html" %}
-{% block title %}Resend activation code{% endblock %}
-{% block content %}<div class="auth-wrap"><div class="card auth-card"><div class="card-body p-4 p-lg-5">
-<h1>Request a new code</h1><p class="text-muted">For privacy, the response is the same whether or not an eligible account exists.</p>
-<form method="post" novalidate>{% csrf_token %}{% include "includes/form_fields.html" %}<button class="btn btn-primary w-100" type="submit">Request code</button></form>
-</div></div></div>{% endblock %}

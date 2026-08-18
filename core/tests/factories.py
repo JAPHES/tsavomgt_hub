@@ -1,8 +1,15 @@
+import secrets
+
 from accounts.models import User
 from innovators.models import InnovatorProfile
 
 
-DEFAULT_PASSWORD = "StrongPass!739"
+def make_test_password():
+    """Create a validator-compliant credential at runtime, never in source control."""
+    return f"T9!a-{secrets.token_urlsafe(18)}"
+
+
+DEFAULT_PASSWORD = make_test_password()
 
 
 def create_admin(email="admin@ttu.ac.ke", password=DEFAULT_PASSWORD):
@@ -14,7 +21,7 @@ def create_admin(email="admin@ttu.ac.ke", password=DEFAULT_PASSWORD):
         role=User.Role.ADMIN,
         account_status=User.AccountStatus.ACTIVE,
         email_verified=True,
-        activation_completed=True,
+        must_change_password=False,
         is_active=True,
         is_staff=True,
     )
@@ -28,6 +35,7 @@ def create_innovator(
     first_name="Amina",
     last_name="Juma",
     project="BlueWatch",
+    must_change_password=False,
 ):
     user = User.objects.create_user(
         email=email,
@@ -35,9 +43,13 @@ def create_innovator(
         first_name=first_name,
         last_name=last_name,
         role=User.Role.INNOVATOR,
-        account_status=User.AccountStatus.ACTIVE if active else User.AccountStatus.PENDING,
-        email_verified=active,
-        activation_completed=active,
+        account_status=(
+            User.AccountStatus.PENDING
+            if must_change_password
+            else User.AccountStatus.ACTIVE if active else User.AccountStatus.INACTIVE
+        ),
+        email_verified=active and not must_change_password,
+        must_change_password=must_change_password,
         is_active=active,
     )
     if not active:

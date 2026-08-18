@@ -1,4 +1,3 @@
-from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -6,20 +5,11 @@ from accounts.models import User
 from auditlog.models import AuditLog
 from auditlog.services import record_audit
 
-from .models import AttendanceCorrection, AttendanceSession
+from .models import AttendanceSession
 
 
 class AttendanceError(Exception):
     pass
-
-
-def _snapshot(session):
-    return {
-        "check_in_at": session.check_in_at.isoformat() if session.check_in_at else None,
-        "check_out_at": session.check_out_at.isoformat() if session.check_out_at else None,
-        "status": session.status,
-        "work_completed": session.work_completed,
-    }
 
 
 @transaction.atomic
@@ -113,53 +103,4 @@ def record_daily_attendance(
     session.status = AttendanceSession.Status.COMPLETED
     session.full_clean()
     session.save()
-    return session
-
-
-@transaction.atomic
-def correct_attendance(session_id, cleaned_data, *, administrator, request=None):
-    session = AttendanceSession.objects.select_for_update().get(pk=session_id)
-    previous = _snapshot(session)
-    session.check_in_at = cleaned_data["check_in_at"]
-    session.check_out_at = cleaned_data.get("check_out_at")
-    session.status = cleaned_data["status"]
-    session.work_completed = cleaned_data.get("work_completed", "").strip()
-    session.correction_reason = cleaned_data["correction_reason"].strip()
-    session.corrected_by = administrator
-    session.corrected_at = timezone.now()
-    try:
-        session.full_clean()
-        session.save()
-    except (ValidationError, IntegrityError) as exc:
-        raise AttendanceError("The correction conflicts with attendance rules.") from exc
-    new = _snapshot(session)
-    AttendanceCorrection.objects.create(
-        attendance=session,
-        administrator=administrator,
-        previous_values=previous,
-        new_values=new,
-        reason=session.correction_reason,
-    )
-    record_audit(
-        actor=administrator,
-        action=AuditLog.Action.ATTENDANCE_CORRECTED,
-        target=session,
-        previous_values=previous,
-        new_values=new,
-        reason=session.correction_reason,
-        request=request,
-    )
-    if (
-        previous["status"] == AttendanceSession.Status.INCOMPLETE
-        and session.status == AttendanceSession.Status.ADMIN_CLOSED
-    ):
-        record_audit(
-            actor=administrator,
-            action=AuditLog.Action.INCOMPLETE_SESSION_CLOSED,
-            target=session,
-            previous_values={"status": previous["status"]},
-            new_values={"status": session.status},
-            reason=session.correction_reason,
-            request=request,
-        )
     return session

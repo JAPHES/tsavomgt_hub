@@ -7,9 +7,11 @@ app_name = "accounts"
 urlpatterns = [
     path("login/", views.TsavoLoginView.as_view(), name="login"),
     path("logout/", views.logout_view, name="logout"),
-    path("activate/", views.activate_account, name="activate"),
-    path("activate/password/", views.create_activation_password, name="activation-password"),
-    path("resend-otp/", views.resend_otp, name="resend-otp"),
+    path(
+        "first-login/password-change/",
+        views.first_login_password_change,
+        name="first-login-password-change",
+    ),
     path("password-reset/", views.TsavoPasswordResetView.as_view(), name="password-reset"),
     path("password-reset/done/", views.TsavoPasswordResetDoneView.as_view(), name="password-reset-done"),
     path(

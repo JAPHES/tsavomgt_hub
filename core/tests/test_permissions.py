@@ -33,9 +33,9 @@ class PermissionTests(TestCase):
         self.assertEqual(self.client.get(reverse("innovators:export")).status_code, 403)
         self.assertEqual(
             self.client.get(
-                reverse("attendance:correct", kwargs={"pk": self.other_session.pk})
+                f"/attendance/session/{self.other_session.pk}/correct/"
             ).status_code,
-            403,
+            404,
         )
 
     def test_innovator_cannot_see_another_innovators_attendance(self):
@@ -77,7 +77,7 @@ class PermissionTests(TestCase):
         session_response = self.client.get(
             reverse("attendance:admin-detail", kwargs={"pk": self.other_session.pk})
         )
-        self.assertContains(session_response, "Correct record")
+        self.assertNotContains(session_response, "Correct record")
         self.assertContains(session_response, "Back to innovator record")
 
     def test_administrator_can_download_all_innovators_as_csv(self):
@@ -119,4 +119,7 @@ class PermissionTests(TestCase):
         self.assertContains(response, "Critical account action")
         self.assertContains(response, "Are you sure you want to continue?")
         self.assertContains(response, "Yes, deactivate account")
+        self.assertNotContains(response, "Total visits")
+        self.assertNotContains(response, "First login")
+        self.assertNotContains(response, "Email access")
         self.assertEqual(response.context["attendance_count"], 1)

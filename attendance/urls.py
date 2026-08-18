@@ -10,5 +10,4 @@ urlpatterns = [
     path("history/", views.attendance_history, name="history"),
     path("session/<int:pk>/", views.innovator_session_detail, name="detail"),
     path("session/<int:pk>/admin/", views.admin_session_detail, name="admin-detail"),
-    path("session/<int:pk>/correct/", views.correct_session, name="correct"),
 ]

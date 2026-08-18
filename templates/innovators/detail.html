@@ -30,29 +30,14 @@
     </div>
     <div class="innovator-record-actions">
         <a class="btn btn-primary" href="{% url 'innovators:update' profile.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Edit innovator</a>
-        {% if not profile.user.activation_completed %}
-            <form method="post" action="{% url 'innovators:admin-resend-otp' profile.pk %}">
+        {% if profile.user.must_change_password %}
+            <form method="post" action="{% url 'innovators:admin-reissue-credentials' profile.pk %}">
                 {% csrf_token %}
-                <button class="btn btn-outline-primary" type="submit"><i class="bi bi-envelope-arrow-up me-2" aria-hidden="true"></i>Resend activation code</button>
+                <button class="btn btn-outline-primary" type="submit"><i class="bi bi-envelope-arrow-up me-2" aria-hidden="true"></i>Reissue login credentials</button>
             </form>
         {% endif %}
     </div>
 </section>
-
-<div class="innovator-record-stats">
-    <article>
-        <span class="record-stat-icon"><i class="bi bi-calendar2-check" aria-hidden="true"></i></span>
-        <div><small>Total visits</small><strong>{{ attendance_count }}</strong></div>
-    </article>
-    <article>
-        <span class="record-stat-icon"><i class="bi bi-patch-check" aria-hidden="true"></i></span>
-        <div><small>Activation</small><strong>{% if profile.user.activation_completed %}Completed{% else %}Pending{% endif %}</strong></div>
-    </article>
-    <article>
-        <span class="record-stat-icon"><i class="bi bi-envelope-check" aria-hidden="true"></i></span>
-        <div><small>Email verification</small><strong>{% if profile.user.email_verified %}Verified{% else %}Not verified{% endif %}</strong></div>
-    </article>
-</div>
 
 <div class="row g-4 innovator-record-grid">
     <div class="col-lg-5">
@@ -148,7 +133,7 @@
                 <p>You are about to deactivate <strong>{{ profile.user.get_full_name }}</strong>. Are you sure you want to continue?</p>
                 <div class="critical-impact-list">
                     <div><i class="bi bi-x-circle" aria-hidden="true"></i><span>The innovator will immediately lose access to the system.</span></div>
-                    <div><i class="bi bi-envelope-x" aria-hidden="true"></i><span>Any unused activation codes will be invalidated.</span></div>
+                    <div><i class="bi bi-envelope-x" aria-hidden="true"></i><span>The innovator will not be able to use temporary or personal login credentials.</span></div>
                     <div><i class="bi bi-archive" aria-hidden="true"></i><span>Profile and attendance history will be preserved.</span></div>
                 </div>
             </div>

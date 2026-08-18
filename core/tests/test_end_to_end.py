@@ -5,12 +5,12 @@ from django.urls import reverse
 
 from accounts.models import User
 from attendance.models import AttendanceSession
-from core.tests.factories import DEFAULT_PASSWORD, create_admin
+from core.tests.factories import DEFAULT_PASSWORD, create_admin, make_test_password
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class CompleteHubFlowTests(TestCase):
-    def test_account_activation_attendance_and_admin_monitoring_flow(self):
+    def test_first_login_attendance_and_admin_monitoring_flow(self):
         administrator = create_admin()
         self.client.force_login(administrator)
         create_data = {
@@ -21,7 +21,11 @@ class CompleteHubFlowTests(TestCase):
             "phone_number": "0711223344",
             "innovation_project_name": "Eco Sort",
         }
-        with patch("accounts.services.generate_otp", return_value="246810"):
+        temporary_password = make_test_password()
+        with patch(
+            "accounts.services.generate_temporary_password",
+            return_value=temporary_password,
+        ):
             with self.captureOnCommitCallbacks(execute=True):
                 response = self.client.post(reverse("innovators:create"), create_data)
         self.assertEqual(response.status_code, 302)
@@ -30,20 +34,27 @@ class CompleteHubFlowTests(TestCase):
         self.client.logout()
         self.assertRedirects(
             self.client.post(
-                reverse("accounts:activate"), {"email": innovator.email, "otp": "246810"}
+                reverse("accounts:login"),
+                {"username": innovator.email, "password": temporary_password},
             ),
-            reverse("accounts:activation-password"),
+            reverse("accounts:first-login-password-change"),
+            fetch_redirect_response=False,
         )
         self.assertRedirects(
             self.client.post(
-                reverse("accounts:activation-password"),
+                reverse("accounts:first-login-password-change"),
                 {"new_password1": DEFAULT_PASSWORD, "new_password2": DEFAULT_PASSWORD},
             ),
             reverse("accounts:login"),
         )
         innovator.refresh_from_db()
-        self.assertTrue(
-            self.client.login(username=innovator.email, password=DEFAULT_PASSWORD)
+        self.assertRedirects(
+            self.client.post(
+                reverse("accounts:login"),
+                {"username": innovator.email, "password": DEFAULT_PASSWORD},
+            ),
+            reverse("dashboard:index"),
+            fetch_redirect_response=False,
         )
         self.assertRedirects(
             self.client.post(

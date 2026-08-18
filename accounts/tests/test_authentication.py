@@ -1,27 +1,43 @@
-from datetime import timedelta
+import string
 from unittest.mock import patch
 
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.utils import timezone
 
+from accounts.models import User
+from accounts.services import generate_temporary_password
 from auditlog.models import AuditLog
-from core.tests.factories import DEFAULT_PASSWORD, create_admin, create_innovator
+from core.tests.factories import (
+    DEFAULT_PASSWORD,
+    create_admin,
+    create_innovator,
+    make_test_password,
+)
 from innovators.models import InnovatorProfile
 
-from accounts.models import AccountActivationOTP, User
-from accounts.services import (
-    OTPVerificationError,
-    complete_activation,
-    generate_otp,
-    issue_activation_otp,
-    verify_activation_otp,
-)
+
+TEMPORARY_PASSWORD = make_test_password()
+NEW_PERSONAL_PASSWORD = make_test_password()
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class AuthenticationTests(TestCase):
+    @override_settings(STATIC_VERSION="test-ui-version")
+    def test_login_page_uses_split_layout_without_support_or_activation_link(self):
+        response = self.client.get(reverse("accounts:login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="login-welcome-panel"')
+        self.assertContains(response, 'class="login-form-panel"')
+        self.assertContains(response, "Tsavo Hub Management System")
+        self.assertContains(response, "/static/css/app.css?v=test-ui-version")
+        self.assertContains(response, "/static/js/app.js?v=test-ui-version")
+        self.assertNotContains(response, "Activate account")
+        self.assertNotContains(
+            response, "Supported by Taita Taveta University &ndash; Home of Ideas"
+        )
+
     def test_email_login_and_invalid_login(self):
         user = create_innovator()
         response = self.client.post(
@@ -45,12 +61,38 @@ class AuthenticationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("_auth_user_id", self.client.session)
 
-    def test_password_reset_is_generic_and_sends_for_active_user(self):
+    def test_password_reset_page_matches_login_layout_and_shows_guidelines(self):
+        response = self.client.get(reverse("accounts:password-reset"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="login-layout password-reset-layout"')
+        self.assertContains(response, 'class="login-welcome-panel"')
+        self.assertContains(response, 'class="login-form-panel"')
+        self.assertContains(response, "Recovery guidelines")
+        self.assertContains(response, "expires after one hour")
+        self.assertContains(response, "spam or junk folder")
+        self.assertContains(response, "system-generated temporary password")
+        self.assertNotContains(
+            response, "Supported by Taita Taveta University &ndash; Home of Ideas"
+        )
+
+    def test_password_reset_is_generic_and_sends_only_for_established_user(self):
         user = create_innovator()
         response = self.client.post(reverse("accounts:password-reset"), {"email": user.email})
         self.assertRedirects(response, reverse("accounts:password-reset-done"))
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("password-reset", mail.outbox[0].body)
+
+        pending = create_innovator(
+            email="pending@example.com",
+            registration_number="TTU/INN/088",
+            password=TEMPORARY_PASSWORD,
+            must_change_password=True,
+        )
+        response = self.client.post(reverse("accounts:password-reset"), {"email": pending.email})
+        self.assertRedirects(response, reverse("accounts:password-reset-done"))
+        self.assertEqual(len(mail.outbox), 1)
+
         response = self.client.post(
             reverse("accounts:password-reset"), {"email": "missing@example.com"}
         )
@@ -84,20 +126,18 @@ class AuthenticationTests(TestCase):
     def test_password_change_updates_password(self):
         user = create_innovator()
         self.client.force_login(user)
-        new_password = "NewSecurePass!846"
-
         response = self.client.post(
             reverse("accounts:password-change"),
             {
                 "old_password": DEFAULT_PASSWORD,
-                "new_password1": new_password,
-                "new_password2": new_password,
+                "new_password1": NEW_PERSONAL_PASSWORD,
+                "new_password2": NEW_PERSONAL_PASSWORD,
             },
         )
 
         self.assertRedirects(response, reverse("accounts:password-change-done"))
         user.refresh_from_db()
-        self.assertTrue(user.check_password(new_password))
+        self.assertTrue(user.check_password(NEW_PERSONAL_PASSWORD))
 
     def test_logout_requires_post(self):
         self.client.force_login(create_innovator())
@@ -105,100 +145,120 @@ class AuthenticationTests(TestCase):
         self.assertRedirects(self.client.post(reverse("accounts:logout")), reverse("accounts:login"))
 
 
-@override_settings(
-    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
-    OTP_RESEND_COOLDOWN_SECONDS=0,
-)
-class OTPTests(TestCase):
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+class TemporaryCredentialTests(TestCase):
     def setUp(self):
-        self.user = create_innovator(active=False)
+        self.user = create_innovator(
+            password=TEMPORARY_PASSWORD,
+            must_change_password=True,
+        )
 
-    def issue_known_otp(self, value="123456"):
-        with patch("accounts.services.generate_otp", return_value=value):
-            with self.captureOnCommitCallbacks(execute=True):
-                otp = issue_activation_otp(self.user)
-        return otp
-
-    def test_secure_six_digit_generation(self):
-        otp = generate_otp()
-        self.assertEqual(len(otp), 6)
-        self.assertTrue(otp.isdigit())
-
-    def test_otp_is_hashed_and_correct_code_verifies(self):
-        otp = self.issue_known_otp()
-        self.assertNotEqual(otp.otp_hash, "123456")
-        verified_user, verified_otp = verify_activation_otp(self.user.email, "123456")
-        self.assertEqual(verified_user, self.user)
-        self.assertEqual(verified_otp, otp)
-
-    def test_incorrect_otp_increments_attempt_count(self):
-        otp = self.issue_known_otp()
-        with self.assertRaises(OTPVerificationError):
-            verify_activation_otp(self.user.email, "000000")
-        otp.refresh_from_db()
-        self.assertEqual(otp.attempt_count, 1)
-
-    def test_expired_and_used_otps_are_rejected(self):
-        otp = self.issue_known_otp()
-        otp.expires_at = timezone.now() - timedelta(seconds=1)
-        otp.save(update_fields=["expires_at"])
-        with self.assertRaises(OTPVerificationError):
-            verify_activation_otp(self.user.email, "123456")
-        otp.expires_at = timezone.now() + timedelta(minutes=5)
-        otp.used_at = timezone.now()
-        otp.save(update_fields=["expires_at", "used_at"])
-        with self.assertRaises(OTPVerificationError):
-            verify_activation_otp(self.user.email, "123456")
-
-    @override_settings(OTP_MAX_ATTEMPTS=2)
-    def test_attempt_limit_blocks_even_correct_code(self):
-        otp = self.issue_known_otp()
-        for value in ("000000", "111111"):
-            with self.assertRaises(OTPVerificationError):
-                verify_activation_otp(self.user.email, value)
-        otp.refresh_from_db()
-        self.assertEqual(otp.attempt_count, 2)
-        with self.assertRaises(OTPVerificationError):
-            verify_activation_otp(self.user.email, "123456")
-
-    def test_resend_invalidates_previous_otp(self):
-        first = self.issue_known_otp("123456")
-        with patch("accounts.services.generate_otp", return_value="654321"):
-            with self.captureOnCommitCallbacks(execute=True):
-                second = issue_activation_otp(self.user, resent=True)
-        first.refresh_from_db()
-        self.assertIsNotNone(first.invalidated_at)
-        with self.assertRaises(OTPVerificationError):
-            verify_activation_otp(self.user.email, "123456")
-        self.assertEqual(verify_activation_otp(self.user.email, "654321")[1], second)
-
-    def test_password_creation_completes_activation_and_uses_otp(self):
-        otp = self.issue_known_otp()
-        complete_activation(self.user.pk, otp.pk, DEFAULT_PASSWORD)
-        self.user.refresh_from_db()
-        otp.refresh_from_db()
-        self.assertTrue(self.user.is_active)
-        self.assertTrue(self.user.email_verified)
-        self.assertTrue(self.user.activation_completed)
-        self.assertTrue(self.user.check_password(DEFAULT_PASSWORD))
-        self.assertIsNotNone(otp.used_at)
+    def test_generated_password_is_strong_and_uses_secure_categories(self):
+        password = generate_temporary_password()
+        self.assertEqual(len(password), 18)
+        self.assertTrue(any(character.isupper() for character in password))
+        self.assertTrue(any(character.islower() for character in password))
+        self.assertTrue(any(character.isdigit() for character in password))
+        self.assertTrue(any(character in "!@#$%^&*" for character in password))
         self.assertTrue(
-            AuditLog.objects.filter(action=AuditLog.Action.ACCOUNT_ACTIVATED).exists()
+            all(
+                character in string.ascii_letters + string.digits + "!@#$%^&*"
+                for character in password
+            )
         )
 
-    def test_activation_view_verifies_then_creates_password(self):
-        otp = self.issue_known_otp()
+    def test_temporary_login_redirects_to_mandatory_password_change(self):
         response = self.client.post(
-            reverse("accounts:activate"), {"email": self.user.email, "otp": "123456"}
+            reverse("accounts:login"),
+            {"username": self.user.email, "password": TEMPORARY_PASSWORD},
         )
-        self.assertRedirects(response, reverse("accounts:activation-password"))
+        self.assertRedirects(
+            response,
+            reverse("accounts:first-login-password-change"),
+            fetch_redirect_response=False,
+        )
+
+    def test_middleware_blocks_all_other_pages_until_password_changes(self):
+        self.client.force_login(self.user)
+        for route in (
+            reverse("dashboard:innovator"),
+            reverse("innovators:profile"),
+            reverse("attendance:history"),
+            reverse("accounts:password-change"),
+        ):
+            self.assertRedirects(
+                self.client.get(route),
+                reverse("accounts:first-login-password-change"),
+                fetch_redirect_response=False,
+            )
+
+    def test_first_login_form_rejects_weak_password(self):
+        self.client.force_login(self.user)
         response = self.client.post(
-            reverse("accounts:activation-password"),
-            {"new_password1": DEFAULT_PASSWORD, "new_password2": DEFAULT_PASSWORD},
+            reverse("accounts:first-login-password-change"),
+            {"new_password1": "short", "new_password2": "short"},
         )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This password is too short")
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.must_change_password)
+
+    def test_first_login_change_activates_account_logs_out_and_audits(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("accounts:first-login-password-change"),
+            {
+                "new_password1": NEW_PERSONAL_PASSWORD,
+                "new_password2": NEW_PERSONAL_PASSWORD,
+            },
+        )
+
         self.assertRedirects(response, reverse("accounts:login"))
-        otp.refresh_from_db()
-        self.assertIsNotNone(otp.used_at)
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.must_change_password)
+        self.assertTrue(self.user.email_verified)
+        self.assertEqual(self.user.account_status, User.AccountStatus.ACTIVE)
+        self.assertTrue(self.user.check_password(NEW_PERSONAL_PASSWORD))
+        self.assertFalse(self.user.check_password(TEMPORARY_PASSWORD))
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.user,
+                action=AuditLog.Action.ACCOUNT_ACTIVATED,
+            ).exists()
+        )
+
+    def test_new_password_can_be_used_on_normal_login(self):
+        self.client.force_login(self.user)
+        self.client.post(
+            reverse("accounts:first-login-password-change"),
+            {
+                "new_password1": NEW_PERSONAL_PASSWORD,
+                "new_password2": NEW_PERSONAL_PASSWORD,
+            },
+        )
+        response = self.client.post(
+            reverse("accounts:login"),
+            {"username": self.user.email, "password": NEW_PERSONAL_PASSWORD},
+        )
+        self.assertRedirects(response, reverse("dashboard:index"), fetch_redirect_response=False)
+
+    def test_established_user_cannot_open_first_login_form(self):
+        established = create_innovator(
+            email="established@example.com",
+            registration_number="TTU/INN/002",
+        )
+        self.client.force_login(established)
+        self.assertRedirects(
+            self.client.get(reverse("accounts:first-login-password-change")),
+            reverse("dashboard:index"),
+            fetch_redirect_response=False,
+        )
+
+    def test_old_activation_pages_are_removed(self):
+        self.client.logout()
+        self.assertEqual(self.client.get("/accounts/activate/").status_code, 404)
+        self.assertEqual(self.client.get("/accounts/resend-otp/").status_code, 404)
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
@@ -215,18 +275,28 @@ class AdministratorAccountCreationTests(TestCase):
             "innovation_project_name": "Eco Sort",
         }
 
-    def test_administrator_creates_account_and_otp(self):
+    @patch("accounts.services.generate_temporary_password", return_value=TEMPORARY_PASSWORD)
+    def test_administrator_creates_account_and_emails_hashed_temporary_password(self, generator):
         with self.captureOnCommitCallbacks(execute=True):
             response = self.client.post(reverse("innovators:create"), self.data)
         profile = InnovatorProfile.objects.get(registration_number="TTU/INN/099")
+        user = profile.user
+
         self.assertRedirects(
             response, reverse("innovators:create-success", kwargs={"pk": profile.pk})
         )
-        self.assertFalse(profile.user.has_usable_password())
-        self.assertFalse(profile.user.is_active)
-        self.assertEqual(profile.user.activation_otps.count(), 1)
+        generator.assert_called_once_with()
+        self.assertTrue(user.has_usable_password())
+        self.assertTrue(user.check_password(TEMPORARY_PASSWORD))
+        self.assertNotEqual(user.password, TEMPORARY_PASSWORD)
+        self.assertTrue(user.is_active)
+        self.assertTrue(user.must_change_password)
+        self.assertEqual(user.account_status, User.AccountStatus.PENDING)
         self.assertEqual(len(mail.outbox), 1)
-        self.assertTrue(AuditLog.objects.filter(action=AuditLog.Action.ACCOUNT_CREATED).exists())
+        self.assertIn(user.email, mail.outbox[0].body)
+        self.assertIn(TEMPORARY_PASSWORD, mail.outbox[0].body)
+        audit = AuditLog.objects.get(action=AuditLog.Action.ACCOUNT_CREATED)
+        self.assertNotIn(TEMPORARY_PASSWORD, str(audit.new_values))
 
     def test_duplicate_email_is_rejected(self):
         create_innovator(email=self.data["email"], registration_number="OTHER/001")
@@ -239,3 +309,32 @@ class AdministratorAccountCreationTests(TestCase):
         response = self.client.post(reverse("innovators:create"), self.data)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "already in use")
+
+    @patch("accounts.services.generate_temporary_password", return_value=TEMPORARY_PASSWORD)
+    def test_administrator_can_reissue_pending_credentials(self, generator):
+        pending = create_innovator(
+            email="pending@example.com",
+            registration_number="TTU/INN/077",
+            password=make_test_password(),
+            must_change_password=True,
+        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse(
+                    "innovators:admin-reissue-credentials",
+                    kwargs={"pk": pending.innovator_profile.pk},
+                )
+            )
+
+        self.assertRedirects(
+            response,
+            reverse("innovators:detail", kwargs={"pk": pending.innovator_profile.pk}),
+        )
+        generator.assert_called_once_with()
+        pending.refresh_from_db()
+        self.assertTrue(pending.check_password(TEMPORARY_PASSWORD))
+        self.assertEqual(len(mail.outbox), 1)
+        audit = AuditLog.objects.get(
+            action=AuditLog.Action.TEMPORARY_CREDENTIALS_REISSUED
+        )
+        self.assertNotIn(TEMPORARY_PASSWORD, str(audit.new_values))

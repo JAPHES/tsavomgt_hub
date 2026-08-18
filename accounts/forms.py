@@ -1,5 +1,10 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordChangeForm,
+    PasswordResetForm,
+    SetPasswordForm,
+)
 
 
 class BootstrapFormMixin:
@@ -21,38 +26,27 @@ class EmailAuthenticationForm(BootstrapFormMixin, AuthenticationForm):
         self.apply_bootstrap()
 
 
-class ActivationVerificationForm(BootstrapFormMixin, forms.Form):
-    email = forms.EmailField(label="Email address")
-    otp = forms.CharField(
-        label="Six-digit activation code",
-        min_length=6,
-        max_length=6,
-        widget=forms.TextInput(attrs={"inputmode": "numeric", "autocomplete": "one-time-code"}),
-    )
+class FirstLoginPasswordChangeForm(BootstrapFormMixin, SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["new_password1"].label = "New password"
+        self.fields["new_password2"].label = "Confirm new password"
+        self.fields["new_password1"].widget.attrs.update(
+            {"autocomplete": "new-password", "placeholder": "Enter your new password", "autofocus": True}
+        )
+        self.fields["new_password2"].widget.attrs.update(
+            {"autocomplete": "new-password", "placeholder": "Enter the new password again"}
+        )
+        self.apply_bootstrap()
 
-    def clean_otp(self):
-        otp = self.cleaned_data["otp"].strip()
-        if not otp.isdigit():
-            raise forms.ValidationError("Enter the six-digit code sent to your email.")
-        return otp
 
+class TsavoPasswordResetForm(BootstrapFormMixin, PasswordResetForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
 
-
-class ResendOTPForm(BootstrapFormMixin, forms.Form):
-    email = forms.EmailField(label="Email address")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.apply_bootstrap()
-
-
-class ActivationPasswordForm(BootstrapFormMixin, SetPasswordForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.apply_bootstrap()
+    def get_users(self, email):
+        return (user for user in super().get_users(email) if not user.must_change_password)
 
 
 class TsavoPasswordChangeForm(BootstrapFormMixin, PasswordChangeForm):

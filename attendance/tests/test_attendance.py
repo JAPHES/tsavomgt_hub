@@ -6,12 +6,10 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from auditlog.models import AuditLog
 from core.tests.factories import create_admin, create_innovator
 
-from attendance.forms import AttendanceCorrectionForm
-from attendance.models import AttendanceCorrection, AttendanceSession
-from attendance.services import AttendanceError, check_in, check_out, correct_attendance
+from attendance.models import AttendanceSession
+from attendance.services import AttendanceError, check_in, check_out
 
 
 class AttendanceServiceTests(TestCase):
@@ -121,7 +119,7 @@ class AttendanceServiceTests(TestCase):
         self.assertIsNone(previous.check_out_at)
 
 
-class AttendanceCorrectionTests(TestCase):
+class AttendanceAdministratorReadOnlyTests(TestCase):
     def setUp(self):
         self.admin = create_admin()
         self.user = create_innovator()
@@ -131,44 +129,32 @@ class AttendanceCorrectionTests(TestCase):
             check_in_at=timezone.now() - timedelta(days=1),
             status=AttendanceSession.Status.INCOMPLETE,
         )
+        self.client.force_login(self.admin)
 
-    def test_administrator_correction_records_history_and_audit(self):
-        checkout = self.session.check_in_at + timedelta(hours=3)
-        corrected = correct_attendance(
-            self.session.pk,
+    def test_administrator_can_view_record_without_correction_action(self):
+        response = self.client.get(
+            reverse("attendance:admin-detail", kwargs={"pk": self.session.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Session timing")
+        self.assertNotContains(response, "Correct record")
+
+    def test_removed_correction_url_cannot_modify_record(self):
+        original_check_in = self.session.check_in_at
+        correction_url = f"/attendance/session/{self.session.pk}/correct/"
+        response = self.client.post(
+            correction_url,
             {
-                "check_in_at": self.session.check_in_at,
-                "check_out_at": checkout,
-                "status": AttendanceSession.Status.ADMIN_CLOSED,
-                "work_completed": "Administrator confirmed the work from signed notes.",
-                "correction_reason": "Confirmed against the signed physical attendance register.",
+                "check_in_at": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
+                "status": AttendanceSession.Status.COMPLETED,
+                "work_completed": "Attempted modification",
+                "correction_reason": "Attempted correction",
             },
-            administrator=self.admin,
         )
-        self.assertEqual(corrected.check_out_at, checkout)
-        self.assertEqual(corrected.corrected_by, self.admin)
-        self.assertEqual(AttendanceCorrection.objects.filter(attendance=corrected).count(), 1)
-        audit = AuditLog.objects.get(
-            action=AuditLog.Action.ATTENDANCE_CORRECTED, target_id=str(corrected.pk)
-        )
-        self.assertEqual(audit.actor, self.admin)
-        self.assertIn("physical attendance", audit.reason)
-
-    def test_correction_requires_reason(self):
-        form = AttendanceCorrectionForm(
-            data={
-                "check_in_at": timezone.localtime(self.session.check_in_at).strftime(
-                    "%Y-%m-%dT%H:%M"
-                ),
-                "check_out_at": "",
-                "status": AttendanceSession.Status.INCOMPLETE,
-                "work_completed": "",
-                "correction_reason": "",
-            },
-            instance=self.session,
-        )
-        self.assertFalse(form.is_valid())
-        self.assertIn("correction_reason", form.errors)
+        self.assertEqual(response.status_code, 404)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.check_in_at, original_check_in)
+        self.assertEqual(self.session.status, AttendanceSession.Status.INCOMPLETE)
 
 
 class AttendanceViewTests(TestCase):
