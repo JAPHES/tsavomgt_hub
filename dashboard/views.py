@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
@@ -9,7 +10,10 @@ from django.utils import timezone
 
 from accounts.models import User
 from attendance.models import AttendanceSession
+from attendance.services import record_daily_attendance
 from core.permissions import admin_required, innovator_required
+
+from attendance.forms import DailyAttendanceForm
 
 from .forms import AttendanceFilterForm
 
@@ -29,6 +33,17 @@ def dashboard_index(request):
 
 @innovator_required
 def innovator_dashboard(request):
+    attendance_form = DailyAttendanceForm(request.POST or None)
+    if request.method == "POST" and attendance_form.is_valid():
+        session = record_daily_attendance(
+            request.user,
+            check_in_at=attendance_form.cleaned_data["check_in_at"],
+            check_out_at=attendance_form.cleaned_data["check_out_at"],
+            work_completed=attendance_form.cleaned_data["work_completed"],
+            challenges_encountered=attendance_form.cleaned_data["challenges_encountered"],
+        )
+        messages.success(request, "Today's attendance and completed work were recorded.")
+        return redirect("attendance:detail", pk=session.pk)
     now = timezone.now()
     today = timezone.localdate(now)
     week_start = today - timedelta(days=today.weekday())
@@ -38,26 +53,13 @@ def innovator_dashboard(request):
     total_seconds = sum(
         (session.duration.total_seconds() for session in week_sessions if session.duration), 0
     )
-    active_session = week_sessions.filter(status=AttendanceSession.Status.ACTIVE).first()
-    if not active_session:
-        active_session = AttendanceSession.objects.filter(
-            innovator=request.user, status=AttendanceSession.Status.ACTIVE
-        ).first()
-    incomplete_sessions = AttendanceSession.objects.filter(
-        innovator=request.user, status=AttendanceSession.Status.INCOMPLETE
-    )[:5]
     recent_sessions = AttendanceSession.objects.filter(innovator=request.user)[:7]
-    today_session = AttendanceSession.objects.filter(
-        innovator=request.user, check_in_at__date=today
-    ).first()
     return render(
         request,
         "dashboard/innovator.html",
         {
             "now": now,
-            "active_session": active_session,
-            "today_session": today_session,
-            "incomplete_sessions": incomplete_sessions,
+            "attendance_form": attendance_form,
             "recent_sessions": recent_sessions,
             "visits_this_week": week_sessions.count(),
             "hours_this_week": total_seconds / 3600,
@@ -69,37 +71,19 @@ def innovator_dashboard(request):
 def admin_dashboard(request):
     today = timezone.localdate()
     sessions = _base_sessions()
-    current_sessions = sessions.filter(status=AttendanceSession.Status.ACTIVE).order_by("check_in_at")
-    today_sessions = sessions.filter(check_in_at__date=today)
-    completed_today = sessions.filter(
-        check_out_at__date=today,
-        status__in=[AttendanceSession.Status.COMPLETED, AttendanceSession.Status.ADMIN_CLOSED],
-    ).order_by("-check_out_at")
-    incomplete_sessions = sessions.filter(status=AttendanceSession.Status.INCOMPLETE).order_by(
-        "check_in_at"
-    )
-    total_seconds = sum(
-        (session.duration.total_seconds() for session in completed_today if session.duration), 0
-    )
+    today_sessions = sessions.filter(check_in_at__date=today).order_by("check_in_at")
     return render(
         request,
         "dashboard/admin.html",
         {
-            "current_sessions": current_sessions,
             "today_sessions": today_sessions,
-            "completed_today": completed_today[:50],
-            "incomplete_sessions": incomplete_sessions[:20],
             "summary": {
-                "currently_in_hub": current_sessions.count(),
-                "visitors_today": today_sessions.values("innovator_id").distinct().count(),
-                "checked_out_today": completed_today.values("innovator_id").distinct().count(),
-                "incomplete": incomplete_sessions.count(),
-                "hours_today": total_seconds / 3600,
                 "active_innovators": User.objects.filter(
                     role=User.Role.INNOVATOR,
                     account_status=User.AccountStatus.ACTIVE,
                     is_active=True,
                 ).count(),
+                "attended_today": today_sessions.values("innovator_id").distinct().count(),
             },
         },
     )

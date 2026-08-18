@@ -106,6 +106,81 @@ a { color: var(--ttu-primary-green); }
 .attendance-empty-state > i { color: #9bb39b; display: block; font-size: 2rem; margin-bottom: .65rem; }
 .attendance-empty-state h3 { font-size: 1.35rem; margin: 0 0 .35rem; }
 .attendance-empty-state p { margin: 0; }
+.presence-dashboard-heading { align-items: flex-end; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1.5rem; }
+.presence-dashboard-heading h1 { margin-bottom: .5rem; }
+.presence-dashboard-heading > div > p:last-child { color: var(--ttu-medium-gray); margin: 0; }
+.presence-updated { align-items: center; background: var(--ttu-white); border: 1px solid #e0e8e0; border-radius: 999px; color: var(--ttu-medium-gray); display: inline-flex; font-size: .72rem; gap: .45rem; padding: .48rem .75rem; white-space: nowrap; }
+.presence-updated i { color: var(--ttu-primary-green); }
+.presence-summary-row { margin-bottom: 1.5rem; }
+.presence-stat-card { align-items: center; background: var(--ttu-white); border: 1px solid rgba(0,100,0,.09); border-radius: 1rem; box-shadow: 0 8px 26px rgba(31,55,31,.07); display: flex; gap: 1rem; min-height: 150px; overflow: hidden; padding: 1.4rem; position: relative; }
+.presence-stat-card::after { border-radius: 50%; content: ""; height: 125px; opacity: .08; position: absolute; right: -38px; top: -45px; width: 125px; }
+.active-innovators-card::after { background: var(--ttu-secondary-green); }
+.in-hub-card::after { background: var(--ttu-gold); }
+.presence-stat-icon { align-items: center; border-radius: .9rem; display: flex; flex: 0 0 62px; font-size: 1.6rem; height: 62px; justify-content: center; }
+.active-innovators-card .presence-stat-icon { background: var(--ttu-light-green); color: var(--ttu-primary-green); }
+.in-hub-card .presence-stat-icon { background: #fff7d9; color: #8b6c00; }
+.presence-stat-card span, .presence-stat-card strong, .presence-stat-card small { display: block; position: relative; z-index: 1; }
+.presence-stat-card span { color: var(--ttu-medium-gray); font-size: .76rem; font-weight: 600; letter-spacing: .035em; text-transform: uppercase; }
+.presence-stat-card strong { color: var(--ttu-dark-green); font-family: "Cormorant Garamond", serif; font-size: 2.75rem; line-height: 1; margin: .25rem 0; }
+.presence-stat-card small { color: #899189; font-size: .68rem; }
+.presence-table-card { background: var(--ttu-white); border: 1px solid rgba(0,100,0,.09); border-radius: 1rem; box-shadow: 0 10px 30px rgba(31,55,31,.07); overflow: hidden; }
+.presence-table-header { align-items: center; border-bottom: 1px solid #e8eee8; display: flex; gap: 1rem; justify-content: space-between; padding: 1.3rem 1.4rem; }
+.presence-title-line { align-items: center; display: flex; gap: .8rem; }
+.presence-title-line h2 { font-size: 1.6rem; margin: 0; }
+.today-indicator { background: #fff7d9; border: 1px solid rgba(212, 175, 55, .45); border-radius: 999px; color: #725900; font-size: .68rem; font-weight: 800; letter-spacing: .08em; padding: .28rem .62rem; text-transform: uppercase; }
+.still-in-hub { align-items: center; color: var(--ttu-primary-green); display: inline-flex; font-size: .76rem; font-weight: 700; gap: .4rem; white-space: nowrap; }
+.still-in-hub i { font-size: .48rem; }
+.session-duration { color: var(--ttu-dark-green); font-size: .85rem; white-space: nowrap; }
+.work-done-summary { color: #515951; display: inline-block; font-size: .76rem; line-height: 1.5; min-width: 180px; }
+.presence-table-header p { color: var(--ttu-medium-gray); font-size: .78rem; margin: .25rem 0 0; }
+.present-count { background: var(--ttu-light-green); border: 1px solid rgba(0,100,0,.1); border-radius: 999px; color: var(--ttu-primary-green); font-size: .72rem; font-weight: 600; padding: .45rem .75rem; white-space: nowrap; }
+.presence-table tbody tr { transition: background-color .15s ease; }
+.presence-table tbody tr:hover { background: #fbfdfb; }
+.live-duration { color: var(--ttu-primary-green); font-size: .76rem; white-space: nowrap; }
+.planned-activity { color: #515951; display: inline-block; font-size: .76rem; line-height: 1.5; min-width: 210px; }
+.presence-empty-state { padding: 4rem 1.25rem; text-align: center; }
+.presence-empty-icon { align-items: center; background: var(--ttu-light-green); border-radius: 50%; color: var(--ttu-primary-green); display: flex; font-size: 1.7rem; height: 68px; justify-content: center; margin: 0 auto .9rem; width: 68px; }
+.presence-empty-state h3 { font-size: 1.45rem; margin: 0 0 .35rem; }
+.presence-empty-state p { color: var(--ttu-medium-gray); margin: 0; }
+.student-dashboard-heading { align-items: flex-end; display: flex; gap: 1rem; justify-content: space-between; margin-bottom: 1.5rem; }
+.student-dashboard-heading h1 { margin-bottom: .5rem; }
+.student-dashboard-heading > div > p:last-child { color: var(--ttu-medium-gray); margin: 0; }
+.student-dashboard-date { align-items: center; background: var(--ttu-white); border: 1px solid #e0e8e0; border-radius: 999px; color: var(--ttu-dark-green); display: inline-flex; font-size: .74rem; font-weight: 500; gap: .45rem; padding: .5rem .78rem; white-space: nowrap; }
+.student-dashboard-date i { color: var(--ttu-primary-green); }
+.student-dashboard-grid { margin-bottom: 1.5rem; }
+.daily-attendance-card { background: var(--ttu-white); border: 1px solid rgba(0,100,0,.1); border-radius: 1rem; box-shadow: 0 10px 30px rgba(31,55,31,.07); height: 100%; overflow: hidden; }
+.daily-attendance-header { align-items: center; background: linear-gradient(120deg, var(--ttu-light-green), var(--ttu-white)); border-bottom: 1px solid #e5ece5; display: flex; gap: .9rem; padding: 1.3rem 1.4rem; }
+.daily-attendance-header h2 { font-size: 1.65rem; margin: 0 0 .2rem; }
+.daily-attendance-header p { color: var(--ttu-medium-gray); font-size: .78rem; margin: 0; }
+.daily-attendance-icon { align-items: center; background: var(--ttu-primary-green); border-radius: .8rem; color: var(--ttu-white); display: flex; flex: 0 0 52px; font-size: 1.3rem; height: 52px; justify-content: center; }
+.daily-attendance-form { padding: 1.4rem; }
+.time-field-wrap { position: relative; }
+.time-field-wrap > i { color: var(--ttu-primary-green); font-size: 1rem; left: .95rem; pointer-events: none; position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; }
+.time-field-wrap .form-control { min-height: 49px; padding-left: 2.65rem; }
+.daily-attendance-form textarea { resize: vertical; }
+.daily-form-footer { align-items: center; border-top: 1px solid #e8eee8; display: flex; gap: 1rem; justify-content: space-between; margin-top: 1.25rem; padding-top: 1.2rem; }
+.daily-form-footer > span { color: var(--ttu-medium-gray); font-size: .7rem; }
+.daily-form-footer > span i { color: var(--ttu-primary-green); margin-right: .3rem; }
+.student-summary-stack { display: grid; gap: 1rem; }
+.student-stat-card { align-items: center; background: var(--ttu-white); border: 1px solid rgba(0,100,0,.1); border-radius: 1rem; box-shadow: 0 8px 24px rgba(31,55,31,.06); display: flex; gap: 1rem; min-height: 126px; padding: 1.2rem; }
+.student-stat-icon { align-items: center; background: var(--ttu-light-green); border-radius: .8rem; color: var(--ttu-primary-green); display: flex; flex: 0 0 54px; font-size: 1.35rem; height: 54px; justify-content: center; }
+.gold-stat-card .student-stat-icon { background: #fff7d9; color: #8b6c00; }
+.student-stat-card span, .student-stat-card strong, .student-stat-card small { display: block; }
+.student-stat-card span { color: var(--ttu-medium-gray); font-size: .72rem; font-weight: 600; letter-spacing: .035em; text-transform: uppercase; }
+.student-stat-card strong { color: var(--ttu-dark-green); font-family: "Cormorant Garamond", serif; font-size: 2.35rem; line-height: 1; margin: .2rem 0; }
+.student-stat-card small { color: #899189; font-size: .67rem; }
+.attendance-guidance-card { align-items: flex-start; background: #fffaf0; border: 1px solid rgba(212,175,55,.3); border-radius: 1rem; color: #5d501e; display: flex; gap: .75rem; padding: 1rem; }
+.attendance-guidance-card > i { color: #9b7a05; font-size: 1.1rem; margin-top: .05rem; }
+.attendance-guidance-card strong { display: block; font-size: .78rem; margin-bottom: .2rem; }
+.attendance-guidance-card p { font-size: .7rem; line-height: 1.55; margin: 0; }
+.student-history-card { overflow: hidden; }
+.student-history-header { align-items: center; border-bottom: 1px solid #e8eee8; display: flex; gap: 1rem; justify-content: space-between; padding: 1.2rem 1.35rem; }
+.student-history-header h2 { font-size: 1.5rem; margin: 0 0 .15rem; }
+.student-history-header p { color: var(--ttu-medium-gray); font-size: .76rem; margin: 0; }
+.student-history-header a { font-size: .76rem; font-weight: 600; text-decoration: none; }
+.student-history-empty { color: var(--ttu-medium-gray); padding: 2.75rem 1rem; text-align: center; }
+.student-history-empty i { color: #9bb39b; display: block; font-size: 1.8rem; margin-bottom: .5rem; }
+.student-history-empty p { margin: 0; }
 .auth-wrap { align-items: center; display: flex; justify-content: center; min-height: 65vh; }
 .auth-card { max-width: 520px; width: 100%; }
 .form-label { color: var(--ttu-dark-gray); font-weight: 600; }
@@ -153,4 +228,4 @@ textarea.form-control { min-height: auto; }
 @keyframes pulse { 50% { opacity: .35; } }
 @media (min-width: 992px) { .hub-sidebar { height: 100vh; position: sticky; top: 0; } }
 @media (max-width: 991.98px) { .hub-sidebar { width: var(--bs-offcanvas-width); } .sidebar-inner { min-height: calc(100vh - 61px); } }
-@media (max-width: 767.98px) { .public-navbar { padding: .5rem .75rem; } .public-logo { height: 58px; width: 58px; } .app-topbar { min-height: 64px; padding: .55rem .75rem; } .topbar-title strong { font-size: 1rem; } .topbar-title span { display: none; } .page-heading { align-items: stretch; flex-direction: column; } .page-heading > .btn, .page-heading > div:last-child { width: 100%; } .form-card-heading { align-items: flex-start; } .form-card-icon { flex-basis: 48px; font-size: 1.3rem; height: 48px; } .attendance-search-card { padding: 1rem; } .attendance-name-form { grid-template-columns: 1fr; } .attendance-name-field { max-width: none; } .attendance-search-actions { flex-wrap: wrap; } .attendance-search-actions .btn:first-child { flex: 1; } .attendance-results-header { align-items: flex-start; flex-direction: column; } .detail-list { grid-template-columns: 1fr; gap: .2rem; } .detail-list dd { margin-bottom: .7rem; } .content-card > .table-responsive { border-radius: .9rem; } }
+@media (max-width: 767.98px) { .public-navbar { padding: .5rem .75rem; } .public-logo { height: 58px; width: 58px; } .app-topbar { min-height: 64px; padding: .55rem .75rem; } .topbar-title strong { font-size: 1rem; } .topbar-title span { display: none; } .page-heading { align-items: stretch; flex-direction: column; } .page-heading > .btn, .page-heading > div:last-child { width: 100%; } .form-card-heading { align-items: flex-start; } .form-card-icon { flex-basis: 48px; font-size: 1.3rem; height: 48px; } .attendance-search-card { padding: 1rem; } .attendance-name-form { grid-template-columns: 1fr; } .attendance-name-field { max-width: none; } .attendance-search-actions { flex-wrap: wrap; } .attendance-search-actions .btn:first-child { flex: 1; } .attendance-results-header, .presence-dashboard-heading, .presence-table-header, .student-dashboard-heading, .student-history-header { align-items: flex-start; flex-direction: column; } .presence-stat-card { min-height: 130px; } .presence-updated, .student-dashboard-date { align-self: flex-start; } .daily-attendance-header { align-items: flex-start; padding: 1rem; } .daily-attendance-form { padding: 1rem; } .daily-form-footer { align-items: stretch; flex-direction: column; } .daily-form-footer .btn { width: 100%; } .detail-list { grid-template-columns: 1fr; gap: .2rem; } .detail-list dd { margin-bottom: .7rem; } .content-card > .table-responsive { border-radius: .9rem; } }

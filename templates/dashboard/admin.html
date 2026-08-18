@@ -1,8 +1,60 @@
-{% extends "base.html" %}{% load dashboard_tags %}{% block title %}Administrator dashboard{% endblock %}
+{% extends "base.html" %}
+{% load dashboard_tags %}
+{% block title %}Administrator dashboard{% endblock %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow">Administrator dashboard</p><h1>Hub overview</h1><p>Live attendance and today's documented innovation work.</p></div><div class="d-flex gap-2"><a class="btn btn-primary" href="{% url 'innovators:create' %}">Create innovator</a><a class="btn btn-outline-primary" href="{% url 'dashboard:live-attendance' %}">Filter attendance</a></div></div>
-<div class="row row-cols-2 row-cols-md-3 row-cols-xl-6 g-3 mb-4"><div class="col"><div class="summary-card"><span>In the hub</span><strong>{{ summary.currently_in_hub }}</strong></div></div><div class="col"><div class="summary-card"><span>Visitors today</span><strong>{{ summary.visitors_today }}</strong></div></div><div class="col"><div class="summary-card"><span>Checked out</span><strong>{{ summary.checked_out_today }}</strong></div></div><div class="col"><div class="summary-card warning-card"><span>Incomplete</span><strong>{{ summary.incomplete }}</strong></div></div><div class="col"><div class="summary-card"><span>Hours today</span><strong>{{ summary.hours_today|floatformat:1 }}</strong></div></div><div class="col"><div class="summary-card"><span>Active innovators</span><strong>{{ summary.active_innovators }}</strong></div></div></div>
-<div class="card content-card mb-4"><div class="card-body"><div class="section-heading"><div><p class="eyebrow">Live now</p><h2>Currently in the Hub</h2></div><span class="live-indicator">Live</span></div><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Innovator</th><th>Registration</th><th>Project</th><th>Checked in</th><th>Time spent</th><th>Planned activity</th><th>Status</th><th></th></tr></thead><tbody>{% for session in current_sessions %}<tr><td><strong>{{ session.innovator.get_full_name }}</strong></td><td>{{ session.innovator.innovator_profile.registration_number }}</td><td>{{ session.project_name }}</td><td>{{ session.check_in_at|time:"H:i" }}</td><td data-elapsed data-check-in="{{ session.check_in_at|date:'c' }}">Calculating…</td><td>{{ session.planned_activity|truncatechars:90 }}</td><td><span class="status-badge status-active">Active</span></td><td><a href="{% url 'attendance:admin-detail' session.pk %}">View</a></td></tr>{% empty %}<tr><td colspan="8" class="empty-cell">No innovators are currently checked in.</td></tr>{% endfor %}</tbody></table></div></div></div>
-<div class="card content-card mb-4"><div class="card-body"><h2>Today’s Completed Visits</h2><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Innovator</th><th>In / out</th><th>Duration</th><th>Planned</th><th>Completed</th><th>Challenges</th><th>Status</th><th></th></tr></thead><tbody>{% for session in completed_today %}<tr><td>{{ session.innovator.get_full_name }}</td><td>{{ session.check_in_at|time:"H:i" }} / {{ session.check_out_at|time:"H:i" }}</td><td>{{ session.duration|duration_hm }}</td><td>{{ session.planned_activity|truncatechars:70 }}</td><td>{{ session.work_completed|truncatechars:70 }}</td><td>{{ session.challenges_encountered|default:"—"|truncatechars:50 }}</td><td>{{ session.get_status_display }}</td><td><a href="{% url 'attendance:admin-detail' session.pk %}">View</a></td></tr>{% empty %}<tr><td colspan="8" class="empty-cell">No completed visits recorded today.</td></tr>{% endfor %}</tbody></table></div></div></div>
-<div class="card content-card"><div class="card-body"><div class="section-heading"><div><p class="eyebrow">Needs review</p><h2>Incomplete Sessions</h2></div></div><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Innovator</th><th>Date</th><th>Checked in</th><th>Planned activity</th><th></th></tr></thead><tbody>{% for session in incomplete_sessions %}<tr><td>{{ session.innovator.get_full_name }}</td><td>{{ session.check_in_at|date:"d M Y" }}</td><td>{{ session.check_in_at|time:"H:i" }}</td><td>{{ session.planned_activity|truncatechars:100 }}</td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'attendance:correct' session.pk %}">Review</a></td></tr>{% empty %}<tr><td colspan="5" class="empty-cell">There are no incomplete sessions.</td></tr>{% endfor %}</tbody></table></div></div></div>
+<div class="presence-dashboard-heading">
+    <div>
+        <p class="eyebrow">Today's hub attendance</p>
+        <h1>Administrator dashboard</h1>
+        <p>A complete view of every innovator who attended the hub today.</p>
+    </div>
+    <span class="presence-updated"><i class="bi bi-clock" aria-hidden="true"></i>{% now "d M Y, H:i" %}</span>
+</div>
+
+<div class="row g-4 presence-summary-row">
+    <div class="col-md-6">
+        <article class="presence-stat-card active-innovators-card">
+            <div class="presence-stat-icon"><i class="bi bi-person-check-fill" aria-hidden="true"></i></div>
+            <div><span>Active innovators</span><strong>{{ summary.active_innovators }}</strong><small>Activated innovator accounts</small></div>
+        </article>
+    </div>
+    <div class="col-md-6">
+        <article class="presence-stat-card in-hub-card">
+            <div class="presence-stat-icon"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i></div>
+            <div><span>Total attended today</span><strong>{{ summary.attended_today }}</strong><small>Checked in at least once today</small></div>
+        </article>
+    </div>
+</div>
+
+<section class="presence-table-card" aria-labelledby="today-innovators-title">
+    <div class="presence-table-header">
+        <div>
+            <div class="presence-title-line"><h2 id="today-innovators-title">Innovators who attended today</h2><span class="today-indicator">Today</span></div>
+            <p>Includes innovators who are still in the hub and those who have already left.</p>
+        </div>
+        <span class="present-count">{{ summary.attended_today }} innovator{{ summary.attended_today|pluralize }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table presence-table align-middle mb-0">
+            <thead><tr><th>Innovator</th><th>Registration</th><th>Project</th><th>Arrived</th><th>Departed</th><th>Duration</th><th>Work done</th><th>Status</th><th><span class="visually-hidden">Action</span></th></tr></thead>
+            <tbody>
+            {% for session in today_sessions %}
+                <tr>
+                    <td><div class="attendance-person"><span class="attendance-avatar">{{ session.innovator.first_name|first }}{{ session.innovator.last_name|first }}</span><div><strong>{{ session.innovator.get_full_name }}</strong><small>{{ session.innovator.email }}</small></div></div></td>
+                    <td><span class="registration-pill">{{ session.innovator.innovator_profile.registration_number }}</span></td>
+                    <td><strong class="project-name">{{ session.project_name }}</strong></td>
+                    <td><span class="date-stack"><strong>{{ session.check_in_at|time:"H:i" }}</strong><small>{{ session.check_in_at|date:"d M Y" }}</small></span></td>
+                    <td>{% if session.check_out_at %}<span class="date-stack"><strong>{{ session.check_out_at|time:"H:i" }}</strong><small>{{ session.check_out_at|date:"d M Y" }}</small></span>{% else %}<span class="still-in-hub"><i class="bi bi-circle-fill" aria-hidden="true"></i>Still in hub</span>{% endif %}</td>
+                    <td>{% if session.check_out_at %}<strong class="session-duration">{{ session.duration|duration_hm }}</strong>{% else %}<strong class="live-duration" data-elapsed data-check-in="{{ session.check_in_at|date:'c' }}">Calculating…</strong>{% endif %}</td>
+                    <td><span class="work-done-summary">{{ session.work_completed|default:"In progress"|truncatechars:100 }}</span></td>
+                    <td><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></td>
+                    <td><a class="btn btn-sm btn-outline-primary record-view-button" href="{% url 'attendance:admin-detail' session.pk %}" aria-label="View attendance record for {{ session.innovator.get_full_name }}"><i class="bi bi-arrow-right" aria-hidden="true"></i></a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="9"><div class="presence-empty-state"><div class="presence-empty-icon"><i class="bi bi-calendar2-check" aria-hidden="true"></i></div><h3>No attendance recorded today</h3><p>Innovators will appear here after recording a hub visit today.</p></div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
 {% endblock %}

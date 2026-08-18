@@ -4,7 +4,7 @@ from django.db import models
 
 class AuditLog(models.Model):
     class Action(models.TextChoices):
-        ACCOUNT_CREATED = "ACCOUNT_CREATED", "Innovator account created"
+        ACCOUNT_CREATED = "ACCOUNT_CREATED", "Innovator account added"
         ACCOUNT_UPDATED = "ACCOUNT_UPDATED", "Account updated"
         ACCOUNT_ACTIVATED = "ACCOUNT_ACTIVATED", "Account activated"
         ACCOUNT_DEACTIVATED = "ACCOUNT_DEACTIVATED", "Account deactivated"

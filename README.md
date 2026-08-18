@@ -7,14 +7,14 @@ The interface uses the requested TTU green, gold, and white identity with a resp
 ## Main features
 
 - Email-only authentication with a custom Django user model and extensible roles
-- Administrator-created innovator accounts; no public registration
+- Administrator-added innovator accounts; no public registration
 - Secure six-digit activation codes generated with `secrets`, stored as password hashes, valid for 15 minutes, single use, attempt-limited, and resend-limited
 - Password creation, password reset, password change, and POST-only logout
 - Restricted innovator profile editing and full administrator profile management
-- Transactional check-in and check-out with server-owned timestamps
+- Transactional daily attendance recording with validated Nairobi arrival and departure times
 - One-active-session database constraint and automatic incomplete flagging for missed prior-day checkout
-- Innovator dashboard with live visual elapsed time and server-calculated weekly totals
-- Administrator dashboard with live occupancy, today's work, incomplete sessions, totals, and seven-day visit chart
+- Innovator dashboard with a required daily attendance/work form and weekly totals
+- Focused administrator dashboard with active-account totals and everyone who attended the hub today
 - Administrator attendance search by innovator first name, last name, or full name
 - Reason-required attendance corrections with immutable correction and audit records
 - Hardened production settings for HTTPS, cookies, HSTS, framing, secrets, and allowed hosts
@@ -104,11 +104,11 @@ The prompt asks for an email address rather than a username. Start the developme
 py manage.py runserver
 ```
 
-Open `http://127.0.0.1:8000/accounts/login/`. After login, use **Create innovator**. The new user has an unusable password until they verify the emailed code and create one.
+Open `http://127.0.0.1:8000/accounts/login/`. After login, use **Add innovator**. The new user has an unusable password until they verify the emailed code and create one.
 
 ## Development email testing
 
-When `DEBUG=True`, Django's console email backend is selected automatically. Creating an innovator prints the complete test email to the server console, which makes the activation flow testable without SMTP. Treat console output as sensitive development data and never use this backend in a shared or production environment.
+When `DEBUG=True`, Django's console email backend is selected automatically. Adding an innovator prints the complete test email to the server console, which makes the activation flow testable without SMTP. Treat console output as sensitive development data and never use this backend in a shared or production environment.
 
 Password-reset emails also use the console backend during local development. The reset response is deliberately generic whether or not an account exists.
 
@@ -152,10 +152,10 @@ py manage.py check --deploy
 
 ## Attendance behavior
 
-- Check-in and checkout timestamps come only from the server.
+- Innovators select today's arrival and departure times on their dashboard; the server rejects reversed or future times.
 - An innovator can have one active session. This is enforced in services and with a conditional database uniqueness constraint.
 - Starting a new visit on a later Nairobi calendar date changes the old active session to `INCOMPLETE`; it does not invent a checkout time.
-- Innovators can view only their own records and cannot submit timestamp fields.
+- Innovators can view only their own records and cannot edit an existing attendance record after submission.
 - Administrator corrections require a reason and preserve previous/new values in both a correction record and the audit log.
 - Ordinary attendance records cannot be deleted or edited through the Django admin; use the audited correction workflow.
 

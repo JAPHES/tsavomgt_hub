@@ -1,6 +1,6 @@
 Hello {{ user.first_name }},
 
-An innovator account has been created for you on the Tsavo Innovation & Incubation Hub Management System.
+An administrator has added you to the Tsavo Innovation & Incubation Hub Management System.
 
 Your one-time activation code is: {{ otp }}
 

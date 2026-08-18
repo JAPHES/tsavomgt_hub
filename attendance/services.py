@@ -94,6 +94,33 @@ def check_out(innovator, *, work_completed, challenges_encountered="", next_step
 
 
 @transaction.atomic
+def record_daily_attendance(
+    innovator, *, check_in_at, check_out_at, work_completed, challenges_encountered=""
+):
+    """Record the innovator's completed visit using their validated local times."""
+    locked_user = User.objects.select_for_update().get(pk=innovator.pk)
+    session = (
+        AttendanceSession.objects.select_for_update()
+        .filter(innovator=locked_user, status=AttendanceSession.Status.ACTIVE)
+        .first()
+    )
+    if session is None:
+        session = AttendanceSession(
+            innovator=locked_user,
+            project_name=locked_user.innovator_profile.innovation_project_name,
+            planned_activity="",
+        )
+    session.check_in_at = check_in_at
+    session.check_out_at = check_out_at
+    session.work_completed = work_completed.strip()
+    session.challenges_encountered = challenges_encountered.strip()
+    session.status = AttendanceSession.Status.COMPLETED
+    session.full_clean()
+    session.save()
+    return session
+
+
+@transaction.atomic
 def correct_attendance(session_id, cleaned_data, *, administrator, request=None):
     session = AttendanceSession.objects.select_for_update().get(pk=session_id)
     previous = _snapshot(session)

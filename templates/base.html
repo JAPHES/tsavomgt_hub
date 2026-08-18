@@ -5,7 +5,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Tsavo Innovation & Incubation Hub Management System">
+    <meta name="theme-color" content="#006400">
     <title>{% block title %}Tsavo Hub{% endblock %} | Management System</title>
+    <link rel="icon" type="image/jpeg" data-circular-favicon href="{% static 'image/tsavo_logo.jpeg' %}">
+    <link rel="shortcut icon" type="image/jpeg" data-circular-favicon href="{% static 'image/tsavo_logo.jpeg' %}">
+    <link rel="apple-touch-icon" href="{% static 'image/tsavo_logo.jpeg' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
@@ -40,8 +44,11 @@
                     <i class="bi bi-grid-1x2-fill" aria-hidden="true"></i><span>Dashboard</span>
                 </a>
                 {% if user.role == 'ADMIN' %}
-                    <a class="sidebar-link {% if request.resolver_match.namespace == 'innovators' %}active{% endif %}" href="{% url 'innovators:manage' %}">
+                    <a class="sidebar-link {% if request.resolver_match.namespace == 'innovators' and request.resolver_match.url_name != 'create' and request.resolver_match.url_name != 'create-success' %}active{% endif %}" href="{% url 'innovators:manage' %}">
                         <i class="bi bi-people-fill" aria-hidden="true"></i><span>Innovators</span>
+                    </a>
+                    <a class="sidebar-link {% if request.resolver_match.namespace == 'innovators' and request.resolver_match.url_name == 'create' or request.resolver_match.namespace == 'innovators' and request.resolver_match.url_name == 'create-success' %}active{% endif %}" href="{% url 'innovators:create' %}">
+                        <i class="bi bi-person-plus-fill" aria-hidden="true"></i><span>Add innovator</span>
                     </a>
                     <a class="sidebar-link {% if request.resolver_match.namespace == 'attendance' or request.resolver_match.url_name == 'live-attendance' %}active{% endif %}" href="{% url 'dashboard:live-attendance' %}">
                         <i class="bi bi-calendar2-check-fill" aria-hidden="true"></i><span>Attendance</span>

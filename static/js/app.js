@@ -1,4 +1,35 @@
 (() => {
+    const applyCircularFavicon = () => {
+        const faviconLinks = document.querySelectorAll("[data-circular-favicon]");
+        if (!faviconLinks.length) return;
+
+        const logo = new Image();
+        logo.addEventListener("load", () => {
+            const size = 128;
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            if (!context) return;
+
+            canvas.width = size;
+            canvas.height = size;
+            context.beginPath();
+            context.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            context.clip();
+
+            const sourceSize = Math.min(logo.naturalWidth, logo.naturalHeight);
+            const sourceX = (logo.naturalWidth - sourceSize) / 2;
+            const sourceY = (logo.naturalHeight - sourceSize) / 2;
+            context.drawImage(logo, sourceX, sourceY, sourceSize, sourceSize, 0, 0, size, size);
+
+            const circularFavicon = canvas.toDataURL("image/png");
+            faviconLinks.forEach(link => {
+                link.type = "image/png";
+                link.href = circularFavicon;
+            });
+        });
+        logo.src = faviconLinks[0].href;
+    };
+
     const pad = value => String(value).padStart(2, "0");
     const updateElapsed = () => {
         document.querySelectorAll("[data-elapsed]").forEach(node => {
@@ -13,6 +44,7 @@
         const clock = document.getElementById("local-clock");
         if (clock) clock.textContent = new Intl.DateTimeFormat("en-KE", {timeZone: "Africa/Nairobi", hour: "2-digit", minute: "2-digit", second: "2-digit"}).format(new Date());
     };
+    applyCircularFavicon();
     updateElapsed();
     window.setInterval(updateElapsed, 1000);
 })();

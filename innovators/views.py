@@ -40,7 +40,7 @@ def innovator_create(request):
         profile = create_innovator(form.cleaned_data, actor=request.user, request=request)
         messages.success(
             request,
-            f"Account created for {profile.user.get_full_name()}. The activation code was emailed.",
+            f"Account added for {profile.user.get_full_name()}. The activation code was emailed.",
         )
         return redirect("innovators:create-success", pk=profile.pk)
     return render(request, "innovators/create.html", {"form": form})

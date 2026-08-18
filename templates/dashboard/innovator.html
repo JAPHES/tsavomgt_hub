@@ -1,7 +1,89 @@
-{% extends "base.html" %}{% load dashboard_tags %}{% block title %}Innovator dashboard{% endblock %}
+{% extends "base.html" %}
+{% load dashboard_tags %}
+{% block title %}Innovator dashboard{% endblock %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow">Innovator dashboard</p><h1>Welcome, {{ user.first_name }}</h1><p>{{ now|date:"l, d F Y" }} · <span id="local-clock">{{ now|time:"H:i" }}</span></p></div><div class="d-flex gap-2"><a class="btn btn-light" href="{% url 'innovators:profile' %}">My profile</a><a class="btn btn-light" href="{% url 'accounts:password-change' %}">Change password</a></div></div>
-{% if incomplete_sessions %}<div class="alert alert-warning"><strong>Missed checkout:</strong> You have {{ incomplete_sessions|length }} incomplete session{{ incomplete_sessions|length|pluralize }}. The administrator can correct these records.</div>{% endif %}
-<div class="row g-4 mb-4"><div class="col-lg-7"><div class="card attendance-hero {% if active_session %}is-active{% endif %}"><div class="card-body p-4 p-lg-5">{% if active_session %}<p class="eyebrow">Currently in the hub</p><h2>You checked in at {{ active_session.check_in_at|time:"H:i" }}</h2><div class="elapsed-display" data-elapsed data-check-in="{{ active_session.check_in_at|date:'c' }}">Calculating elapsed time…</div><p class="mt-3"><strong>{{ active_session.project_name }}</strong><br>{{ active_session.planned_activity }}</p><a class="btn btn-gold btn-lg" href="{% url 'attendance:check-out' %}">Check Out</a>{% else %}<p class="eyebrow">Current status</p><h2>You are not checked in</h2><p>Record your planned work as you arrive at the hub.</p><a class="btn btn-primary btn-lg check-in-button" href="{% url 'attendance:check-in' %}">Check In</a>{% endif %}</div></div></div><div class="col-lg-5"><div class="row g-3"><div class="col-6"><div class="summary-card"><span>Visits this week</span><strong>{{ visits_this_week }}</strong></div></div><div class="col-6"><div class="summary-card"><span>Hours this week</span><strong>{{ hours_this_week|floatformat:1 }}</strong></div></div><div class="col-12"><div class="summary-card"><span>Today's activity</span><strong class="fs-6">{% if today_session %}{{ today_session.planned_activity|truncatechars:100 }}{% else %}No visit recorded today{% endif %}</strong></div></div></div></div></div>
-<div class="card content-card"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-3"><h2 class="mb-0">Recent attendance</h2><a href="{% url 'attendance:history' %}">View all</a></div><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Date</th><th>Project</th><th>Time in</th><th>Duration</th><th>Status</th><th></th></tr></thead><tbody>{% for session in recent_sessions %}<tr><td>{{ session.check_in_at|date:"d M Y" }}</td><td>{{ session.project_name }}</td><td>{{ session.check_in_at|time:"H:i" }}</td><td>{{ session.duration|duration_hm }}</td><td><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></td><td><a href="{% url 'attendance:detail' session.pk %}">View</a></td></tr>{% empty %}<tr><td colspan="6" class="empty-cell">Your attendance history will appear here.</td></tr>{% endfor %}</tbody></table></div></div></div>
+<div class="student-dashboard-heading">
+    <div>
+        <p class="eyebrow">Innovator workspace</p>
+        <h1>Welcome, {{ user.first_name }}</h1>
+        <p>Record your hub attendance and the work completed during your visit.</p>
+    </div>
+    <span class="student-dashboard-date"><i class="bi bi-calendar3" aria-hidden="true"></i>{{ now|date:"l, d F Y" }}</span>
+</div>
+
+<div class="row g-4 student-dashboard-grid">
+    <div class="col-xl-8">
+        <section class="daily-attendance-card" aria-labelledby="daily-attendance-title">
+            <div class="daily-attendance-header">
+                <div class="daily-attendance-icon"><i class="bi bi-clipboard2-check-fill" aria-hidden="true"></i></div>
+                <div>
+                    <h2 id="daily-attendance-title">Today's attendance record</h2>
+                    <p>Complete every required field before submitting your daily record.</p>
+                </div>
+            </div>
+            <form method="post" class="daily-attendance-form" novalidate>
+                {% csrf_token %}
+                {% if attendance_form.non_field_errors %}<div class="alert alert-danger">{{ attendance_form.non_field_errors }}</div>{% endif %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ attendance_form.arrival_time.id_for_label }}">{{ attendance_form.arrival_time.label }} <span class="text-danger" aria-label="required">*</span></label>
+                        <div class="time-field-wrap"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>{{ attendance_form.arrival_time }}</div>
+                        {% if attendance_form.arrival_time.help_text %}<div class="form-text">{{ attendance_form.arrival_time.help_text }}</div>{% endif %}
+                        {% for error in attendance_form.arrival_time.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ attendance_form.departure_time.id_for_label }}">{{ attendance_form.departure_time.label }} <span class="text-danger" aria-label="required">*</span></label>
+                        <div class="time-field-wrap"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>{{ attendance_form.departure_time }}</div>
+                        {% if attendance_form.departure_time.help_text %}<div class="form-text">{{ attendance_form.departure_time.help_text }}</div>{% endif %}
+                        {% for error in attendance_form.departure_time.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="{{ attendance_form.work_completed.id_for_label }}">{{ attendance_form.work_completed.label }} <span class="text-danger" aria-label="required">*</span></label>
+                        {{ attendance_form.work_completed }}
+                        {% for error in attendance_form.work_completed.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="{{ attendance_form.challenges_encountered.id_for_label }}">{{ attendance_form.challenges_encountered.label }}</label>
+                        {{ attendance_form.challenges_encountered }}
+                        {% for error in attendance_form.challenges_encountered.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+                <div class="daily-form-footer">
+                    <span><i class="bi bi-shield-check" aria-hidden="true"></i>Times are recorded for today's Nairobi date.</span>
+                    <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-check2-circle me-2" aria-hidden="true"></i>Submit attendance record</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="student-summary-stack">
+            <article class="student-stat-card">
+                <div class="student-stat-icon"><i class="bi bi-calendar2-week-fill" aria-hidden="true"></i></div>
+                <div><span>Visits this week</span><strong>{{ visits_this_week }}</strong><small>Recorded hub visits</small></div>
+            </article>
+            <article class="student-stat-card gold-stat-card">
+                <div class="student-stat-icon"><i class="bi bi-hourglass-split" aria-hidden="true"></i></div>
+                <div><span>Hours this week</span><strong>{{ hours_this_week|floatformat:1 }}</strong><small>Completed session hours</small></div>
+            </article>
+            <div class="attendance-guidance-card">
+                <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+                <div><strong>Before you submit</strong><p>Confirm that your arrival and departure times are accurate. Work completed is required; challenges are optional.</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="card content-card student-history-card">
+    <div class="student-history-header">
+        <div><h2>Recent attendance</h2><p>Your most recently submitted hub records.</p></div>
+        <a href="{% url 'attendance:history' %}">View full history <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead><tr><th>Date</th><th>Project</th><th>Arrival</th><th>Departure</th><th>Duration</th><th>Status</th><th><span class="visually-hidden">Action</span></th></tr></thead>
+            <tbody>{% for session in recent_sessions %}<tr><td>{{ session.check_in_at|date:"d M Y" }}</td><td><strong class="project-name">{{ session.project_name }}</strong></td><td>{{ session.check_in_at|time:"H:i" }}</td><td>{{ session.check_out_at|time:"H:i"|default:"Not recorded" }}</td><td>{{ session.duration|duration_hm }}</td><td><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></td><td><a class="btn btn-sm btn-outline-primary record-view-button" href="{% url 'attendance:detail' session.pk %}" aria-label="View attendance record"><i class="bi bi-arrow-right" aria-hidden="true"></i></a></td></tr>{% empty %}<tr><td colspan="7"><div class="student-history-empty"><i class="bi bi-journal-text" aria-hidden="true"></i><p>Your submitted attendance records will appear here.</p></div></td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</section>
 {% endblock %}

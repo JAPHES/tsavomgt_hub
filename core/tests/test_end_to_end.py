@@ -59,7 +59,7 @@ class CompleteHubFlowTests(TestCase):
         self.client.force_login(administrator)
         admin_live = self.client.get(reverse("dashboard:admin"))
         self.assertContains(admin_live, "Neema Mwangeka")
-        self.assertEqual(admin_live.context["summary"]["currently_in_hub"], 1)
+        self.assertEqual(admin_live.context["summary"]["attended_today"], 1)
 
         self.client.force_login(innovator)
         checkout = self.client.post(
@@ -78,5 +78,4 @@ class CompleteHubFlowTests(TestCase):
         self.client.force_login(administrator)
         completed = self.client.get(reverse("dashboard:admin"))
         self.assertContains(completed, "Completed the classification form")
-        self.assertEqual(completed.context["summary"]["currently_in_hub"], 0)
-        self.assertEqual(completed.context["summary"]["checked_out_today"], 1)
+        self.assertEqual(completed.context["summary"]["attended_today"], 1)
