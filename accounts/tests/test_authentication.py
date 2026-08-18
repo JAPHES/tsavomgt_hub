@@ -57,6 +57,48 @@ class AuthenticationTests(TestCase):
         self.assertRedirects(response, reverse("accounts:password-reset-done"))
         self.assertEqual(len(mail.outbox), 1)
 
+    def test_password_change_hides_rules_until_validation_fails(self):
+        user = create_innovator()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("accounts:password-change"))
+        self.assertContains(response, 'class="auth-wrap"')
+        self.assertContains(response, 'class="card auth-card password-auth-card"')
+        self.assertContains(response, "Current password")
+        self.assertContains(response, "New password")
+        self.assertContains(response, "Confirm new password")
+        self.assertNotContains(response, "Password requirements")
+
+        response = self.client.post(
+            reverse("accounts:password-change"),
+            {
+                "old_password": DEFAULT_PASSWORD,
+                "new_password1": "short",
+                "new_password2": "short",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Password requirements")
+        self.assertContains(response, "This password is too short")
+
+    def test_password_change_updates_password(self):
+        user = create_innovator()
+        self.client.force_login(user)
+        new_password = "NewSecurePass!846"
+
+        response = self.client.post(
+            reverse("accounts:password-change"),
+            {
+                "old_password": DEFAULT_PASSWORD,
+                "new_password1": new_password,
+                "new_password2": new_password,
+            },
+        )
+
+        self.assertRedirects(response, reverse("accounts:password-change-done"))
+        user.refresh_from_db()
+        self.assertTrue(user.check_password(new_password))
+
     def test_logout_requires_post(self):
         self.client.force_login(create_innovator())
         self.assertEqual(self.client.get(reverse("accounts:logout")).status_code, 405)

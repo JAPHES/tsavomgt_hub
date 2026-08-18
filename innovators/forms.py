@@ -50,11 +50,9 @@ class InnovatorAdminUpdateForm(BootstrapFormMixin, forms.ModelForm):
             "phone_number",
             "innovation_project_name",
             "profile_photo",
-            "biography",
             "project_description",
         ]
         widgets = {
-            "biography": forms.Textarea(attrs={"rows": 3}),
             "project_description": forms.Textarea(attrs={"rows": 4}),
         }
 
@@ -80,9 +78,8 @@ class InnovatorAdminUpdateForm(BootstrapFormMixin, forms.ModelForm):
 class InnovatorSelfUpdateForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = InnovatorProfile
-        fields = ["phone_number", "profile_photo", "biography", "project_description"]
+        fields = ["phone_number", "profile_photo", "project_description"]
         widgets = {
-            "biography": forms.Textarea(attrs={"rows": 3}),
             "project_description": forms.Textarea(attrs={"rows": 5}),
         }
 

@@ -19,7 +19,6 @@ class AdministratorDashboardTests(TestCase):
         values = {
             "innovator": self.user,
             "project_name": "BlueWatch",
-            "planned_activity": "Develop the dumpsite reporting form and test uploads.",
             "check_in_at": timezone.now() - timedelta(hours=2),
             "status": AttendanceSession.Status.ACTIVE,
         }
@@ -69,7 +68,6 @@ class AdministratorDashboardTests(TestCase):
         AttendanceSession.objects.create(
             innovator=other_user,
             project_name="AgriSense",
-            planned_activity="Calibrate the soil moisture sensing prototype.",
             check_in_at=timezone.now(),
             status=AttendanceSession.Status.ACTIVE,
         )
@@ -90,7 +88,6 @@ class InnovatorDashboardTests(TestCase):
         AttendanceSession.objects.create(
             innovator=user,
             project_name="BlueWatch",
-            planned_activity="Build the reporting form interface and validation.",
             check_in_at=start,
             check_out_at=start + timedelta(minutes=30),
             work_completed="Built and tested the interface validation.",
@@ -99,6 +96,9 @@ class InnovatorDashboardTests(TestCase):
         self.client.force_login(user)
         response = self.client.get(reverse("dashboard:innovator"))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response, f"Welcome, {user.first_name}, to Tsavo Hub Management System"
+        )
         self.assertEqual(response.context["visits_this_week"], 1)
         self.assertAlmostEqual(response.context["hours_this_week"], 0.5)
 

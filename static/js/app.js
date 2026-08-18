@@ -31,6 +31,23 @@
     };
 
     const pad = value => String(value).padStart(2, "0");
+    const setupPasswordToggles = () => {
+        document.querySelectorAll("[data-password-toggle]").forEach(button => {
+            button.addEventListener("click", () => {
+                const input = button.parentElement.querySelector("input");
+                if (!input) return;
+                const showPassword = input.type === "password";
+                input.type = showPassword ? "text" : "password";
+                button.setAttribute("aria-pressed", String(showPassword));
+                button.setAttribute(
+                    "aria-label",
+                    `${showPassword ? "Hide" : "Show"} ${input.labels?.[0]?.textContent.trim() || "password"}`,
+                );
+                const icon = button.querySelector("i");
+                if (icon) icon.className = `bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`;
+            });
+        });
+    };
     const updateElapsed = () => {
         document.querySelectorAll("[data-elapsed]").forEach(node => {
             const started = Date.parse(node.dataset.checkIn);
@@ -45,6 +62,7 @@
         if (clock) clock.textContent = new Intl.DateTimeFormat("en-KE", {timeZone: "Africa/Nairobi", hour: "2-digit", minute: "2-digit", second: "2-digit"}).format(new Date());
     };
     applyCircularFavicon();
+    setupPasswordToggles();
     updateElapsed();
     window.setInterval(updateElapsed, 1000);
 })();

@@ -1,1 +1,97 @@
-{% extends "base.html" %}{% load dashboard_tags %}{% block title %}Attendance session{% endblock %}{% block content %}<div class="page-heading"><div><p class="eyebrow">Attendance record #{{ session.pk }}</p><h1>{{ session.innovator.get_full_name }}</h1><p>{{ session.project_name }} · {{ session.check_in_at|date:"d M Y" }}</p></div>{% if request.user.role == 'ADMIN' %}<a class="btn btn-primary" href="{% url 'attendance:correct' session.pk %}">Correct record</a>{% endif %}</div><div class="row g-4"><div class="col-lg-4"><div class="card content-card h-100"><div class="card-body"><h2>Session timing</h2><dl class="detail-list"><dt>Status</dt><dd><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></dd><dt>Check in</dt><dd>{{ session.check_in_at|date:"d M Y, H:i" }}</dd><dt>Check out</dt><dd>{{ session.check_out_at|date:"d M Y, H:i"|default:"Not recorded" }}</dd><dt>Duration</dt><dd>{{ session.duration|duration_hm }}</dd></dl></div></div></div><div class="col-lg-8"><div class="card content-card"><div class="card-body"><h2>Activity record</h2><h3>Planned activity</h3><p>{{ session.planned_activity|linebreaksbr }}</p><h3>Work completed</h3><p>{{ session.work_completed|default:"Not recorded."|linebreaksbr }}</p><h3>Challenges</h3><p>{{ session.challenges_encountered|default:"None recorded."|linebreaksbr }}</p><h3>Next step</h3><p>{{ session.next_step|default:"Not recorded."|linebreaksbr }}</p>{% if session.corrected_at %}<div class="callout mt-4"><strong>Administrator correction</strong><p>{{ session.correction_reason }}</p><small>Corrected by {{ session.corrected_by }} on {{ session.corrected_at|date:"d M Y, H:i" }}</small></div>{% endif %}</div></div></div></div>{% endblock %}
+{% extends "base.html" %}
+{% load dashboard_tags %}
+{% block title %}Attendance record #{{ session.pk }}{% endblock %}
+{% block content %}
+<div class="attendance-record-toolbar">
+    {% if request.user.role == 'ADMIN' %}
+        <a href="{% url 'innovators:detail' session.innovator.innovator_profile.pk %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Back to innovator record</a>
+    {% else %}
+        <a href="{% url 'attendance:history' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Back to attendance history</a>
+    {% endif %}
+    <span>Attendance record #{{ session.pk }}</span>
+</div>
+
+<section class="attendance-record-hero">
+    <div class="attendance-record-person">
+        {% if session.innovator.innovator_profile.profile_photo %}
+            <img class="attendance-record-avatar" src="{{ session.innovator.innovator_profile.profile_photo.url }}" alt="Profile photo for {{ session.innovator.get_full_name }}">
+        {% else %}
+            <div class="attendance-record-avatar attendance-record-initials" aria-hidden="true">{{ session.innovator.first_name|first }}{{ session.innovator.last_name|first }}</div>
+        {% endif %}
+        <div>
+            <p class="eyebrow">Hub attendance</p>
+            <div class="attendance-record-name-line">
+                <h1>{{ session.innovator.get_full_name }}</h1>
+                <span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span>
+            </div>
+            <div class="attendance-record-meta">
+                <span><i class="bi bi-person-vcard" aria-hidden="true"></i>{{ session.innovator.innovator_profile.registration_number }}</span>
+                <span><i class="bi bi-lightbulb" aria-hidden="true"></i>{{ session.project_name }}</span>
+            </div>
+        </div>
+    </div>
+    {% if request.user.role == 'ADMIN' %}
+        <a class="btn btn-primary" href="{% url 'attendance:correct' session.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Correct record</a>
+    {% endif %}
+</section>
+
+<div class="attendance-section-heading">
+    <div><p class="eyebrow">Session overview</p><h2>Session timing</h2></div>
+    <span>Times shown in Africa/Nairobi</span>
+</div>
+
+<section class="session-timing-grid" aria-label="Session timing">
+    <article class="session-timing-card">
+        <span class="session-timing-icon"><i class="bi bi-calendar3" aria-hidden="true"></i></span>
+        <div><small>Visit date</small><strong>{{ session.check_in_at|date:"d M Y" }}</strong></div>
+    </article>
+    <article class="session-timing-card">
+        <span class="session-timing-icon"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i></span>
+        <div><small>Arrival time</small><strong>{{ session.check_in_at|time:"H:i" }}</strong></div>
+    </article>
+    <article class="session-timing-card">
+        <span class="session-timing-icon"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></span>
+        <div><small>Departure time</small><strong>{% if session.check_out_at %}{{ session.check_out_at|time:"H:i" }}{% else %}Not recorded{% endif %}</strong></div>
+    </article>
+    <article class="session-timing-card session-duration-card">
+        <span class="session-timing-icon"><i class="bi bi-stopwatch" aria-hidden="true"></i></span>
+        <div>
+            <small>Total duration</small>
+            {% if session.status == 'ACTIVE' %}
+                <strong data-elapsed data-check-in="{{ session.check_in_at|date:'c' }}">Calculating…</strong>
+            {% else %}
+                <strong>{{ session.duration|duration_hm }}</strong>
+            {% endif %}
+        </div>
+    </article>
+</section>
+
+<section class="session-activity-card" aria-labelledby="activity-record-heading">
+    <div class="session-activity-heading">
+        <div><p class="eyebrow">Work documentation</p><h2 id="activity-record-heading">Activity record</h2><span>A structured record of the work undertaken during this hub visit.</span></div>
+        <span class="session-project-label">{{ session.project_name }}</span>
+    </div>
+    <div class="session-activity-grid">
+        <article class="session-activity-item completed-item">
+            <span class="activity-item-number">01</span>
+            <div><h3>Work completed</h3><p>{{ session.work_completed|default:"Work completed has not been recorded."|linebreaksbr }}</p></div>
+        </article>
+        <article class="session-activity-item challenge-item">
+            <span class="activity-item-number">02</span>
+            <div><h3>Challenges encountered</h3><p>{{ session.challenges_encountered|default:"No challenges were recorded."|linebreaksbr }}</p></div>
+        </article>
+    </div>
+</section>
+
+{% if session.corrected_at %}
+    <section class="attendance-correction-note" aria-labelledby="correction-note-heading">
+        <span><i class="bi bi-journal-check" aria-hidden="true"></i></span>
+        <div>
+            <p class="eyebrow">Audit information</p>
+            <h2 id="correction-note-heading">Administrator correction</h2>
+            <p>{{ session.correction_reason }}</p>
+            <small>Corrected by {{ session.corrected_by|default:"Administrator" }} on {{ session.corrected_at|date:"d M Y, H:i" }}</small>
+        </div>
+    </section>
+{% endif %}
+{% endblock %}

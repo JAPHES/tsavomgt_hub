@@ -50,7 +50,6 @@ class CompleteHubFlowTests(TestCase):
                 reverse("attendance:check-in"),
                 {
                     "project_name": "Eco Sort",
-                    "planned_activity": "Build and test the recyclable material classification form.",
                 },
             ),
             reverse("dashboard:innovator"),
@@ -67,7 +66,6 @@ class CompleteHubFlowTests(TestCase):
             {
                 "work_completed": "Completed the classification form and validated its database records.",
                 "challenges_encountered": "A small sample dataset limited testing.",
-                "next_step": "Collect a larger labelled dataset.",
             },
         )
         self.assertEqual(checkout.status_code, 302)

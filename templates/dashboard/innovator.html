@@ -2,14 +2,14 @@
 {% load dashboard_tags %}
 {% block title %}Innovator dashboard{% endblock %}
 {% block content %}
-<div class="student-dashboard-heading">
+<header class="student-dashboard-heading">
     <div>
         <p class="eyebrow">Innovator workspace</p>
-        <h1>Welcome, {{ user.first_name }}</h1>
+        <h1>Welcome, {{ user.first_name }}, to Tsavo Hub Management System</h1>
         <p>Record your hub attendance and the work completed during your visit.</p>
     </div>
     <span class="student-dashboard-date"><i class="bi bi-calendar3" aria-hidden="true"></i>{{ now|date:"l, d F Y" }}</span>
-</div>
+</header>
 
 <div class="row g-4 student-dashboard-grid">
     <div class="col-xl-8">

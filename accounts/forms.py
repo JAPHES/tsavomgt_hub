@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, SetPasswordForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
 
 
 class BootstrapFormMixin:
@@ -52,4 +52,26 @@ class ResendOTPForm(BootstrapFormMixin, forms.Form):
 class ActivationPasswordForm(BootstrapFormMixin, SetPasswordForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.apply_bootstrap()
+
+
+class TsavoPasswordChangeForm(BootstrapFormMixin, PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field_settings = {
+            "old_password": ("Current password", "Enter your current password", "current-password"),
+            "new_password1": ("New password", "Enter your new password", "new-password"),
+            "new_password2": ("Confirm new password", "Enter the new password again", "new-password"),
+        }
+        for name, (label, placeholder, autocomplete) in field_settings.items():
+            field = self.fields[name]
+            field.label = label
+            field.widget.attrs.update(
+                {
+                    "autocomplete": autocomplete,
+                    "placeholder": placeholder,
+                    "spellcheck": "false",
+                }
+            )
+        self.fields["old_password"].widget.attrs["autofocus"] = True
         self.apply_bootstrap()

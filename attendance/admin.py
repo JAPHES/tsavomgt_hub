@@ -32,15 +32,12 @@ class AttendanceSessionAdmin(admin.ModelAdmin):
         "innovator__last_name",
         "innovator__innovator_profile__registration_number",
         "project_name",
-        "planned_activity",
     )
     readonly_fields = (
         "innovator",
         "project_name",
-        "planned_activity",
         "work_completed",
         "challenges_encountered",
-        "next_step",
         "check_in_at",
         "check_out_at",
         "status",

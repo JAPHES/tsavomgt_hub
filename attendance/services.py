@@ -23,7 +23,7 @@ def _snapshot(session):
 
 
 @transaction.atomic
-def check_in(innovator, *, project_name, planned_activity, now=None):
+def check_in(innovator, *, project_name, now=None):
     now = now or timezone.now()
     locked_user = User.objects.select_for_update().get(pk=innovator.pk)
     active = (
@@ -49,7 +49,6 @@ def check_in(innovator, *, project_name, planned_activity, now=None):
     session = AttendanceSession(
         innovator=locked_user,
         project_name=project_name.strip(),
-        planned_activity=planned_activity.strip(),
         check_in_at=now,
         status=AttendanceSession.Status.ACTIVE,
     )
@@ -62,7 +61,7 @@ def check_in(innovator, *, project_name, planned_activity, now=None):
 
 
 @transaction.atomic
-def check_out(innovator, *, work_completed, challenges_encountered="", next_step="", now=None):
+def check_out(innovator, *, work_completed, challenges_encountered="", now=None):
     now = now or timezone.now()
     locked_user = User.objects.select_for_update().get(pk=innovator.pk)
     session = (
@@ -76,7 +75,6 @@ def check_out(innovator, *, work_completed, challenges_encountered="", next_step
         raise AttendanceError("Check-out time cannot be earlier than check-in time.")
     session.work_completed = work_completed.strip()
     session.challenges_encountered = challenges_encountered.strip()
-    session.next_step = next_step.strip()
     session.check_out_at = now
     session.status = AttendanceSession.Status.COMPLETED
     session.full_clean()
@@ -84,7 +82,6 @@ def check_out(innovator, *, work_completed, challenges_encountered="", next_step
         update_fields=[
             "work_completed",
             "challenges_encountered",
-            "next_step",
             "check_out_at",
             "status",
             "updated_at",
@@ -108,7 +105,6 @@ def record_daily_attendance(
         session = AttendanceSession(
             innovator=locked_user,
             project_name=locked_user.innovator_profile.innovation_project_name,
-            planned_activity="",
         )
     session.check_in_at = check_in_at
     session.check_out_at = check_out_at

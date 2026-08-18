@@ -10,28 +10,12 @@ from .models import AttendanceSession
 
 class CheckInForm(BootstrapFormMixin, forms.Form):
     project_name = forms.CharField(max_length=200, label="Project")
-    planned_activity = forms.CharField(
-        label="Planned activity",
-        widget=forms.Textarea(
-            attrs={
-                "rows": 5,
-                "placeholder": "Describe the specific work you plan to complete during this visit.",
-            }
-        ),
-    )
 
     def __init__(self, *args, project_name="", **kwargs):
         super().__init__(*args, **kwargs)
         if project_name:
             self.fields["project_name"].initial = project_name
         self.apply_bootstrap()
-
-    def clean_planned_activity(self):
-        value = self.cleaned_data["planned_activity"].strip()
-        if len(value) < 10:
-            raise forms.ValidationError("Please give a useful description of the planned activity.")
-        return value
-
 
 class CheckOutForm(BootstrapFormMixin, forms.Form):
     work_completed = forms.CharField(
@@ -43,7 +27,6 @@ class CheckOutForm(BootstrapFormMixin, forms.Form):
     challenges_encountered = forms.CharField(
         required=False, widget=forms.Textarea(attrs={"rows": 3})
     )
-    next_step = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3}))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

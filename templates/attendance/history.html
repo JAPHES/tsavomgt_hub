@@ -1,1 +1,51 @@
-{% extends "base.html" %}{% load dashboard_tags %}{% block title %}Attendance history{% endblock %}{% block content %}<div class="page-heading"><div><p class="eyebrow">My records</p><h1>Attendance history</h1><p>Official session times and documented activities.</p></div></div><div class="card content-card"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Date</th><th>Project</th><th>Time in</th><th>Time out</th><th>Duration</th><th>Status</th><th></th></tr></thead><tbody>{% for session in page_obj %}<tr><td>{{ session.check_in_at|date:"d M Y" }}</td><td>{{ session.project_name }}</td><td>{{ session.check_in_at|time:"H:i" }}</td><td>{{ session.check_out_at|time:"H:i"|default:"—" }}</td><td>{{ session.duration|duration_hm }}</td><td><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></td><td><a href="{% url 'attendance:detail' session.pk %}">View</a></td></tr>{% empty %}<tr><td colspan="7" class="empty-cell">No attendance sessions yet.</td></tr>{% endfor %}</tbody></table></div></div>{% include "includes/pagination.html" %}{% endblock %}
+{% extends "base.html" %}
+{% load dashboard_tags %}
+{% block title %}Attendance history{% endblock %}
+{% block content %}
+<header class="attendance-history-heading">
+    <p class="eyebrow">My records</p>
+    <h1>Attendance history</h1>
+    <p>Official session times and documented activities.</p>
+</header>
+
+<section class="attendance-history-card" aria-labelledby="attendance-records-heading">
+    <div class="attendance-history-card-header">
+        <div>
+            <h2 id="attendance-records-heading">Hub visit records</h2>
+            <p>A complete history of your submitted attendance sessions.</p>
+        </div>
+        <span class="record-count"><i class="bi bi-calendar2-check" aria-hidden="true"></i>{{ page_obj.paginator.count }} attendance record{{ page_obj.paginator.count|pluralize }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table attendance-history-table align-middle mb-0">
+            <thead>
+                <tr><th>Date</th><th>Project</th><th>Arrival</th><th>Departure</th><th>Duration</th><th>Status</th><th><span class="visually-hidden">Action</span></th></tr>
+            </thead>
+            <tbody>
+                {% for session in page_obj %}
+                    <tr>
+                        <td><span class="history-date-cell"><strong>{{ session.check_in_at|date:"d M Y" }}</strong><small>{{ session.check_in_at|date:"l" }}</small></span></td>
+                        <td><strong class="project-name">{{ session.project_name }}</strong></td>
+                        <td><span class="history-time">{{ session.check_in_at|time:"H:i" }}</span></td>
+                        <td><span class="history-time">{{ session.check_out_at|time:"H:i"|default:"—" }}</span></td>
+                        <td><strong class="history-duration">{{ session.duration|duration_hm }}</strong></td>
+                        <td><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></td>
+                        <td><a class="btn btn-sm btn-outline-primary record-view-button" href="{% url 'attendance:detail' session.pk %}" aria-label="View attendance record from {{ session.check_in_at|date:'d M Y' }}"><i class="bi bi-arrow-right" aria-hidden="true"></i></a></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="attendance-history-empty">
+                                <span><i class="bi bi-calendar2" aria-hidden="true"></i></span>
+                                <h3>No attendance records yet</h3>
+                                <p>Your submitted hub visits will appear here.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% include "includes/pagination.html" %}
+{% endblock %}

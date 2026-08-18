@@ -16,10 +16,8 @@ class AttendanceSession(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="attendance_sessions"
     )
     project_name = models.CharField(max_length=200)
-    planned_activity = models.TextField(blank=True)
     work_completed = models.TextField(blank=True)
     challenges_encountered = models.TextField(blank=True)
-    next_step = models.TextField(blank=True)
     check_in_at = models.DateTimeField()
     check_out_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)

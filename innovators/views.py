@@ -1,7 +1,10 @@
+import csv
+
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -15,6 +18,13 @@ from core.permissions import admin_required, innovator_required
 from .forms import InnovatorAdminUpdateForm, InnovatorCreateForm, InnovatorSelfUpdateForm
 from .models import InnovatorProfile
 from .services import create_innovator, send_deactivation_email, update_innovator
+
+
+def _spreadsheet_safe(value):
+    text = str(value or "")
+    if text.lstrip().startswith(("=", "+", "-", "@")):
+        return f"'{text}"
+    return text
 
 
 @admin_required
@@ -31,6 +41,29 @@ def innovator_list(request):
         )
     page_obj = Paginator(profiles, 20).get_page(request.GET.get("page"))
     return render(request, "innovators/manage.html", {"page_obj": page_obj, "query": query})
+
+
+@admin_required
+def export_innovators(request):
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    filename = f"tsavo_hub_innovators_{timezone.localdate():%Y-%m-%d}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.write("\ufeff")
+
+    writer = csv.writer(response)
+    writer.writerow(["Full name", "Email", "Project"])
+    profiles = InnovatorProfile.objects.select_related("user").order_by(
+        "user__last_name", "user__first_name", "user__email"
+    )
+    for profile in profiles.iterator():
+        writer.writerow(
+            [
+                _spreadsheet_safe(profile.user.get_full_name()),
+                _spreadsheet_safe(profile.user.email),
+                _spreadsheet_safe(profile.innovation_project_name),
+            ]
+        )
+    return response
 
 
 @admin_required
@@ -55,11 +88,16 @@ def create_success(request, pk):
 @admin_required
 def innovator_detail(request, pk):
     profile = get_object_or_404(InnovatorProfile.objects.select_related("user"), pk=pk)
-    recent_sessions = profile.user.attendance_sessions.order_by("-check_in_at")[:10]
+    sessions = profile.user.attendance_sessions.order_by("-check_in_at")
+    recent_sessions = list(sessions[:10])
     return render(
         request,
         "innovators/detail.html",
-        {"profile": profile, "recent_sessions": recent_sessions},
+        {
+            "profile": profile,
+            "recent_sessions": recent_sessions,
+            "attendance_count": sessions.count(),
+        },
     )
 
 

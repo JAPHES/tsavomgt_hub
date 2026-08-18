@@ -19,6 +19,7 @@ from .forms import (
     ActivationVerificationForm,
     EmailAuthenticationForm,
     ResendOTPForm,
+    TsavoPasswordChangeForm,
 )
 from .models import AccountActivationOTP, User
 from .services import (
@@ -134,6 +135,7 @@ class TsavoPasswordResetCompleteView(PasswordResetCompleteView):
 
 class TsavoPasswordChangeView(PasswordChangeView):
     template_name = "accounts/password_change_form.html"
+    form_class = TsavoPasswordChangeForm
     success_url = reverse_lazy("accounts:password-change-done")
 
 

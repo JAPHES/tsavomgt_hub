@@ -23,7 +23,6 @@ class AttendanceServiceTests(TestCase):
         session, stale = check_in(
             self.user,
             project_name="BlueWatch",
-            planned_activity="Develop and test the dumpsite reporting form.",
             now=now,
         )
         self.assertIsNone(stale)
@@ -34,13 +33,11 @@ class AttendanceServiceTests(TestCase):
         check_in(
             self.user,
             project_name="BlueWatch",
-            planned_activity="Develop and test the dumpsite reporting form.",
         )
         with self.assertRaises(AttendanceError):
             check_in(
                 self.user,
                 project_name="BlueWatch",
-                planned_activity="Attempt a duplicate active check in.",
             )
         self.assertEqual(
             AttendanceSession.objects.filter(status=AttendanceSession.Status.ACTIVE).count(), 1
@@ -50,14 +47,12 @@ class AttendanceServiceTests(TestCase):
         AttendanceSession.objects.create(
             innovator=self.user,
             project_name="BlueWatch",
-            planned_activity="First valid activity description.",
             check_in_at=timezone.now(),
         )
         with self.assertRaises(IntegrityError), transaction.atomic():
             AttendanceSession.objects.create(
                 innovator=self.user,
                 project_name="Second",
-                planned_activity="Second invalid active session.",
                 check_in_at=timezone.now(),
             )
 
@@ -66,7 +61,6 @@ class AttendanceServiceTests(TestCase):
         session, _ = check_in(
             self.user,
             project_name="BlueWatch",
-            planned_activity="Develop and test the dumpsite reporting form.",
             now=start,
         )
         finished = start + timedelta(hours=2, minutes=15)
@@ -74,7 +68,6 @@ class AttendanceServiceTests(TestCase):
             self.user,
             work_completed="Completed the form and tested image submissions.",
             challenges_encountered="Slow test network.",
-            next_step="Deploy to staging.",
             now=finished,
         )
         self.assertEqual(session.status, AttendanceSession.Status.COMPLETED)
@@ -91,7 +84,6 @@ class AttendanceServiceTests(TestCase):
         check_in(
             self.user,
             project_name="BlueWatch",
-            planned_activity="Develop and test the dumpsite reporting form.",
             now=start,
         )
         with self.assertRaises(AttendanceError):
@@ -103,7 +95,6 @@ class AttendanceServiceTests(TestCase):
         invalid = AttendanceSession(
             innovator=self.user,
             project_name="Invalid",
-            planned_activity="Validate reversed timestamps in the model.",
             check_in_at=start,
             check_out_at=start - timedelta(minutes=1),
             status=AttendanceSession.Status.COMPLETED,
@@ -116,13 +107,11 @@ class AttendanceServiceTests(TestCase):
         previous = AttendanceSession.objects.create(
             innovator=self.user,
             project_name="Old project",
-            planned_activity="Work that was not checked out correctly.",
             check_in_at=yesterday,
         )
         new_session, stale = check_in(
             self.user,
             project_name="BlueWatch",
-            planned_activity="Start a valid activity on the new local day.",
             now=timezone.now(),
         )
         previous.refresh_from_db()
@@ -139,7 +128,6 @@ class AttendanceCorrectionTests(TestCase):
         self.session = AttendanceSession.objects.create(
             innovator=self.user,
             project_name="BlueWatch",
-            planned_activity="Record a deliberately incomplete visit.",
             check_in_at=timezone.now() - timedelta(days=1),
             status=AttendanceSession.Status.INCOMPLETE,
         )
@@ -188,13 +176,20 @@ class AttendanceViewTests(TestCase):
         self.user = create_innovator()
         self.client.force_login(self.user)
 
+    def test_attendance_history_uses_centered_records_layout(self):
+        response = self.client.get(reverse("attendance:history"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="attendance-history-heading"')
+        self.assertContains(response, "Official session times and documented activities")
+        self.assertContains(response, "0 attendance records")
+
     def test_innovator_cannot_supply_checkin_timestamp(self):
         fake_time = timezone.now() - timedelta(days=100)
         response = self.client.post(
             reverse("attendance:check-in"),
             {
                 "project_name": "BlueWatch",
-                "planned_activity": "Develop the reporting workflow and test uploads.",
                 "check_in_at": fake_time.isoformat(),
             },
         )
@@ -206,7 +201,6 @@ class AttendanceViewTests(TestCase):
         session, _ = check_in(
             self.user,
             project_name="BlueWatch",
-            planned_activity="Develop the reporting workflow and test uploads.",
         )
         original = session.check_in_at
         response = self.client.post(
@@ -214,7 +208,6 @@ class AttendanceViewTests(TestCase):
             {
                 "work_completed": "Completed and tested the reporting workflow successfully.",
                 "challenges_encountered": "",
-                "next_step": "Deploy the workflow.",
                 "check_in_at": (timezone.now() - timedelta(days=10)).isoformat(),
             },
         )

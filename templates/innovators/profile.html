@@ -1,1 +1,72 @@
-{% extends "base.html" %}{% block title %}My profile{% endblock %}{% block content %}<div class="page-heading"><div><p class="eyebrow">My account</p><h1>{{ profile.user.get_full_name }}</h1><p>{{ profile.registration_number }} · {{ profile.user.email }}</p></div><a class="btn btn-primary" href="{% url 'innovators:profile-edit' %}">Edit safe profile fields</a></div><div class="row g-4"><div class="col-md-4"><div class="card content-card text-center"><div class="card-body">{% if profile.profile_photo %}<img class="profile-photo" src="{{ profile.profile_photo.url }}" alt="Profile photo for {{ profile.user.get_full_name }}">{% else %}<div class="profile-placeholder">{{ profile.user.first_name|first }}{{ profile.user.last_name|first }}</div>{% endif %}<h2 class="mt-3">{{ profile.innovation_project_name }}</h2></div></div></div><div class="col-md-8"><div class="card content-card"><div class="card-body"><h2>Profile details</h2><dl class="detail-list"><dt>Phone</dt><dd>{{ profile.phone_number }}</dd><dt>Biography</dt><dd>{{ profile.biography|default:'Not provided.'|linebreaksbr }}</dd><dt>Project description</dt><dd>{{ profile.project_description|default:'Not provided.'|linebreaksbr }}</dd></dl></div></div></div></div>{% endblock %}
+{% extends "base.html" %}
+{% block title %}My profile{% endblock %}
+{% block content %}
+<div class="self-profile-toolbar">
+    <div>
+        <p class="eyebrow">My account</p>
+        <h1>My profile</h1>
+    </div>
+    <a class="btn btn-primary" href="{% url 'innovators:profile-edit' %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Edit profile</a>
+</div>
+
+<section class="self-profile-hero">
+    <div class="self-profile-identity">
+        {% if profile.profile_photo %}
+            <img class="self-profile-avatar" src="{{ profile.profile_photo.url }}" alt="Profile photo for {{ profile.user.get_full_name }}">
+        {% else %}
+            <div class="self-profile-avatar self-profile-initials" aria-hidden="true">{{ profile.user.first_name|first }}{{ profile.user.last_name|first }}</div>
+        {% endif %}
+        <div class="self-profile-name">
+            <div class="self-profile-name-line">
+                <h2>{{ profile.user.get_full_name }}</h2>
+                <span class="status-badge status-{{ profile.user.account_status|lower }}">{{ profile.user.get_account_status_display }}</span>
+            </div>
+            <p>{{ profile.innovation_project_name }}</p>
+            <div class="self-profile-meta">
+                <span><i class="bi bi-person-vcard" aria-hidden="true"></i>{{ profile.registration_number }}</span>
+                <span><i class="bi bi-envelope" aria-hidden="true"></i>{{ profile.user.email }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="self-profile-verification">
+        <span><i class="bi bi-patch-check-fill" aria-hidden="true"></i></span>
+        <div><small>Email status</small><strong>{% if profile.user.email_verified %}Verified{% else %}Not verified{% endif %}</strong></div>
+    </div>
+</section>
+
+<div class="row g-4 self-profile-grid">
+    <div class="col-lg-5">
+        <section class="self-profile-card h-100" aria-labelledby="personal-details-heading">
+            <div class="self-profile-card-heading">
+                <div><p class="eyebrow">Personal information</p><h2 id="personal-details-heading">Contact details</h2></div>
+                <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
+            </div>
+            <dl class="self-profile-detail-list">
+                <div><dt>Full name</dt><dd>{{ profile.user.get_full_name }}</dd></div>
+                <div><dt>Registration number</dt><dd>{{ profile.registration_number }}</dd></div>
+                <div><dt>Email address</dt><dd><a href="mailto:{{ profile.user.email }}">{{ profile.user.email }}</a></dd></div>
+                <div><dt>Phone number</dt><dd><a href="tel:{{ profile.phone_number }}">{{ profile.phone_number }}</a></dd></div>
+                <div><dt>Profile last updated</dt><dd>{{ profile.updated_at|date:"d M Y, H:i" }}</dd></div>
+            </dl>
+        </section>
+    </div>
+
+    <div class="col-lg-7">
+        <section class="self-profile-card self-project-card h-100" aria-labelledby="my-project-heading">
+            <div class="self-profile-card-heading">
+                <div><p class="eyebrow">Innovation</p><h2 id="my-project-heading">My project</h2></div>
+                <i class="bi bi-lightbulb-fill" aria-hidden="true"></i>
+            </div>
+            <div class="self-project-name">{{ profile.innovation_project_name }}</div>
+            <div class="self-project-description">
+                <h3>Project description</h3>
+                <p>{{ profile.project_description|default:"No project description has been provided yet."|linebreaksbr }}</p>
+            </div>
+            <div class="self-project-action">
+                <span>Keep your phone number, profile photo and project description up to date.</span>
+                <a href="{% url 'innovators:profile-edit' %}">Update details<i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
