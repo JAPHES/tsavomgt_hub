@@ -1,6 +1,6 @@
 # Tsavo Innovation & Incubation Hub Management System
 
-A secure, server-rendered Django application for managing innovator accounts and daily attendance at the Tsavo Innovation & Incubation Hub, Taita Taveta University.
+A secure, server-rendered Django application for managing innovator accounts, planned hub visits, and administrator-controlled admission at the Tsavo Innovation & Incubation Hub, Taita Taveta University.
 
 The application uses Django templates, Bootstrap 5, JavaScript, SQLite for local development, and PostgreSQL for production. It is branded in TTU green, gold, and white and displays the bundled Tsavo Hub logo with the label **Tsavo Hub Management System**.
 
@@ -13,10 +13,10 @@ The application uses Django templates, Bootstrap 5, JavaScript, SQLite for local
 - Mandatory first-login password replacement with server-side access enforcement and forced logout after completion
 - Professional split-layout password recovery with clear guidance, plus styled first-login and ordinary password-change forms
 - POST-only logout and server-side role authorization
-- Responsive sidebar navigation with Bootstrap icons
+- Responsive sidebar navigation with Bootstrap icons, fluid cards and forms, mobile-friendly data tables, touch-sized controls, and a consistent non-overlapping footer shell
 - Tsavo Hub logo branding and a circular favicon across application pages
 - Professional two-panel login page with a prominent centered circular logo and branded welcome area on the left, and the sign-in form on the right
-- Professional administrator, innovator, profile, attendance-history, streamlined innovator-record, and attendance-record pages
+- Professional administrator, innovator, profile, booking-history, streamlined innovator-record, and legacy attendance-record pages
 - Account-deactivation confirmation warning before the destructive request is submitted
 - Audit records for important administrative actions
 
@@ -29,7 +29,9 @@ The **Add innovator** form collects:
 - Email address
 - Registration number
 - Phone number
-- Innovation/project name
+- Initial project name
+- Initial project details
+- Initial project area of focus
 
 Email addresses and registration numbers are unique. New accounts receive a cryptographically generated temporary password by email. Django stores only its secure password hash. The account can use the normal login page, but server-side middleware blocks every other page until the innovator creates a personal password. After the change, the temporary password is invalid, the innovator is signed out, and they must log in again with the new password.
 
@@ -37,11 +39,11 @@ Administrators can:
 
 - Add and search innovators
 - View professional innovator records
-- Update approved account and project information
+- Update approved account and contact information
 - Reissue temporary login credentials for an innovator who has not completed the first-login password change
 - Deactivate accounts after an explicit confirmation warning
 - Restore inactive accounts
-- Download all innovators as a CSV containing full name, email, and project
+- Download all innovators as a CSV containing full name, email, projects, and areas of focus
 
 The CSV export is administrator-only, includes the complete list regardless of pagination or search, uses UTF-8 for Excel compatibility, and sanitizes spreadsheet-formula prefixes.
 
@@ -49,59 +51,70 @@ Innovators can update only:
 
 - Phone number
 - Profile photo
-- Project description
 
-Email, registration number, role, account status, attendance history, and project name cannot be changed through the self-service profile form.
+Email, registration number, role, account status, projects, and booking history cannot be changed through the self-service profile form.
 
-### Attendance
+### Project portfolios
+
+Each innovator can own multiple projects. Every project records:
+
+- Project name
+- Detailed description
+- Area of focus
+
+Innovators add projects from their dashboard. Project creation is transactional, duplicate names for the same innovator are rejected case-insensitively, and every successful addition creates an audit record. Administrators can see the innovator's complete project portfolio, including each project's details and area of focus, from the innovator record page. Project names and focus areas are also searchable in the innovator directory and included in the CSV export.
+
+The upgrade copies every existing profile project into the new portfolio model. Existing descriptions are retained; projects created before areas of focus were collected are marked `Not specified` rather than being assigned invented information.
+
+### Hub bookings and admission
 
 The primary innovator-dashboard form records:
 
-- Arrival time
-- Departure time
-- Work completed
-- Challenges encountered, optionally
+- Visit date
+- Expected arrival time
+- What the innovator intends to do in the hub
 
-The project name comes from the innovator profile. The server combines selected times with the current `Africa/Nairobi` date and rejects reversed or future times.
+Booking statuses are:
 
-Attendance statuses are:
+- `BOOKED`
+- `ADMITTED`
 
-- `ACTIVE`
-- `COMPLETED`
-- `INCOMPLETE`
-- `ADMIN_CLOSED`
+Booking and admission protections include:
 
-Attendance protections include:
+- Today or a future date is required when making a booking
+- One booking per innovator per visit date, enforced in service logic and by a database constraint
+- Purpose text must contain a useful description
+- Booking creation and admission transitions are transactional
+- Only an administrator can admit an innovator
+- Only today's bookings can be admitted
+- Admission uses server time and cannot be back-dated through the form
+- An admitted booking cannot be admitted a second time
+- Admission status, administrator, and timestamp consistency is enforced at model and database levels
+- Every admission creates an audit record
+- Innovators can view only their own booking history
 
-- One active session per innovator, enforced by service logic and a database constraint
-- Checkout-order validation at form, service, model, and database levels
-- Transactional attendance writes
-- Automatic `INCOMPLETE` status when a previous-day active session is superseded
-- No invented checkout time for missed checkouts
-- Innovators can view only their own attendance sessions
-- Administrators can view all attendance sessions but cannot edit innovator-submitted records
-- Historical correction metadata and audit entries remain read-only where older databases contain them
-- Ordinary attendance records cannot be deleted through the application dashboard
+The previous innovator self check-in/check-out flow is no longer routed. Existing attendance rows are not deleted during the upgrade; administrators can still open legacy records when historical review is necessary.
 
 ### Dashboards and reporting
 
 The innovator workspace provides:
 
 - A centered personalized welcome to Tsavo Hub Management System
-- Daily attendance submission
-- Weekly visit and hour totals
-- Recent attendance records
-- Links to professional session-detail and attendance-history pages
+- Hub booking form
+- Project creation form and complete project portfolio
+- Monthly booking and admitted-visit totals
+- Recent booking records
+- A private booking-history page
 
 The administrator dashboard provides:
 
 - Total active innovator accounts
-- Total innovators who attended today
-- A table of everyone who attended on the current Nairobi date
-- Active and completed visits in the same daily view
-- Arrival, departure, duration, work completed, and status information
+- Total bookings, awaiting admissions, and admitted innovators today
+- A time-ordered table of today's expected innovators
+- Expected arrival time, intended activity, admission status, and admission time
+- A POST-only action for admitting an innovator upon arrival
 
-The separate attendance management page searches by innovator name only.
+The separate booking-records page searches by innovator name only.
 
 ## Project structure
 
@@ -114,9 +127,9 @@ tsavo_hub/
 |-- tsavo_hub/       # Settings, root URLs, ASGI and WSGI
 |-- core/            # Shared pages, permissions, branding and test factories
 |-- accounts/        # Custom users, authentication and mandatory first-login security
-|-- innovators/      # Innovator profiles, management and CSV export
-|-- attendance/      # Attendance sessions, services and read-only administrator review
-|-- dashboard/       # Role dashboards and attendance search
+|-- innovators/      # Innovator profiles, multi-project portfolios, management and CSV export
+|-- attendance/      # Hub bookings, admission services and retained legacy attendance data
+|-- dashboard/       # Role dashboards and booking search
 |-- auditlog/        # Administrative audit records
 |-- templates/       # Shared, page and email templates
 |-- static/          # Branding, responsive CSS and interface JavaScript
@@ -288,21 +301,19 @@ With `DEBUG=False`, the SMTP backend is selected automatically. Verify the sende
 /innovators/create/
 /innovators/<id>/
 
-/attendance/check-in/
-/attendance/check-out/
-/attendance/history/
-/attendance/session/<id>/
+/attendance/bookings/
 /attendance/session/<id>/admin/
 
 /dashboard/
 /dashboard/innovator/
 /dashboard/admin/
-/dashboard/live-attendance/
+/dashboard/admin/bookings/<id>/admit/
+/dashboard/bookings/
 
 /audit/
 ```
 
-All management, export, attendance-review, and audit routes enforce authorization on the server. Navigation visibility is not treated as a security boundary. Attendance records submitted by innovators are read-only for administrators in both the application and Django Admin.
+All management, export, booking, admission, legacy attendance-review, and audit routes enforce authorization on the server. Navigation visibility is not treated as a security boundary. Hub bookings and retained attendance records are read-only in Django Admin; admission occurs only through the protected application workflow.
 
 ## Tests and verification
 
@@ -316,7 +327,7 @@ py manage.py test
 py manage.py collectstatic --noinput
 ```
 
-Tests cover authentication, secure temporary-password generation and hashing, emailed credentials, mandatory first-login routing, password workflows, permissions, attendance validation, administrator read-only enforcement, dashboards, professional record pages, and CSV export.
+Tests cover authentication, secure temporary-password generation and hashing, emailed credentials, mandatory first-login routing, password workflows, permissions, multi-project portfolios and migration, booking validation, admission rules and auditing, legacy attendance retention, dashboards, professional record pages, and CSV export.
 
 For a production configuration review, provide non-placeholder environment values and run:
 

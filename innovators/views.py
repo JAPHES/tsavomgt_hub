@@ -29,7 +29,7 @@ def _spreadsheet_safe(value):
 
 @admin_required
 def innovator_list(request):
-    profiles = InnovatorProfile.objects.select_related("user")
+    profiles = InnovatorProfile.objects.select_related("user").prefetch_related("projects")
     query = request.GET.get("q", "").strip()
     if query:
         profiles = profiles.filter(
@@ -38,7 +38,9 @@ def innovator_list(request):
             | Q(user__email__icontains=query)
             | Q(registration_number__icontains=query)
             | Q(innovation_project_name__icontains=query)
-        )
+            | Q(projects__name__icontains=query)
+            | Q(projects__area_of_focus__icontains=query)
+        ).distinct()
     page_obj = Paginator(profiles, 20).get_page(request.GET.get("page"))
     return render(request, "innovators/manage.html", {"page_obj": page_obj, "query": query})
 
@@ -51,16 +53,20 @@ def export_innovators(request):
     response.write("\ufeff")
 
     writer = csv.writer(response)
-    writer.writerow(["Full name", "Email", "Project"])
-    profiles = InnovatorProfile.objects.select_related("user").order_by(
-        "user__last_name", "user__first_name", "user__email"
+    writer.writerow(["Full name", "Email", "Projects", "Areas of focus"])
+    profiles = (
+        InnovatorProfile.objects.select_related("user")
+        .prefetch_related("projects")
+        .order_by("user__last_name", "user__first_name", "user__email")
     )
-    for profile in profiles.iterator():
+    for profile in profiles:
+        projects = list(profile.projects.all())
         writer.writerow(
             [
                 _spreadsheet_safe(profile.user.get_full_name()),
                 _spreadsheet_safe(profile.user.email),
-                _spreadsheet_safe(profile.innovation_project_name),
+                _spreadsheet_safe("; ".join(project.name for project in projects)),
+                _spreadsheet_safe("; ".join(project.area_of_focus for project in projects)),
             ]
         )
     return response
@@ -87,16 +93,19 @@ def create_success(request, pk):
 
 @admin_required
 def innovator_detail(request, pk):
-    profile = get_object_or_404(InnovatorProfile.objects.select_related("user"), pk=pk)
-    sessions = profile.user.attendance_sessions.order_by("-check_in_at")
-    recent_sessions = list(sessions[:10])
+    profile = get_object_or_404(
+        InnovatorProfile.objects.select_related("user").prefetch_related("projects"), pk=pk
+    )
+    bookings = profile.user.hub_bookings.order_by("-visit_date", "-arrival_time")
+    recent_bookings = list(bookings[:10])
     return render(
         request,
         "innovators/detail.html",
         {
             "profile": profile,
-            "recent_sessions": recent_sessions,
-            "attendance_count": sessions.count(),
+            "recent_bookings": recent_bookings,
+            "booking_count": bookings.count(),
+            "projects": profile.projects.all(),
         },
     )
 
@@ -175,8 +184,15 @@ def admin_reissue_credentials(request, pk):
 
 @innovator_required
 def my_profile(request):
-    profile = get_object_or_404(InnovatorProfile.objects.select_related("user"), user=request.user)
-    return render(request, "innovators/profile.html", {"profile": profile})
+    profile = get_object_or_404(
+        InnovatorProfile.objects.select_related("user").prefetch_related("projects"),
+        user=request.user,
+    )
+    return render(
+        request,
+        "innovators/profile.html",
+        {"profile": profile, "projects": profile.projects.all()},
+    )
 
 
 @innovator_required

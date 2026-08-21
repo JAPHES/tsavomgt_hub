@@ -3,7 +3,7 @@ from django import forms
 from accounts.forms import BootstrapFormMixin
 from accounts.models import User
 
-from .models import InnovatorProfile, validate_kenyan_phone
+from .models import InnovatorProfile, InnovatorProject, validate_kenyan_phone
 
 
 class InnovatorCreateForm(BootstrapFormMixin, forms.Form):
@@ -12,7 +12,16 @@ class InnovatorCreateForm(BootstrapFormMixin, forms.Form):
     email = forms.EmailField()
     registration_number = forms.CharField(max_length=50, label="Registration number")
     phone_number = forms.CharField(max_length=20)
-    innovation_project_name = forms.CharField(max_length=200, label="Innovation / project name")
+    innovation_project_name = forms.CharField(max_length=200, label="Initial project name")
+    project_details = forms.CharField(
+        label="Initial project details",
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
+    area_of_focus = forms.CharField(
+        max_length=150,
+        label="Initial project area of focus",
+        help_text="For example: Climate technology, agriculture, health, education, or fintech.",
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -35,6 +44,27 @@ class InnovatorCreateForm(BootstrapFormMixin, forms.Form):
         validate_kenyan_phone(value)
         return value
 
+    def clean_innovation_project_name(self):
+        name = " ".join(self.cleaned_data["innovation_project_name"].split())
+        if len(name) < 2:
+            raise forms.ValidationError("Enter a meaningful project name.")
+        return name
+
+    def clean_project_details(self):
+        details = self.cleaned_data["project_details"].strip()
+        if len(details) < 20:
+            raise forms.ValidationError(
+                "Describe the project in at least 20 characters."
+            )
+        return details
+
+    def clean_area_of_focus(self):
+        area = " ".join(self.cleaned_data["area_of_focus"].split())
+        if len(area) < 3:
+            raise forms.ValidationError("Enter a meaningful area of focus.")
+        return area
+
+
 class InnovatorAdminUpdateForm(BootstrapFormMixin, forms.ModelForm):
     first_name = forms.CharField(max_length=150)
     last_name = forms.CharField(max_length=150)
@@ -48,13 +78,8 @@ class InnovatorAdminUpdateForm(BootstrapFormMixin, forms.ModelForm):
             "email",
             "registration_number",
             "phone_number",
-            "innovation_project_name",
             "profile_photo",
-            "project_description",
         ]
-        widgets = {
-            "project_description": forms.Textarea(attrs={"rows": 4}),
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -75,14 +100,69 @@ class InnovatorAdminUpdateForm(BootstrapFormMixin, forms.ModelForm):
             raise forms.ValidationError("This registration number is already in use.")
         return number
 
+
 class InnovatorSelfUpdateForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = InnovatorProfile
-        fields = ["phone_number", "profile_photo", "project_description"]
-        widgets = {
-            "project_description": forms.Textarea(attrs={"rows": 5}),
-        }
+        fields = ["phone_number", "profile_photo"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
+
+
+class InnovatorProjectForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = InnovatorProject
+        fields = ["name", "details", "area_of_focus"]
+        labels = {
+            "name": "Project name",
+            "details": "Project details",
+            "area_of_focus": "Area of focus",
+        }
+        help_texts = {
+            "area_of_focus": (
+                "For example: Climate technology, agriculture, health, education, or fintech."
+            ),
+        }
+        widgets = {
+            "details": forms.Textarea(
+                attrs={
+                    "rows": 5,
+                    "placeholder": "Describe the problem, your solution, and the progress made so far.",
+                }
+            ),
+            "area_of_focus": forms.TextInput(
+                attrs={"placeholder": "e.g. Climate technology"}
+            ),
+        }
+
+    def __init__(self, *args, profile=None, **kwargs):
+        self.profile = profile
+        super().__init__(*args, **kwargs)
+        self.apply_bootstrap()
+
+    def clean_name(self):
+        name = " ".join(self.cleaned_data["name"].split())
+        if len(name) < 2:
+            raise forms.ValidationError("Enter a meaningful project name.")
+        if (
+            self.profile
+            and InnovatorProject.objects.filter(profile=self.profile, name__iexact=name).exists()
+        ):
+            raise forms.ValidationError("You already have a project with this name.")
+        return name
+
+    def clean_details(self):
+        details = self.cleaned_data["details"].strip()
+        if len(details) < 20:
+            raise forms.ValidationError(
+                "Describe the project in at least 20 characters."
+            )
+        return details
+
+    def clean_area_of_focus(self):
+        area = " ".join(self.cleaned_data["area_of_focus"].split())
+        if len(area) < 3:
+            raise forms.ValidationError("Enter a meaningful area of focus.")
+        return area

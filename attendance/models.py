@@ -100,3 +100,73 @@ class AttendanceCorrection(models.Model):
 
     def __str__(self):
         return f"Correction to session {self.attendance_id} by {self.administrator}"
+
+
+class HubBooking(models.Model):
+    class Status(models.TextChoices):
+        BOOKED = "BOOKED", "Booked"
+        ADMITTED = "ADMITTED", "Admitted"
+
+    innovator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="hub_bookings",
+    )
+    visit_date = models.DateField()
+    arrival_time = models.TimeField()
+    purpose = models.TextField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.BOOKED)
+    admitted_at = models.DateTimeField(null=True, blank=True)
+    admitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="admitted_hub_bookings",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-visit_date", "-arrival_time", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["innovator", "visit_date"],
+                name="unique_daily_booking_per_innovator",
+                violation_error_message="You already have a hub booking for this date.",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(status="BOOKED", admitted_at__isnull=True, admitted_by__isnull=True)
+                    | Q(
+                        status="ADMITTED",
+                        admitted_at__isnull=False,
+                        admitted_by__isnull=False,
+                    )
+                ),
+                name="booking_admission_fields_match_status",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["visit_date", "status", "arrival_time"]),
+            models.Index(fields=["innovator", "visit_date"]),
+        ]
+
+    def clean(self):
+        errors = {}
+        if self.innovator_id and self.innovator.role != self.innovator.Role.INNOVATOR:
+            errors["innovator"] = "Hub bookings can only be made for an innovator."
+        if self.status == self.Status.BOOKED and (self.admitted_at or self.admitted_by_id):
+            errors["status"] = "A booked visit cannot contain admission details."
+        if self.status == self.Status.ADMITTED:
+            if not self.admitted_at:
+                errors["admitted_at"] = "An admitted booking requires an admission time."
+            if not self.admitted_by_id:
+                errors["admitted_by"] = "An admitted booking requires an administrator."
+            elif self.admitted_by.role != self.admitted_by.Role.ADMIN:
+                errors["admitted_by"] = "Only an administrator can admit a booking."
+        if errors:
+            raise ValidationError(errors)
+
+    def __str__(self):
+        return f"{self.innovator} - {self.visit_date:%Y-%m-%d} at {self.arrival_time:%H:%M}"

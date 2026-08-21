@@ -1,6 +1,46 @@
 from django.contrib import admin
 
-from .models import AttendanceCorrection, AttendanceSession
+from .models import AttendanceCorrection, AttendanceSession, HubBooking
+
+
+@admin.register(HubBooking)
+class HubBookingAdmin(admin.ModelAdmin):
+    list_display = (
+        "innovator",
+        "visit_date",
+        "arrival_time",
+        "status",
+        "admitted_at",
+        "admitted_by",
+    )
+    list_filter = ("status", "visit_date")
+    search_fields = (
+        "innovator__email",
+        "innovator__first_name",
+        "innovator__last_name",
+        "innovator__innovator_profile__registration_number",
+        "purpose",
+    )
+    readonly_fields = (
+        "innovator",
+        "visit_date",
+        "arrival_time",
+        "purpose",
+        "status",
+        "admitted_at",
+        "admitted_by",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 class AttendanceCorrectionInline(admin.TabularInline):

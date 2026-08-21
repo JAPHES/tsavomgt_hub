@@ -58,43 +58,46 @@
     </div>
 
     <div class="col-lg-7">
-        <section class="record-detail-card h-100" aria-labelledby="project-details-heading">
+        <section class="record-detail-card h-100" aria-labelledby="project-portfolio-heading">
             <div class="record-card-heading">
-                <div><p class="eyebrow">Innovation</p><h2 id="project-details-heading">Innovation project</h2></div>
+                <div><p class="eyebrow">Innovation</p><h2 id="project-portfolio-heading">Project portfolio</h2></div>
                 <i class="bi bi-lightbulb-fill" aria-hidden="true"></i>
             </div>
-            <div class="record-project-name">{{ profile.innovation_project_name }}</div>
-            <div class="record-narrative">
-                <div>
-                    <h3>Project description</h3>
-                    <p>{{ profile.project_description|default:"No project description has been provided."|linebreaksbr }}</p>
-                </div>
+            <div class="project-count-line"><strong>{{ projects|length }}</strong><span>project{{ projects|length|pluralize }} associated with this innovator</span></div>
+            <div class="project-card-list admin-project-list">
+                {% for project in projects %}
+                    <article class="project-card-item">
+                        <div class="project-card-title"><h3>{{ project.name }}</h3><span class="project-focus-badge">{{ project.area_of_focus }}</span></div>
+                        <p>{{ project.details|linebreaksbr }}</p>
+                        <small>Added {{ project.created_at|date:"d M Y" }}</small>
+                    </article>
+                {% empty %}
+                    <div class="project-empty-state"><i class="bi bi-lightbulb" aria-hidden="true"></i><p>No projects have been added.</p></div>
+                {% endfor %}
             </div>
         </section>
     </div>
 </div>
 
-<section class="record-attendance-card" aria-labelledby="recent-attendance-heading">
+<section class="record-attendance-card" aria-labelledby="recent-bookings-heading">
     <div class="record-attendance-heading">
-        <div><p class="eyebrow">Visit history</p><h2 id="recent-attendance-heading">Recent attendance</h2><span>The latest 10 recorded hub visits.</span></div>
-        <span class="record-count"><i class="bi bi-calendar3" aria-hidden="true"></i>{{ attendance_count }} total visit{{ attendance_count|pluralize }}</span>
+        <div><p class="eyebrow">Visit planning</p><h2 id="recent-bookings-heading">Recent bookings</h2><span>The latest 10 planned hub visits.</span></div>
+        <span class="record-count"><i class="bi bi-calendar3" aria-hidden="true"></i>{{ booking_count }} booking{{ booking_count|pluralize }}</span>
     </div>
-    <div class="table-responsive">
-        <table class="table record-attendance-table align-middle mb-0">
-            <thead><tr><th>Date</th><th>Arrival</th><th>Departure</th><th>Duration</th><th>Work completed</th><th>Status</th><th><span class="visually-hidden">Action</span></th></tr></thead>
+    <div class="table-responsive mobile-card-table-wrap">
+        <table class="table record-attendance-table mobile-card-table align-middle mb-0">
+            <thead><tr><th>Visit date</th><th>Expected arrival</th><th>Intended activity</th><th>Status</th><th>Admitted at</th></tr></thead>
             <tbody>
-                {% for session in recent_sessions %}
+                {% for booking in recent_bookings %}
                     <tr>
-                        <td><strong>{{ session.check_in_at|date:"d M Y" }}</strong></td>
-                        <td>{{ session.check_in_at|time:"H:i" }}</td>
-                        <td>{{ session.check_out_at|time:"H:i"|default:"—" }}</td>
-                        <td>{{ session.duration|duration_hm }}</td>
-                        <td><span class="record-work-summary">{{ session.work_completed|default:"In progress"|truncatechars:85 }}</span></td>
-                        <td><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></td>
-                        <td><a class="btn btn-sm btn-outline-primary record-view-button" href="{% url 'attendance:admin-detail' session.pk %}" aria-label="View attendance record from {{ session.check_in_at|date:'d M Y' }}"><i class="bi bi-arrow-right" aria-hidden="true"></i></a></td>
+                        <td data-label="Visit date"><strong>{{ booking.visit_date|date:"d M Y" }}</strong></td>
+                        <td data-label="Expected arrival">{{ booking.arrival_time|time:"H:i" }}</td>
+                        <td data-label="Intended activity"><span class="record-work-summary">{{ booking.purpose|truncatechars:100 }}</span></td>
+                        <td data-label="Status"><span class="status-badge status-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></td>
+                        <td data-label="Admitted at">{% if booking.admitted_at %}{{ booking.admitted_at|date:"d M Y, H:i" }}{% else %}<span class="text-muted">Not yet admitted</span>{% endif %}</td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="7"><div class="record-attendance-empty"><i class="bi bi-calendar2" aria-hidden="true"></i><strong>No attendance recorded</strong><span>This innovator's hub visits will appear here.</span></div></td></tr>
+                    <tr><td colspan="5"><div class="record-attendance-empty"><i class="bi bi-calendar2" aria-hidden="true"></i><strong>No bookings recorded</strong><span>This innovator's planned hub visits will appear here.</span></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -134,7 +137,7 @@
                 <div class="critical-impact-list">
                     <div><i class="bi bi-x-circle" aria-hidden="true"></i><span>The innovator will immediately lose access to the system.</span></div>
                     <div><i class="bi bi-envelope-x" aria-hidden="true"></i><span>The innovator will not be able to use temporary or personal login credentials.</span></div>
-                    <div><i class="bi bi-archive" aria-hidden="true"></i><span>Profile and attendance history will be preserved.</span></div>
+                    <div><i class="bi bi-archive" aria-hidden="true"></i><span>Profile, projects and booking history will be preserved.</span></div>
                 </div>
             </div>
             <div class="modal-footer critical-action-footer">

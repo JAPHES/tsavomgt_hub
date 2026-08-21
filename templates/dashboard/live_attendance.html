@@ -1,64 +1,56 @@
 {% extends "base.html" %}
-{% load dashboard_tags %}
-{% block title %}Attendance records{% endblock %}
+{% block title %}Hub booking records{% endblock %}
 {% block content %}
 <div class="page-heading attendance-page-heading">
     <div>
-        <p class="eyebrow">Attendance management</p>
-        <h1>Attendance records</h1>
-        <p>Find an innovator by name and review their complete hub attendance history.</p>
+        <p class="eyebrow">Booking management</p>
+        <h1>Hub booking records</h1>
+        <p>Find an innovator by name and review their planned and admitted visits.</p>
     </div>
 </div>
 
-<section class="attendance-search-card" aria-labelledby="attendance-search-title">
+<section class="attendance-search-card" aria-labelledby="booking-search-title">
     <div class="attendance-search-intro">
         <div class="attendance-search-icon"><i class="bi bi-person-search" aria-hidden="true"></i></div>
-        <div>
-            <h2 id="attendance-search-title">Find innovator attendance</h2>
-            <p>Search using the innovator's first name, last name, or full name.</p>
-        </div>
+        <div><h2 id="booking-search-title">Find innovator bookings</h2><p>Search using the innovator's first name, last name, or full name.</p></div>
     </div>
     <form method="get" class="attendance-name-form" role="search" novalidate>
         <div class="attendance-name-field">
             <label class="form-label" for="{{ form.innovator_name.id_for_label }}">{{ form.innovator_name.label }}</label>
-            <div class="search-input-wrap">
-                <i class="bi bi-search" aria-hidden="true"></i>
-                {{ form.innovator_name }}
-            </div>
+            <div class="search-input-wrap"><i class="bi bi-search" aria-hidden="true"></i>{{ form.innovator_name }}</div>
             {% for error in form.innovator_name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
         <div class="attendance-search-actions">
-            <button class="btn btn-primary" type="submit"><i class="bi bi-search me-2" aria-hidden="true"></i>Search records</button>
-            {% if form.innovator_name.value %}<a class="btn btn-light" href="{% url 'dashboard:live-attendance' %}">Clear</a>{% endif %}
+            <button class="btn btn-primary" type="submit"><i class="bi bi-search me-2" aria-hidden="true"></i>Search bookings</button>
+            {% if form.innovator_name.value %}<a class="btn btn-light" href="{% url 'dashboard:bookings' %}">Clear</a>{% endif %}
         </div>
     </form>
 </section>
 
-<section class="card content-card attendance-results-card" aria-labelledby="attendance-results-title">
+<section class="card content-card attendance-results-card" aria-labelledby="booking-results-title">
     <div class="attendance-results-header">
         <div>
-            <h2 id="attendance-results-title">{% if filter_applied %}Search results{% else %}All attendance records{% endif %}</h2>
-            {% if filter_applied %}<p>Showing records matching “{{ form.innovator_name.value }}”.</p>{% else %}<p>Most recent hub visits appear first.</p>{% endif %}
+            <h2 id="booking-results-title">{% if filter_applied %}Search results{% else %}All booking records{% endif %}</h2>
+            {% if filter_applied %}<p>Showing bookings matching “{{ form.innovator_name.value }}”.</p>{% else %}<p>Newest planned visits appear first.</p>{% endif %}
         </div>
-        <span class="record-count"><i class="bi bi-journal-check" aria-hidden="true"></i>{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</span>
+        <span class="record-count"><i class="bi bi-calendar2-check" aria-hidden="true"></i>{{ page_obj.paginator.count }} booking{{ page_obj.paginator.count|pluralize }}</span>
     </div>
-    <div class="table-responsive">
-        <table class="table attendance-records-table align-middle mb-0">
-            <thead><tr><th>Innovator</th><th>Registration</th><th>Project</th><th>Check in</th><th>Check out</th><th>Duration</th><th>Status</th><th><span class="visually-hidden">Action</span></th></tr></thead>
+    <div class="table-responsive mobile-card-table-wrap">
+        <table class="table attendance-records-table mobile-card-table align-middle mb-0">
+            <thead><tr><th>Innovator</th><th>Registration</th><th>Visit date</th><th>Expected</th><th>Intended activity</th><th>Status</th><th>Admitted at</th></tr></thead>
             <tbody>
-            {% for session in page_obj %}
+            {% for booking in page_obj %}
                 <tr>
-                    <td><div class="attendance-person"><span class="attendance-avatar">{{ session.innovator.first_name|first }}{{ session.innovator.last_name|first }}</span><div><strong>{{ session.innovator.get_full_name }}</strong><small>{{ session.innovator.email }}</small></div></div></td>
-                    <td><span class="registration-pill">{{ session.innovator.innovator_profile.registration_number }}</span></td>
-                    <td><strong class="project-name">{{ session.project_name }}</strong></td>
-                    <td><span class="date-stack"><strong>{{ session.check_in_at|date:"d M Y" }}</strong><small>{{ session.check_in_at|time:"H:i" }}</small></span></td>
-                    <td>{% if session.check_out_at %}<span class="date-stack"><strong>{{ session.check_out_at|date:"d M Y" }}</strong><small>{{ session.check_out_at|time:"H:i" }}</small></span>{% else %}<span class="text-muted">Not recorded</span>{% endif %}</td>
-                    <td>{{ session.duration|duration_hm }}</td>
-                    <td><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></td>
-                    <td><a class="btn btn-sm btn-outline-primary record-view-button" href="{% url 'attendance:admin-detail' session.pk %}" aria-label="View attendance record for {{ session.innovator.get_full_name }}"><i class="bi bi-arrow-right" aria-hidden="true"></i></a></td>
+                    <td data-label="Innovator"><div class="attendance-person"><span class="attendance-avatar">{{ booking.innovator.first_name|first }}{{ booking.innovator.last_name|first }}</span><div><strong>{{ booking.innovator.get_full_name }}</strong><small>{{ booking.innovator.email }}</small></div></div></td>
+                    <td data-label="Registration"><span class="registration-pill">{{ booking.innovator.innovator_profile.registration_number }}</span></td>
+                    <td data-label="Visit date"><span class="date-stack"><strong>{{ booking.visit_date|date:"d M Y" }}</strong><small>{{ booking.visit_date|date:"l" }}</small></span></td>
+                    <td data-label="Expected"><strong>{{ booking.arrival_time|time:"H:i" }}</strong></td>
+                    <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|truncatechars:120 }}</span></td>
+                    <td data-label="Status"><span class="status-badge status-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></td>
+                    <td data-label="Admitted at">{% if booking.admitted_at %}<span class="date-stack"><strong>{{ booking.admitted_at|date:"d M Y" }}</strong><small>{{ booking.admitted_at|time:"H:i" }}</small></span>{% else %}<span class="text-muted">Not yet admitted</span>{% endif %}</td>
                 </tr>
             {% empty %}
-                <tr><td colspan="8"><div class="attendance-empty-state"><i class="bi bi-search" aria-hidden="true"></i><h3>No attendance records found</h3><p>{% if filter_applied %}Try checking the spelling of the innovator's name.{% else %}Attendance records will appear here after innovators visit the hub.{% endif %}</p></div></td></tr>
+                <tr><td colspan="7"><div class="attendance-empty-state"><i class="bi bi-search" aria-hidden="true"></i><h3>No booking records found</h3><p>{% if filter_applied %}Try checking the spelling of the innovator's name.{% else %}Bookings will appear here after innovators plan a hub visit.{% endif %}</p></div></td></tr>
             {% endfor %}
             </tbody>
         </table>
@@ -66,7 +58,7 @@
 </section>
 
 {% if page_obj.has_other_pages %}
-<nav aria-label="Attendance result pages">
+<nav aria-label="Booking result pages">
     <ul class="pagination justify-content-center mt-4">
         {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?innovator_name={{ form.innovator_name.value|default:''|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a></li>{% endif %}
         <li class="page-item active"><span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>

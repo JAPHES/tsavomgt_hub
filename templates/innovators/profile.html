@@ -21,7 +21,7 @@
                 <h2>{{ profile.user.get_full_name }}</h2>
                 <span class="status-badge status-{{ profile.user.account_status|lower }}">{{ profile.user.get_account_status_display }}</span>
             </div>
-            <p>{{ profile.innovation_project_name }}</p>
+            <p>{{ projects|length }} project{{ projects|length|pluralize }} in this portfolio</p>
             <div class="self-profile-meta">
                 <span><i class="bi bi-person-vcard" aria-hidden="true"></i>{{ profile.registration_number }}</span>
                 <span><i class="bi bi-envelope" aria-hidden="true"></i>{{ profile.user.email }}</span>
@@ -52,19 +52,25 @@
     </div>
 
     <div class="col-lg-7">
-        <section class="self-profile-card self-project-card h-100" aria-labelledby="my-project-heading">
+        <section class="self-profile-card self-project-card h-100" aria-labelledby="my-projects-heading">
             <div class="self-profile-card-heading">
-                <div><p class="eyebrow">Innovation</p><h2 id="my-project-heading">My project</h2></div>
+                <div><p class="eyebrow">Innovation</p><h2 id="my-projects-heading">My project portfolio</h2></div>
                 <i class="bi bi-lightbulb-fill" aria-hidden="true"></i>
             </div>
-            <div class="self-project-name">{{ profile.innovation_project_name }}</div>
-            <div class="self-project-description">
-                <h3>Project description</h3>
-                <p>{{ profile.project_description|default:"No project description has been provided yet."|linebreaksbr }}</p>
+            <div class="project-card-list">
+                {% for project in projects %}
+                    <article class="project-card-item">
+                        <div class="project-card-title"><h3>{{ project.name }}</h3><span class="project-focus-badge">{{ project.area_of_focus }}</span></div>
+                        <p>{{ project.details|linebreaksbr }}</p>
+                        <small>Added {{ project.created_at|date:"d M Y" }}</small>
+                    </article>
+                {% empty %}
+                    <div class="project-empty-state"><i class="bi bi-lightbulb" aria-hidden="true"></i><p>No projects have been added yet.</p></div>
+                {% endfor %}
             </div>
             <div class="self-project-action">
-                <span>Keep your phone number, profile photo and project description up to date.</span>
-                <a href="{% url 'innovators:profile-edit' %}">Update details<i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                <span>Add new projects from your innovator dashboard.</span>
+                <a href="{% url 'dashboard:innovator' %}#add-project-title">Add a project<i class="bi bi-arrow-right" aria-hidden="true"></i></a>
             </div>
         </section>
     </div>

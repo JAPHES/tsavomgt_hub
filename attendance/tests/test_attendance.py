@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import time, timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -6,197 +6,166 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from attendance.models import AttendanceSession, HubBooking
+from attendance.services import BookingError, admit_booking, create_booking
+from auditlog.models import AuditLog
 from core.tests.factories import create_admin, create_innovator
 
-from attendance.models import AttendanceSession
-from attendance.services import AttendanceError, check_in, check_out
 
-
-class AttendanceServiceTests(TestCase):
+class HubBookingServiceTests(TestCase):
     def setUp(self):
-        self.user = create_innovator()
+        self.innovator = create_innovator()
+        self.admin = create_admin()
 
-    def test_successful_check_in_uses_server_time(self):
-        now = timezone.now()
-        session, stale = check_in(
-            self.user,
-            project_name="BlueWatch",
-            now=now,
+    def test_booking_is_created_with_trimmed_purpose(self):
+        visit_date = timezone.localdate() + timedelta(days=1)
+        booking = create_booking(
+            self.innovator,
+            visit_date=visit_date,
+            arrival_time=time(10, 15),
+            purpose="  Test the sensor calibration workflow.  ",
         )
-        self.assertIsNone(stale)
-        self.assertEqual(session.check_in_at, now)
-        self.assertEqual(session.status, AttendanceSession.Status.ACTIVE)
 
-    def test_duplicate_active_check_in_is_prevented(self):
-        check_in(
-            self.user,
-            project_name="BlueWatch",
+        self.assertEqual(booking.visit_date, visit_date)
+        self.assertEqual(booking.purpose, "Test the sensor calibration workflow.")
+        self.assertEqual(booking.status, HubBooking.Status.BOOKED)
+
+    def test_duplicate_daily_booking_is_rejected_by_service_and_database(self):
+        visit_date = timezone.localdate() + timedelta(days=1)
+        create_booking(
+            self.innovator,
+            visit_date=visit_date,
+            arrival_time=time(9, 0),
+            purpose="Test the first version of the monitoring device.",
         )
-        with self.assertRaises(AttendanceError):
-            check_in(
-                self.user,
-                project_name="BlueWatch",
+        with self.assertRaises(BookingError):
+            create_booking(
+                self.innovator,
+                visit_date=visit_date,
+                arrival_time=time(14, 0),
+                purpose="Continue testing the monitoring device in the hub.",
             )
-        self.assertEqual(
-            AttendanceSession.objects.filter(status=AttendanceSession.Status.ACTIVE).count(), 1
-        )
-
-    def test_database_constraint_rejects_two_active_sessions(self):
-        AttendanceSession.objects.create(
-            innovator=self.user,
-            project_name="BlueWatch",
-            check_in_at=timezone.now(),
-        )
         with self.assertRaises(IntegrityError), transaction.atomic():
-            AttendanceSession.objects.create(
-                innovator=self.user,
-                project_name="Second",
-                check_in_at=timezone.now(),
+            HubBooking.objects.create(
+                innovator=self.innovator,
+                visit_date=visit_date,
+                arrival_time=time(15, 0),
+                purpose="Attempt a duplicate booking at the database boundary.",
             )
 
-    def test_successful_checkout_and_duration(self):
-        start = timezone.now() - timedelta(hours=2, minutes=15)
-        session, _ = check_in(
-            self.user,
-            project_name="BlueWatch",
-            now=start,
-        )
-        finished = start + timedelta(hours=2, minutes=15)
-        session = check_out(
-            self.user,
-            work_completed="Completed the form and tested image submissions.",
-            challenges_encountered="Slow test network.",
-            now=finished,
-        )
-        self.assertEqual(session.status, AttendanceSession.Status.COMPLETED)
-        self.assertEqual(session.check_out_at, finished)
-        self.assertEqual(session.duration, timedelta(hours=2, minutes=15))
-        self.assertAlmostEqual(session.duration_hours, 2.25)
-
-    def test_checkout_without_active_session_is_prevented(self):
-        with self.assertRaises(AttendanceError):
-            check_out(self.user, work_completed="No active work could be completed today.")
-
-    def test_checkout_time_validation(self):
-        start = timezone.now()
-        check_in(
-            self.user,
-            project_name="BlueWatch",
-            now=start,
-        )
-        with self.assertRaises(AttendanceError):
-            check_out(
-                self.user,
-                work_completed="This should fail due to its checkout time.",
-                now=start - timedelta(minutes=1),
+    def test_past_booking_is_rejected(self):
+        with self.assertRaises(BookingError):
+            create_booking(
+                self.innovator,
+                visit_date=timezone.localdate() - timedelta(days=1),
+                arrival_time=time(10, 0),
+                purpose="Attempt to create a booking in the past.",
             )
-        invalid = AttendanceSession(
-            innovator=self.user,
-            project_name="Invalid",
-            check_in_at=start,
-            check_out_at=start - timedelta(minutes=1),
-            status=AttendanceSession.Status.COMPLETED,
+
+    def test_admission_uses_server_time_and_creates_audit_record(self):
+        booking = create_booking(
+            self.innovator,
+            visit_date=timezone.localdate(),
+            arrival_time=time(10, 0),
+            purpose="Build and validate the booking admission workflow.",
+        )
+        now = timezone.now()
+        admitted = admit_booking(self.admin, booking, now=now)
+
+        self.assertEqual(admitted.status, HubBooking.Status.ADMITTED)
+        self.assertEqual(admitted.admitted_at, now)
+        self.assertEqual(admitted.admitted_by, self.admin)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.admin,
+                action=AuditLog.Action.BOOKING_ADMITTED,
+                target_id=str(booking.pk),
+            ).exists()
+        )
+
+    def test_future_booking_cannot_be_admitted(self):
+        booking = create_booking(
+            self.innovator,
+            visit_date=timezone.localdate() + timedelta(days=1),
+            arrival_time=time(10, 0),
+            purpose="Prepare a future device validation session.",
+        )
+        with self.assertRaises(BookingError):
+            admit_booking(self.admin, booking)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, HubBooking.Status.BOOKED)
+
+    def test_innovator_cannot_admit_a_booking(self):
+        booking = create_booking(
+            self.innovator,
+            visit_date=timezone.localdate(),
+            arrival_time=time(10, 0),
+            purpose="Confirm that admission remains an administrator action.",
+        )
+        with self.assertRaises(BookingError):
+            admit_booking(self.innovator, booking)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, HubBooking.Status.BOOKED)
+
+    def test_admitted_status_requires_admission_details(self):
+        booking = HubBooking(
+            innovator=self.innovator,
+            visit_date=timezone.localdate(),
+            arrival_time=time(10, 0),
+            purpose="Validate admission field consistency.",
+            status=HubBooking.Status.ADMITTED,
         )
         with self.assertRaises(ValidationError):
-            invalid.full_clean()
-
-    def test_previous_day_active_session_is_marked_incomplete(self):
-        yesterday = timezone.now() - timedelta(days=1)
-        previous = AttendanceSession.objects.create(
-            innovator=self.user,
-            project_name="Old project",
-            check_in_at=yesterday,
-        )
-        new_session, stale = check_in(
-            self.user,
-            project_name="BlueWatch",
-            now=timezone.now(),
-        )
-        previous.refresh_from_db()
-        self.assertEqual(stale, previous)
-        self.assertEqual(previous.status, AttendanceSession.Status.INCOMPLETE)
-        self.assertEqual(new_session.status, AttendanceSession.Status.ACTIVE)
-        self.assertIsNone(previous.check_out_at)
+            booking.full_clean()
 
 
-class AttendanceAdministratorReadOnlyTests(TestCase):
+class BookingViewTests(TestCase):
     def setUp(self):
-        self.admin = create_admin()
-        self.user = create_innovator()
-        self.session = AttendanceSession.objects.create(
-            innovator=self.user,
+        self.innovator = create_innovator()
+        self.client.force_login(self.innovator)
+
+    def test_booking_history_is_scoped_to_logged_in_innovator(self):
+        own_booking = HubBooking.objects.create(
+            innovator=self.innovator,
+            visit_date=timezone.localdate(),
+            arrival_time=time(10, 0),
+            purpose="Test the innovator's own device prototype.",
+        )
+        other = create_innovator(
+            email="other@example.com", registration_number="TTU/INN/009"
+        )
+        HubBooking.objects.create(
+            innovator=other,
+            visit_date=timezone.localdate(),
+            arrival_time=time(11, 0),
+            purpose="This other innovator booking must remain private.",
+        )
+
+        response = self.client.get(reverse("attendance:booking-history"))
+
+        self.assertEqual(list(response.context["page_obj"].object_list), [own_booking])
+        self.assertContains(response, "own device prototype")
+        self.assertNotContains(response, "must remain private")
+
+    def test_old_self_attendance_endpoints_are_removed(self):
+        self.assertEqual(self.client.get("/attendance/check-in/").status_code, 404)
+        self.assertEqual(self.client.get("/attendance/check-out/").status_code, 404)
+
+
+class LegacyAttendanceRetentionTests(TestCase):
+    def test_administrator_can_still_view_a_legacy_attendance_record(self):
+        administrator = create_admin()
+        innovator = create_innovator()
+        session = AttendanceSession.objects.create(
+            innovator=innovator,
             project_name="BlueWatch",
-            check_in_at=timezone.now() - timedelta(days=1),
+            check_in_at=timezone.now() - timedelta(days=2),
             status=AttendanceSession.Status.INCOMPLETE,
         )
-        self.client.force_login(self.admin)
+        self.client.force_login(administrator)
 
-    def test_administrator_can_view_record_without_correction_action(self):
         response = self.client.get(
-            reverse("attendance:admin-detail", kwargs={"pk": self.session.pk})
+            reverse("attendance:admin-detail", kwargs={"pk": session.pk})
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Session timing")
-        self.assertNotContains(response, "Correct record")
-
-    def test_removed_correction_url_cannot_modify_record(self):
-        original_check_in = self.session.check_in_at
-        correction_url = f"/attendance/session/{self.session.pk}/correct/"
-        response = self.client.post(
-            correction_url,
-            {
-                "check_in_at": timezone.localtime().strftime("%Y-%m-%dT%H:%M"),
-                "status": AttendanceSession.Status.COMPLETED,
-                "work_completed": "Attempted modification",
-                "correction_reason": "Attempted correction",
-            },
-        )
-        self.assertEqual(response.status_code, 404)
-        self.session.refresh_from_db()
-        self.assertEqual(self.session.check_in_at, original_check_in)
-        self.assertEqual(self.session.status, AttendanceSession.Status.INCOMPLETE)
-
-
-class AttendanceViewTests(TestCase):
-    def setUp(self):
-        self.user = create_innovator()
-        self.client.force_login(self.user)
-
-    def test_attendance_history_uses_centered_records_layout(self):
-        response = self.client.get(reverse("attendance:history"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'class="attendance-history-heading"')
-        self.assertContains(response, "Official session times and documented activities")
-        self.assertContains(response, "0 attendance records")
-
-    def test_innovator_cannot_supply_checkin_timestamp(self):
-        fake_time = timezone.now() - timedelta(days=100)
-        response = self.client.post(
-            reverse("attendance:check-in"),
-            {
-                "project_name": "BlueWatch",
-                "check_in_at": fake_time.isoformat(),
-            },
-        )
-        self.assertRedirects(response, reverse("dashboard:innovator"))
-        session = AttendanceSession.objects.get(innovator=self.user)
-        self.assertGreater(session.check_in_at, timezone.now() - timedelta(minutes=1))
-
-    def test_checkout_form_does_not_modify_checkin_timestamp(self):
-        session, _ = check_in(
-            self.user,
-            project_name="BlueWatch",
-        )
-        original = session.check_in_at
-        response = self.client.post(
-            reverse("attendance:check-out"),
-            {
-                "work_completed": "Completed and tested the reporting workflow successfully.",
-                "challenges_encountered": "",
-                "check_in_at": (timezone.now() - timedelta(days=10)).isoformat(),
-            },
-        )
-        self.assertEqual(response.status_code, 302)
-        session.refresh_from_db()
-        self.assertEqual(session.check_in_at, original)

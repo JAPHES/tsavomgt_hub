@@ -1,7 +1,7 @@
 import secrets
 
 from accounts.models import User
-from innovators.models import InnovatorProfile
+from innovators.models import InnovatorProfile, InnovatorProject
 
 
 def make_test_password():
@@ -35,6 +35,8 @@ def create_innovator(
     first_name="Amina",
     last_name="Juma",
     project="BlueWatch",
+    project_details="A water-quality monitoring and alert platform for local communities.",
+    area_of_focus="Climate technology",
     must_change_password=False,
 ):
     user = User.objects.create_user(
@@ -55,10 +57,17 @@ def create_innovator(
     if not active:
         user.set_unusable_password()
         user.save(update_fields=["password"])
-    InnovatorProfile.objects.create(
+    profile = InnovatorProfile.objects.create(
         user=user,
         registration_number=registration_number,
         phone_number="0712345678",
         innovation_project_name=project,
+        project_description=project_details,
+    )
+    InnovatorProject.objects.create(
+        profile=profile,
+        name=project,
+        details=project_details,
+        area_of_focus=area_of_focus,
     )
     return user

@@ -2,6 +2,7 @@ import re
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MinLengthValidator
 from django.db import models
 
 
@@ -37,3 +38,39 @@ class InnovatorProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.get_full_name()} ({self.registration_number})"
+
+
+class InnovatorProject(models.Model):
+    profile = models.ForeignKey(
+        InnovatorProfile,
+        on_delete=models.CASCADE,
+        related_name="projects",
+    )
+    name = models.CharField(max_length=200, validators=[MinLengthValidator(2)])
+    details = models.TextField(validators=[MinLengthValidator(20)])
+    area_of_focus = models.CharField(max_length=150, validators=[MinLengthValidator(3)])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["profile", "name"],
+                name="unique_project_name_per_innovator",
+                violation_error_message="You already have a project with this name.",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["profile", "created_at"]),
+            models.Index(fields=["area_of_focus"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.name = " ".join((self.name or "").split())
+        self.area_of_focus = " ".join((self.area_of_focus or "").split())
+        self.details = (self.details or "").strip()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name} — {self.profile.user}"

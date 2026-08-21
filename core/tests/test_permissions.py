@@ -1,11 +1,13 @@
 import csv
 import io
+from datetime import time
 
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from attendance.models import AttendanceSession
+from attendance.models import AttendanceSession, HubBooking
+from innovators.models import InnovatorProject
 
 from .factories import create_admin, create_innovator
 
@@ -25,6 +27,12 @@ class PermissionTests(TestCase):
             project_name="AgriSense",
             check_in_at=timezone.now(),
         )
+        self.other_booking = HubBooking.objects.create(
+            innovator=self.other,
+            visit_date=timezone.localdate(),
+            arrival_time=time(10, 0),
+            purpose="Test the AgriSense monitoring prototype in the hub.",
+        )
 
     def test_innovator_cannot_access_admin_dashboard_or_create_accounts(self):
         self.client.force_login(self.innovator)
@@ -38,23 +46,19 @@ class PermissionTests(TestCase):
             404,
         )
 
-    def test_innovator_cannot_see_another_innovators_attendance(self):
+    def test_innovator_cannot_see_another_innovators_bookings(self):
         self.client.force_login(self.innovator)
-        response = self.client.get(
-            reverse("attendance:detail", kwargs={"pk": self.other_session.pk})
-        )
-        self.assertEqual(response.status_code, 404)
+        response = self.client.get(reverse("attendance:booking-history"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "AgriSense monitoring prototype")
 
-    def test_innovator_can_view_own_structured_attendance_record(self):
+    def test_innovator_can_view_own_structured_booking_history(self):
         self.client.force_login(self.other)
-        response = self.client.get(
-            reverse("attendance:detail", kwargs={"pk": self.other_session.pk})
-        )
+        response = self.client.get(reverse("attendance:booking-history"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Session timing")
-        self.assertContains(response, "Activity record")
-        self.assertContains(response, "Back to attendance history")
+        self.assertContains(response, "Hub booking history")
+        self.assertContains(response, "AgriSense monitoring prototype")
 
     def test_innovator_can_view_professional_own_profile(self):
         self.client.force_login(self.innovator)
@@ -62,7 +66,7 @@ class PermissionTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Contact details")
-        self.assertContains(response, "My project")
+        self.assertContains(response, "My project portfolio")
         self.assertContains(response, self.innovator.innovator_profile.registration_number)
 
     def test_administrator_can_access_management_pages(self):
@@ -71,8 +75,15 @@ class PermissionTests(TestCase):
         manage_response = self.client.get(reverse("innovators:manage"))
         self.assertEqual(manage_response.status_code, 200)
         self.assertContains(manage_response, "Download innovators")
+        self.assertContains(manage_response, 'class="innovator-directory-page"')
+        self.assertContains(manage_response, 'class="hub-footer')
+        rendered_html = manage_response.content.decode()
+        self.assertLess(
+            rendered_html.index('class="innovator-directory-page"'),
+            rendered_html.index('class="hub-footer'),
+        )
         self.assertEqual(self.client.get(reverse("innovators:create")).status_code, 200)
-        self.assertEqual(self.client.get(reverse("dashboard:live-attendance")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("dashboard:bookings")).status_code, 200)
         self.assertEqual(self.client.get(reverse("auditlog:list")).status_code, 200)
         session_response = self.client.get(
             reverse("attendance:admin-detail", kwargs={"pk": self.other_session.pk})
@@ -88,13 +99,14 @@ class PermissionTests(TestCase):
         self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
         self.assertIn("attachment;", response["Content-Disposition"])
         rows = list(csv.reader(io.StringIO(response.content.decode("utf-8-sig"))))
-        self.assertEqual(rows[0], ["Full name", "Email", "Project"])
+        self.assertEqual(rows[0], ["Full name", "Email", "Projects", "Areas of focus"])
         self.assertEqual(len(rows), 3)
         self.assertIn(
             [
                 self.innovator.get_full_name(),
                 self.innovator.email,
                 self.innovator.innovator_profile.innovation_project_name,
+                "Climate technology",
             ],
             rows,
         )
@@ -103,11 +115,45 @@ class PermissionTests(TestCase):
                 self.other.get_full_name(),
                 self.other.email,
                 self.other.innovator_profile.innovation_project_name,
+                "Climate technology",
             ],
             rows,
         )
 
-    def test_administrator_innovator_record_shows_profile_and_attendance_summary(self):
+    def test_main_pages_include_responsive_shell_and_mobile_table_markup(self):
+        self.client.force_login(self.admin)
+
+        for route_name in (
+            "dashboard:admin",
+            "dashboard:bookings",
+            "innovators:manage",
+            "auditlog:list",
+        ):
+            with self.subTest(route_name=route_name):
+                response = self.client.get(reverse(route_name))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(
+                    response,
+                    'name="viewport" content="width=device-width, initial-scale=1"',
+                )
+                self.assertContains(response, 'data-bs-target="#hubSidebar"')
+                self.assertContains(response, "mobile-card-table")
+
+        self.client.force_login(self.innovator)
+        for route_name in ("dashboard:innovator", "attendance:booking-history"):
+            with self.subTest(route_name=route_name):
+                response = self.client.get(reverse(route_name))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'data-bs-target="#hubSidebar"')
+                self.assertContains(response, "mobile-card-table")
+
+    def test_administrator_innovator_record_shows_profile_and_booking_summary(self):
+        InnovatorProject.objects.create(
+            profile=self.other.innovator_profile,
+            name="Market Bridge",
+            details="A produce market matching platform for smallholder farmers.",
+            area_of_focus="Agricultural technology",
+        )
         self.client.force_login(self.admin)
         response = self.client.get(
             reverse("innovators:detail", kwargs={"pk": self.other.innovator_profile.pk})
@@ -115,11 +161,15 @@ class PermissionTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.other.get_full_name())
-        self.assertContains(response, "Innovation project")
+        self.assertContains(response, "Project portfolio")
+        self.assertContains(response, "Climate technology")
+        self.assertContains(response, "Market Bridge")
+        self.assertContains(response, "Agricultural technology")
+        self.assertContains(response, "produce market matching platform")
         self.assertContains(response, "Critical account action")
         self.assertContains(response, "Are you sure you want to continue?")
         self.assertContains(response, "Yes, deactivate account")
         self.assertNotContains(response, "Total visits")
         self.assertNotContains(response, "First login")
         self.assertNotContains(response, "Email access")
-        self.assertEqual(response.context["attendance_count"], 1)
+        self.assertEqual(response.context["booking_count"], 1)

@@ -1,25 +1,27 @@
-from datetime import timedelta
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from accounts.models import User
-from attendance.models import AttendanceSession
-from attendance.services import record_daily_attendance
+from attendance.forms import HubBookingForm
+from attendance.models import HubBooking
+from attendance.services import BookingError, admit_booking, create_booking
 from core.permissions import admin_required, innovator_required
-
-from attendance.forms import DailyAttendanceForm
+from innovators.forms import InnovatorProjectForm
+from innovators.services import ProjectError, create_project
 
 from .forms import AttendanceFilterForm
 
 
-def _base_sessions():
-    return AttendanceSession.objects.select_related("innovator", "innovator__innovator_profile")
+def _base_bookings():
+    return HubBooking.objects.select_related(
+        "innovator", "innovator__innovator_profile", "admitted_by"
+    )
 
 
 @login_required
@@ -33,36 +35,63 @@ def dashboard_index(request):
 
 @innovator_required
 def innovator_dashboard(request):
-    attendance_form = DailyAttendanceForm(request.POST or None)
-    if request.method == "POST" and attendance_form.is_valid():
-        session = record_daily_attendance(
-            request.user,
-            check_in_at=attendance_form.cleaned_data["check_in_at"],
-            check_out_at=attendance_form.cleaned_data["check_out_at"],
-            work_completed=attendance_form.cleaned_data["work_completed"],
-            challenges_encountered=attendance_form.cleaned_data["challenges_encountered"],
-        )
-        messages.success(request, "Today's attendance and completed work were recorded.")
-        return redirect("attendance:detail", pk=session.pk)
+    profile = request.user.innovator_profile
+    action = request.POST.get("action", "") if request.method == "POST" else ""
+    if not action and request.method == "POST":
+        action = "book_visit" if "visit_date" in request.POST else "add_project"
+    booking_form = HubBookingForm(
+        request.POST if action == "book_visit" else None, innovator=request.user
+    )
+    project_form = InnovatorProjectForm(
+        request.POST if action == "add_project" else None, profile=profile
+    )
+    if action == "book_visit" and booking_form.is_valid():
+        try:
+            booking = create_booking(request.user, **booking_form.cleaned_data)
+        except BookingError as exc:
+            booking_form.add_error(None, str(exc))
+        else:
+            messages.success(
+                request,
+                f"Your hub visit for {booking.visit_date:%d %B %Y} at "
+                f"{booking.arrival_time:%H:%M} has been booked.",
+            )
+            return redirect("dashboard:innovator")
+    if action == "add_project" and project_form.is_valid():
+        try:
+            project = create_project(
+                profile,
+                **project_form.cleaned_data,
+                actor=request.user,
+                request=request,
+            )
+        except ProjectError as exc:
+            project_form.add_error(None, str(exc))
+        else:
+            messages.success(request, f'Project "{project.name}" was added to your portfolio.')
+            return redirect("dashboard:innovator")
     now = timezone.now()
     today = timezone.localdate(now)
-    week_start = today - timedelta(days=today.weekday())
-    week_sessions = AttendanceSession.objects.filter(
-        innovator=request.user, check_in_at__date__gte=week_start, check_in_at__date__lte=today
+    bookings = HubBooking.objects.filter(innovator=request.user)
+    upcoming_bookings = bookings.filter(
+        visit_date__gte=today, status=HubBooking.Status.BOOKED
+    ).order_by("visit_date", "arrival_time")
+    bookings_this_month = bookings.filter(
+        visit_date__year=today.year, visit_date__month=today.month
     )
-    total_seconds = sum(
-        (session.duration.total_seconds() for session in week_sessions if session.duration), 0
-    )
-    recent_sessions = AttendanceSession.objects.filter(innovator=request.user)[:7]
     return render(
         request,
         "dashboard/innovator.html",
         {
             "now": now,
-            "attendance_form": attendance_form,
-            "recent_sessions": recent_sessions,
-            "visits_this_week": week_sessions.count(),
-            "hours_this_week": total_seconds / 3600,
+            "booking_form": booking_form,
+            "project_form": project_form,
+            "projects": profile.projects.all(),
+            "project_count": profile.projects.count(),
+            "upcoming_bookings": upcoming_bookings[:5],
+            "recent_bookings": bookings[:7],
+            "bookings_this_month": bookings_this_month.count(),
+            "admitted_visits": bookings.filter(status=HubBooking.Status.ADMITTED).count(),
         },
     )
 
@@ -70,26 +99,49 @@ def innovator_dashboard(request):
 @admin_required
 def admin_dashboard(request):
     today = timezone.localdate()
-    sessions = _base_sessions()
-    today_sessions = sessions.filter(check_in_at__date=today).order_by("check_in_at")
+    today_bookings = _base_bookings().filter(visit_date=today).order_by("arrival_time")
     return render(
         request,
         "dashboard/admin.html",
         {
-            "today_sessions": today_sessions,
+            "today": today,
+            "today_bookings": today_bookings,
             "summary": {
                 "active_innovators": User.objects.filter(
                     role=User.Role.INNOVATOR,
                     account_status=User.AccountStatus.ACTIVE,
                     is_active=True,
                 ).count(),
-                "attended_today": today_sessions.values("innovator_id").distinct().count(),
+                "bookings_today": today_bookings.count(),
+                "awaiting_admission": today_bookings.filter(
+                    status=HubBooking.Status.BOOKED
+                ).count(),
+                "admitted_today": today_bookings.filter(
+                    status=HubBooking.Status.ADMITTED
+                ).count(),
             },
         },
     )
 
 
-def filter_attendance(queryset, cleaned):
+@admin_required
+@require_POST
+def admit_booking_view(request, pk):
+    booking = get_object_or_404(HubBooking, pk=pk)
+    try:
+        admitted = admit_booking(request.user, booking, request=request)
+    except BookingError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(
+            request,
+            f"{admitted.innovator.get_full_name()} was admitted to the hub at "
+            f"{timezone.localtime(admitted.admitted_at):%H:%M}.",
+        )
+    return redirect("dashboard:admin")
+
+
+def filter_bookings(queryset, cleaned):
     innovator_name = cleaned.get("innovator_name", "")
     for name_part in innovator_name.split():
         queryset = queryset.filter(
@@ -100,12 +152,12 @@ def filter_attendance(queryset, cleaned):
 
 
 @admin_required
-def live_attendance(request):
+def booking_records(request):
     form = AttendanceFilterForm(request.GET or None)
-    sessions = _base_sessions()
+    bookings = _base_bookings()
     if form.is_valid():
-        sessions = filter_attendance(sessions, form.cleaned_data)
-    page_obj = Paginator(sessions, 30).get_page(request.GET.get("page"))
+        bookings = filter_bookings(bookings, form.cleaned_data)
+    page_obj = Paginator(bookings, 30).get_page(request.GET.get("page"))
     return render(
         request,
         "dashboard/live_attendance.html",

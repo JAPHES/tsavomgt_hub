@@ -1,57 +1,75 @@
 {% extends "base.html" %}
-{% load dashboard_tags %}
 {% block title %}Administrator dashboard{% endblock %}
 {% block content %}
 <div class="presence-dashboard-heading">
     <div>
-        <p class="eyebrow">Today's hub attendance</p>
+        <p class="eyebrow">Today's hub bookings</p>
         <h1>Administrator dashboard</h1>
-        <p>A complete view of every innovator who attended the hub today.</p>
+        <p>Review everyone expected today and admit innovators when they arrive.</p>
     </div>
     <span class="presence-updated"><i class="bi bi-clock" aria-hidden="true"></i>{% now "d M Y, H:i" %}</span>
 </div>
 
 <div class="row g-4 presence-summary-row">
-    <div class="col-md-6">
+    <div class="col-sm-6 col-xl-3">
         <article class="presence-stat-card active-innovators-card">
-            <div class="presence-stat-icon"><i class="bi bi-person-check-fill" aria-hidden="true"></i></div>
+            <div class="presence-stat-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></div>
             <div><span>Active innovators</span><strong>{{ summary.active_innovators }}</strong><small>Active innovator accounts</small></div>
         </article>
     </div>
-    <div class="col-md-6">
+    <div class="col-sm-6 col-xl-3">
+        <article class="presence-stat-card bookings-today-card">
+            <div class="presence-stat-icon"><i class="bi bi-calendar2-check-fill" aria-hidden="true"></i></div>
+            <div><span>Bookings today</span><strong>{{ summary.bookings_today }}</strong><small>Expected hub visits</small></div>
+        </article>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <article class="presence-stat-card awaiting-card">
+            <div class="presence-stat-icon"><i class="bi bi-hourglass-split" aria-hidden="true"></i></div>
+            <div><span>Awaiting admission</span><strong>{{ summary.awaiting_admission }}</strong><small>Not yet admitted</small></div>
+        </article>
+    </div>
+    <div class="col-sm-6 col-xl-3">
         <article class="presence-stat-card in-hub-card">
-            <div class="presence-stat-icon"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i></div>
-            <div><span>Total attended today</span><strong>{{ summary.attended_today }}</strong><small>Checked in at least once today</small></div>
+            <div class="presence-stat-icon"><i class="bi bi-door-open-fill" aria-hidden="true"></i></div>
+            <div><span>Admitted today</span><strong>{{ summary.admitted_today }}</strong><small>Confirmed arrivals</small></div>
         </article>
     </div>
 </div>
 
-<section class="presence-table-card" aria-labelledby="today-innovators-title">
+<section class="presence-table-card" aria-labelledby="today-bookings-title">
     <div class="presence-table-header">
         <div>
-            <div class="presence-title-line"><h2 id="today-innovators-title">Innovators who attended today</h2><span class="today-indicator">Today</span></div>
-            <p>Includes innovators who are still in the hub and those who have already left.</p>
+            <div class="presence-title-line"><h2 id="today-bookings-title">Today's bookings</h2><span class="today-indicator">{{ today|date:"d M Y" }}</span></div>
+            <p>Admission is recorded using the current server time when the innovator arrives.</p>
         </div>
-        <span class="present-count">{{ summary.attended_today }} innovator{{ summary.attended_today|pluralize }}</span>
+        <span class="present-count">{{ summary.bookings_today }} booking{{ summary.bookings_today|pluralize }}</span>
     </div>
-    <div class="table-responsive">
-        <table class="table presence-table align-middle mb-0">
-            <thead><tr><th>Innovator</th><th>Registration</th><th>Project</th><th>Arrived</th><th>Departed</th><th>Duration</th><th>Work done</th><th>Status</th><th><span class="visually-hidden">Action</span></th></tr></thead>
+    <div class="table-responsive mobile-card-table-wrap">
+        <table class="table presence-table mobile-card-table align-middle mb-0">
+            <thead><tr><th>Innovator</th><th>Registration</th><th>Expected</th><th>Intended activity</th><th>Status</th><th>Admitted</th><th>Action</th></tr></thead>
             <tbody>
-            {% for session in today_sessions %}
+            {% for booking in today_bookings %}
                 <tr>
-                    <td><div class="attendance-person"><span class="attendance-avatar">{{ session.innovator.first_name|first }}{{ session.innovator.last_name|first }}</span><div><strong>{{ session.innovator.get_full_name }}</strong><small>{{ session.innovator.email }}</small></div></div></td>
-                    <td><span class="registration-pill">{{ session.innovator.innovator_profile.registration_number }}</span></td>
-                    <td><strong class="project-name">{{ session.project_name }}</strong></td>
-                    <td><span class="date-stack"><strong>{{ session.check_in_at|time:"H:i" }}</strong><small>{{ session.check_in_at|date:"d M Y" }}</small></span></td>
-                    <td>{% if session.check_out_at %}<span class="date-stack"><strong>{{ session.check_out_at|time:"H:i" }}</strong><small>{{ session.check_out_at|date:"d M Y" }}</small></span>{% else %}<span class="still-in-hub"><i class="bi bi-circle-fill" aria-hidden="true"></i>Still in hub</span>{% endif %}</td>
-                    <td>{% if session.check_out_at %}<strong class="session-duration">{{ session.duration|duration_hm }}</strong>{% else %}<strong class="live-duration" data-elapsed data-check-in="{{ session.check_in_at|date:'c' }}">Calculating…</strong>{% endif %}</td>
-                    <td><span class="work-done-summary">{{ session.work_completed|default:"In progress"|truncatechars:100 }}</span></td>
-                    <td><span class="status-badge status-{{ session.status|lower }}">{{ session.get_status_display }}</span></td>
-                    <td><a class="btn btn-sm btn-outline-primary record-view-button" href="{% url 'attendance:admin-detail' session.pk %}" aria-label="View attendance record for {{ session.innovator.get_full_name }}"><i class="bi bi-arrow-right" aria-hidden="true"></i></a></td>
+                    <td data-label="Innovator"><div class="attendance-person"><span class="attendance-avatar">{{ booking.innovator.first_name|first }}{{ booking.innovator.last_name|first }}</span><div><strong>{{ booking.innovator.get_full_name }}</strong><small>{{ booking.innovator.email }}</small></div></div></td>
+                    <td data-label="Registration"><span class="registration-pill">{{ booking.innovator.innovator_profile.registration_number }}</span></td>
+                    <td data-label="Expected"><strong>{{ booking.arrival_time|time:"H:i" }}</strong></td>
+                    <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|truncatechars:120 }}</span></td>
+                    <td data-label="Status"><span class="status-badge status-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></td>
+                    <td data-label="Admitted">{% if booking.admitted_at %}<span class="date-stack"><strong>{{ booking.admitted_at|time:"H:i" }}</strong><small>by {{ booking.admitted_by.get_full_name|default:booking.admitted_by.email }}</small></span>{% else %}<span class="text-muted">Not yet</span>{% endif %}</td>
+                    <td data-label="Action">
+                        {% if booking.status == 'BOOKED' %}
+                            <form method="post" action="{% url 'dashboard:admit-booking' booking.pk %}">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-primary admit-booking-button" type="submit"><i class="bi bi-door-open me-1" aria-hidden="true"></i>Admit</button>
+                            </form>
+                        {% else %}
+                            <span class="text-success fw-semibold"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Admitted</span>
+                        {% endif %}
+                    </td>
                 </tr>
             {% empty %}
-                <tr><td colspan="9"><div class="presence-empty-state"><div class="presence-empty-icon"><i class="bi bi-calendar2-check" aria-hidden="true"></i></div><h3>No attendance recorded today</h3><p>Innovators will appear here after recording a hub visit today.</p></div></td></tr>
+                <tr><td colspan="7"><div class="presence-empty-state"><div class="presence-empty-icon"><i class="bi bi-calendar2-check" aria-hidden="true"></i></div><h3>No bookings for today</h3><p>Bookings made by innovators for today will appear here.</p></div></td></tr>
             {% endfor %}
             </tbody>
         </table>

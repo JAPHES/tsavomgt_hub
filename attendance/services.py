@@ -5,102 +5,61 @@ from accounts.models import User
 from auditlog.models import AuditLog
 from auditlog.services import record_audit
 
-from .models import AttendanceSession
+from .models import HubBooking
 
 
-class AttendanceError(Exception):
+class BookingError(Exception):
     pass
 
 
 @transaction.atomic
-def check_in(innovator, *, project_name, now=None):
-    now = now or timezone.now()
+def create_booking(innovator, *, visit_date, arrival_time, purpose):
     locked_user = User.objects.select_for_update().get(pk=innovator.pk)
-    active = (
-        AttendanceSession.objects.select_for_update()
-        .filter(innovator=locked_user, status=AttendanceSession.Status.ACTIVE)
-        .first()
-    )
-    stale_session = None
-    if active:
-        if timezone.localdate(active.check_in_at) == timezone.localdate(now):
-            raise AttendanceError("You already have an active attendance session.")
-        active.status = AttendanceSession.Status.INCOMPLETE
-        active.save(update_fields=["status", "updated_at"])
-        stale_session = active
-        record_audit(
-            actor=locked_user,
-            action=AuditLog.Action.INCOMPLETE_SESSION_CLOSED,
-            target=active,
-            previous_values={"status": AttendanceSession.Status.ACTIVE},
-            new_values={"status": AttendanceSession.Status.INCOMPLETE},
-            reason="Automatically flagged when a new local day began without checkout.",
-        )
-    session = AttendanceSession(
+    if locked_user.role != User.Role.INNOVATOR:
+        raise BookingError("Only innovators can make hub bookings.")
+    if visit_date < timezone.localdate():
+        raise BookingError("Choose today or a future date.")
+    if HubBooking.objects.filter(innovator=locked_user, visit_date=visit_date).exists():
+        raise BookingError("You already have a hub booking for this date.")
+
+    booking = HubBooking(
         innovator=locked_user,
-        project_name=project_name.strip(),
-        check_in_at=now,
-        status=AttendanceSession.Status.ACTIVE,
+        visit_date=visit_date,
+        arrival_time=arrival_time,
+        purpose=purpose.strip(),
     )
-    session.full_clean()
+    booking.full_clean(validate_unique=False, validate_constraints=False)
     try:
-        session.save()
+        booking.save()
     except IntegrityError as exc:
-        raise AttendanceError("You already have an active attendance session.") from exc
-    return session, stale_session
+        raise BookingError("You already have a hub booking for this date.") from exc
+    return booking
 
 
 @transaction.atomic
-def check_out(innovator, *, work_completed, challenges_encountered="", now=None):
+def admit_booking(administrator, booking, *, now=None, request=None):
     now = now or timezone.now()
-    locked_user = User.objects.select_for_update().get(pk=innovator.pk)
-    session = (
-        AttendanceSession.objects.select_for_update()
-        .filter(innovator=locked_user, status=AttendanceSession.Status.ACTIVE)
-        .first()
-    )
-    if not session:
-        raise AttendanceError("There is no active session to check out from.")
-    if now < session.check_in_at:
-        raise AttendanceError("Check-out time cannot be earlier than check-in time.")
-    session.work_completed = work_completed.strip()
-    session.challenges_encountered = challenges_encountered.strip()
-    session.check_out_at = now
-    session.status = AttendanceSession.Status.COMPLETED
-    session.full_clean()
-    session.save(
-        update_fields=[
-            "work_completed",
-            "challenges_encountered",
-            "check_out_at",
-            "status",
-            "updated_at",
-        ]
-    )
-    return session
+    locked_booking = HubBooking.objects.select_for_update().select_related(
+        "innovator", "admitted_by"
+    ).get(pk=booking.pk)
+    if administrator.role != User.Role.ADMIN:
+        raise BookingError("Only an administrator can admit a hub booking.")
+    if locked_booking.status == HubBooking.Status.ADMITTED:
+        raise BookingError("This innovator has already been admitted for this booking.")
+    if locked_booking.visit_date != timezone.localdate(now):
+        raise BookingError("Only today's bookings can be admitted.")
 
-
-@transaction.atomic
-def record_daily_attendance(
-    innovator, *, check_in_at, check_out_at, work_completed, challenges_encountered=""
-):
-    """Record the innovator's completed visit using their validated local times."""
-    locked_user = User.objects.select_for_update().get(pk=innovator.pk)
-    session = (
-        AttendanceSession.objects.select_for_update()
-        .filter(innovator=locked_user, status=AttendanceSession.Status.ACTIVE)
-        .first()
+    locked_booking.status = HubBooking.Status.ADMITTED
+    locked_booking.admitted_at = now
+    locked_booking.admitted_by = administrator
+    locked_booking.full_clean()
+    locked_booking.save(update_fields=["status", "admitted_at", "admitted_by", "updated_at"])
+    record_audit(
+        actor=administrator,
+        action=AuditLog.Action.BOOKING_ADMITTED,
+        target=locked_booking,
+        previous_values={"status": HubBooking.Status.BOOKED},
+        new_values={"status": HubBooking.Status.ADMITTED, "admitted_at": now.isoformat()},
+        request=request,
     )
-    if session is None:
-        session = AttendanceSession(
-            innovator=locked_user,
-            project_name=locked_user.innovator_profile.innovation_project_name,
-        )
-    session.check_in_at = check_in_at
-    session.check_out_at = check_out_at
-    session.work_completed = work_completed.strip()
-    session.challenges_encountered = challenges_encountered.strip()
-    session.status = AttendanceSession.Status.COMPLETED
-    session.full_clean()
-    session.save()
-    return session
+    return locked_booking

@@ -1,5 +1,5 @@
 from django.core.mail import EmailMultiAlternatives
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.template.loader import render_to_string
 
 from accounts.models import User
@@ -7,7 +7,11 @@ from accounts.services import issue_temporary_credentials
 from auditlog.models import AuditLog
 from auditlog.services import record_audit
 
-from .models import InnovatorProfile
+from .models import InnovatorProfile, InnovatorProject
+
+
+class ProjectError(Exception):
+    pass
 
 
 @transaction.atomic
@@ -28,6 +32,13 @@ def create_innovator(cleaned_data, *, actor, request=None):
         registration_number=cleaned_data["registration_number"],
         phone_number=cleaned_data["phone_number"],
         innovation_project_name=cleaned_data["innovation_project_name"],
+        project_description=cleaned_data["project_details"],
+    )
+    InnovatorProject.objects.create(
+        profile=profile,
+        name=cleaned_data["innovation_project_name"],
+        details=cleaned_data["project_details"],
+        area_of_focus=cleaned_data["area_of_focus"],
     )
     issue_temporary_credentials(user, actor=actor, request=request)
     record_audit(
@@ -54,7 +65,6 @@ def update_innovator(form, *, actor, request=None):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "registration_number": profile.registration_number,
-        "project": profile.innovation_project_name,
     }
     new_email = form.cleaned_data["email"]
     email_changed = user.email != new_email
@@ -85,11 +95,46 @@ def update_innovator(form, *, actor, request=None):
             "first_name": user.first_name,
             "last_name": user.last_name,
             "registration_number": profile.registration_number,
-            "project": profile.innovation_project_name,
         },
         request=request,
     )
     return profile, email_changed
+
+
+@transaction.atomic
+def create_project(profile, *, name, details, area_of_focus, actor, request=None):
+    locked_profile = (
+        InnovatorProfile.objects.select_for_update().select_related("user").get(pk=profile.pk)
+    )
+    if actor.pk != locked_profile.user_id or actor.role != User.Role.INNOVATOR:
+        raise ProjectError("You can only add projects to your own innovator profile.")
+    if InnovatorProject.objects.filter(
+        profile=locked_profile, name__iexact=name.strip()
+    ).exists():
+        raise ProjectError("You already have a project with this name.")
+
+    project = InnovatorProject(
+        profile=locked_profile,
+        name=name,
+        details=details,
+        area_of_focus=area_of_focus,
+    )
+    project.full_clean(validate_unique=False, validate_constraints=False)
+    try:
+        project.save()
+    except IntegrityError as exc:
+        raise ProjectError("You already have a project with this name.") from exc
+    record_audit(
+        actor=actor,
+        action=AuditLog.Action.PROJECT_CREATED,
+        target=project,
+        new_values={
+            "name": project.name,
+            "area_of_focus": project.area_of_focus,
+        },
+        request=request,
+    )
+    return project
 
 
 def send_deactivation_email(user):

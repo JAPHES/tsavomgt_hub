@@ -273,6 +273,8 @@ class AdministratorAccountCreationTests(TestCase):
             "registration_number": "TTU/INN/099",
             "phone_number": "0711223344",
             "innovation_project_name": "Eco Sort",
+            "project_details": "A smart sorting system that classifies recyclable waste.",
+            "area_of_focus": "Climate technology",
         }
 
     @patch("accounts.services.generate_temporary_password", return_value=TEMPORARY_PASSWORD)
@@ -281,6 +283,7 @@ class AdministratorAccountCreationTests(TestCase):
             response = self.client.post(reverse("innovators:create"), self.data)
         profile = InnovatorProfile.objects.get(registration_number="TTU/INN/099")
         user = profile.user
+        project = profile.projects.get()
 
         self.assertRedirects(
             response, reverse("innovators:create-success", kwargs={"pk": profile.pk})
@@ -292,6 +295,8 @@ class AdministratorAccountCreationTests(TestCase):
         self.assertTrue(user.is_active)
         self.assertTrue(user.must_change_password)
         self.assertEqual(user.account_status, User.AccountStatus.PENDING)
+        self.assertEqual(project.name, "Eco Sort")
+        self.assertEqual(project.area_of_focus, "Climate technology")
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(user.email, mail.outbox[0].body)
         self.assertIn(TEMPORARY_PASSWORD, mail.outbox[0].body)
