@@ -76,6 +76,11 @@ class PermissionTests(TestCase):
         self.assertEqual(manage_response.status_code, 200)
         self.assertContains(manage_response, "Download innovators")
         self.assertContains(manage_response, 'class="innovator-directory-page"')
+        self.assertContains(manage_response, "<th>Name</th>", html=True)
+        self.assertContains(manage_response, "<th>Registration</th>", html=True)
+        self.assertContains(manage_response, "<th>Status</th>", html=True)
+        self.assertNotContains(manage_response, "<th>Projects</th>", html=True)
+        self.assertContains(manage_response, "View innovator")
         self.assertContains(manage_response, 'class="hub-footer')
         rendered_html = manage_response.content.decode()
         self.assertLess(
