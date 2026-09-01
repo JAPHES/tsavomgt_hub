@@ -40,7 +40,7 @@ def _spreadsheet_safe(value):
 
 @admin_required
 def innovator_list(request):
-    profiles = InnovatorProfile.objects.select_related("user").prefetch_related("projects")
+    profiles = InnovatorProfile.objects.select_related("user")
     query = request.GET.get("q", "").strip()
     if query:
         profiles = profiles.filter(
