@@ -31,14 +31,6 @@ def create_innovator(cleaned_data, *, actor, request=None):
         user=user,
         registration_number=cleaned_data["registration_number"],
         phone_number=cleaned_data["phone_number"],
-        innovation_project_name=cleaned_data["innovation_project_name"],
-        project_description=cleaned_data["project_details"],
-    )
-    InnovatorProject.objects.create(
-        profile=profile,
-        name=cleaned_data["innovation_project_name"],
-        details=cleaned_data["project_details"],
-        area_of_focus=cleaned_data["area_of_focus"],
     )
     issue_temporary_credentials(user, actor=actor, request=request)
     record_audit(

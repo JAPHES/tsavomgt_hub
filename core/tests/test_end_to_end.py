@@ -21,9 +21,6 @@ class CompleteHubFlowTests(TestCase):
             "email": "neema@students.ttu.ac.ke",
             "registration_number": "TTU/INN/099",
             "phone_number": "0711223344",
-            "innovation_project_name": "Eco Sort",
-            "project_details": "A smart sorting system that classifies recyclable waste.",
-            "area_of_focus": "Climate technology",
         }
         temporary_password = make_test_password()
         with patch(

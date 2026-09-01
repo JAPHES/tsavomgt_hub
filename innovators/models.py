@@ -18,7 +18,8 @@ class InnovatorProfile(models.Model):
     )
     registration_number = models.CharField(max_length=50, unique=True)
     phone_number = models.CharField(max_length=20, validators=[validate_kenyan_phone])
-    innovation_project_name = models.CharField(max_length=200)
+    # Retained for backward database compatibility. New projects live in InnovatorProject.
+    innovation_project_name = models.CharField(max_length=200, blank=True, default="")
     profile_photo = models.ImageField(upload_to="profile_photos/%Y/%m/", null=True, blank=True)
     project_description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

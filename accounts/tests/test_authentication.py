@@ -272,10 +272,16 @@ class AdministratorAccountCreationTests(TestCase):
             "email": "neema@students.ttu.ac.ke",
             "registration_number": "TTU/INN/099",
             "phone_number": "0711223344",
-            "innovation_project_name": "Eco Sort",
-            "project_details": "A smart sorting system that classifies recyclable waste.",
-            "area_of_focus": "Climate technology",
         }
+
+    def test_add_innovator_form_contains_only_account_fields(self):
+        response = self.client.get(reverse("innovators:create"))
+
+        self.assertEqual(
+            list(response.context["form"].fields),
+            ["first_name", "last_name", "email", "registration_number", "phone_number"],
+        )
+        self.assertNotContains(response, "Initial project")
 
     @patch("accounts.services.generate_temporary_password", return_value=TEMPORARY_PASSWORD)
     def test_administrator_creates_account_and_emails_hashed_temporary_password(self, generator):
@@ -283,7 +289,6 @@ class AdministratorAccountCreationTests(TestCase):
             response = self.client.post(reverse("innovators:create"), self.data)
         profile = InnovatorProfile.objects.get(registration_number="TTU/INN/099")
         user = profile.user
-        project = profile.projects.get()
 
         self.assertRedirects(
             response, reverse("innovators:create-success", kwargs={"pk": profile.pk})
@@ -295,8 +300,7 @@ class AdministratorAccountCreationTests(TestCase):
         self.assertTrue(user.is_active)
         self.assertTrue(user.must_change_password)
         self.assertEqual(user.account_status, User.AccountStatus.PENDING)
-        self.assertEqual(project.name, "Eco Sort")
-        self.assertEqual(project.area_of_focus, "Climate technology")
+        self.assertFalse(profile.projects.exists())
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(user.email, mail.outbox[0].body)
         self.assertIn(TEMPORARY_PASSWORD, mail.outbox[0].body)

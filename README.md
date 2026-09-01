@@ -29,11 +29,8 @@ The **Add innovator** form collects:
 - Email address
 - Registration number
 - Phone number
-- Initial project name
-- Initial project details
-- Initial project area of focus
 
-Email addresses and registration numbers are unique. New accounts receive a cryptographically generated temporary password by email. Django stores only its secure password hash. The account can use the normal login page, but server-side middleware blocks every other page until the innovator creates a personal password. After the change, the temporary password is invalid, the innovator is signed out, and they must log in again with the new password.
+Email addresses and registration numbers are unique. New accounts begin with an empty project portfolio; after signing in, innovators add their own projects from **My projects**. New accounts receive a cryptographically generated temporary password by email. Django stores only its secure password hash. The account can use the normal login page, but server-side middleware blocks every other page until the innovator creates a personal password. After the change, the temporary password is invalid, the innovator is signed out, and they must log in again with the new password.
 
 Administrators can:
 
