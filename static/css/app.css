@@ -67,9 +67,9 @@ a { color: var(--ttu-primary-green); }
 .password-reset-notice i { color: var(--ttu-primary-green); font-size: 1rem; margin-top: .05rem; }
 .password-reset-notice p { margin: 0; }
 .password-reset-support-link { justify-content: flex-start; }
-.app-shell { align-items: stretch; display: flex; min-height: 100vh; min-height: 100dvh; width: 100%; }
-.hub-sidebar { --bs-offcanvas-width: 285px; background: linear-gradient(180deg, #003f00 0%, var(--ttu-dark-green) 55%, #003600 100%); border: 0; color: var(--ttu-white); flex: 0 0 285px; width: 285px; }
-.sidebar-inner { display: flex; flex-direction: column; height: 100%; min-height: 100vh; padding: 1rem; }
+.app-shell { --app-sidebar-width: clamp(285px, 19vw, 400px); align-items: stretch; display: flex; min-height: 100vh; min-height: 100dvh; width: 100%; }
+.hub-sidebar { --bs-offcanvas-width: var(--app-sidebar-width); background: linear-gradient(180deg, #003f00 0%, var(--ttu-dark-green) 55%, #003600 100%); border: 0; color: var(--ttu-white); flex: 0 0 var(--app-sidebar-width); max-width: var(--app-sidebar-width); width: var(--app-sidebar-width); }
+.sidebar-inner { display: flex; flex-direction: column; height: 100%; min-height: 100vh; min-height: 100dvh; padding: 1rem; }
 .sidebar-mobile-header { border-bottom: 1px solid rgba(255,255,255,.12); }
 .sidebar-brand { color: var(--ttu-white); display: block; padding: .2rem .25rem 1.2rem; text-align: center; text-decoration: none; }
 .sidebar-brand:hover { color: var(--ttu-white); }
@@ -506,8 +506,25 @@ textarea.form-control { min-height: auto; }
 .live-indicator { color: var(--ttu-danger); font-size: .75rem; font-weight: 600; text-transform: uppercase; }
 .live-indicator::before { animation: pulse 1.8s infinite; background: var(--ttu-danger); border-radius: 50%; content: ""; display: inline-block; height: 8px; margin-right: .4rem; width: 8px; }
 @keyframes pulse { 50% { opacity: .35; } }
-@media (min-width: 992px) { .hub-sidebar { height: 100vh; position: sticky; top: 0; } }
-@media (max-width: 991.98px) { .hub-sidebar { width: var(--bs-offcanvas-width); } .sidebar-inner { min-height: calc(100vh - 61px); } }
+@media (min-width: 992px) {
+    .hub-sidebar { align-self: flex-start; height: 100vh; height: 100dvh; min-height: 100vh; min-height: 100dvh; overflow-y: auto; position: sticky; top: 0; }
+    .sidebar-inner { height: auto; min-height: 100%; }
+}
+@media (min-width: 1600px) {
+    .sidebar-inner { padding: 1.25rem clamp(1.1rem, 1.2vw, 1.5rem); }
+    .sidebar-logo-panel { height: 150px; margin-bottom: 1rem; width: 150px; }
+    .sidebar-brand-name { font-size: .76rem; letter-spacing: .055em; }
+    .sidebar-navigation { padding-top: .85rem; }
+    .sidebar-link { font-size: .96rem; gap: 1rem; padding: .9rem 1rem; }
+    .sidebar-link i { font-size: 1.18rem; width: 1.45rem; }
+    .sidebar-account { padding-top: 1.2rem; }
+    .sidebar-user-copy strong { font-size: .84rem; }
+    .sidebar-user-copy span { font-size: .72rem; }
+}
+@media (max-width: 991.98px) {
+    .hub-sidebar { --bs-offcanvas-width: min(86vw, 320px); flex-basis: auto; max-width: var(--bs-offcanvas-width); width: var(--bs-offcanvas-width); }
+    .sidebar-inner { min-height: calc(100vh - 61px); min-height: calc(100dvh - 61px); }
+}
 @media (max-width: 767.98px) { .public-navbar { padding: .5rem .75rem; } .public-logo { height: 58px; width: 58px; } .app-topbar { min-height: 64px; padding: .55rem .75rem; } .topbar-title strong { font-size: 1rem; } .topbar-title span { display: none; } .page-heading { align-items: stretch; flex-direction: column; } .page-heading > .btn, .page-heading > div:last-child { width: 100%; } .form-card-heading { align-items: flex-start; } .form-card-icon { flex-basis: 48px; font-size: 1.3rem; height: 48px; } .attendance-search-card { padding: 1rem; } .attendance-name-form { grid-template-columns: 1fr; } .attendance-name-field { max-width: none; } .attendance-search-actions { flex-wrap: wrap; } .attendance-search-actions .btn:first-child { flex: 1; } .attendance-results-header, .presence-dashboard-heading, .presence-table-header, .student-dashboard-heading, .student-history-header { align-items: flex-start; flex-direction: column; } .presence-stat-card { min-height: 130px; } .presence-updated, .student-dashboard-date { align-self: flex-start; } .daily-attendance-header { align-items: flex-start; padding: 1rem; } .daily-attendance-form { padding: 1rem; } .daily-form-footer { align-items: stretch; flex-direction: column; } .daily-form-footer .btn { width: 100%; } .detail-list { grid-template-columns: 1fr; gap: .2rem; } .detail-list dd { margin-bottom: .7rem; } .content-card > .table-responsive { border-radius: .9rem; } }
 @media (max-width: 767.98px) { .password-auth-heading h1 { font-size: 1.75rem; } .password-auth-footer a { flex-basis: 100%; margin-left: 0; } }
 @media (max-width: 767.98px) { .innovator-record-toolbar > span { display: none; } .innovator-record-hero, .innovator-record-identity, .record-attendance-heading, .record-access-card { align-items: flex-start; flex-direction: column; } .innovator-record-hero { padding: 1.15rem; } .innovator-record-avatar { flex-basis: 76px; height: 76px; width: 76px; } .innovator-name-line h1 { font-size: 1.8rem; } .innovator-record-actions, .innovator-record-actions form, .innovator-record-actions .btn, .record-access-card form, .record-access-card .btn { width: 100%; } .record-detail-list > div { grid-template-columns: 1fr; gap: .25rem; } .record-attendance-heading { gap: .8rem; } }
