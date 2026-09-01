@@ -62,7 +62,7 @@ Each innovator can own multiple projects. Every project records:
 - Detailed description
 - Area of focus
 
-Innovators add projects from their dashboard. Project creation is transactional, duplicate names for the same innovator are rejected case-insensitively, and every successful addition creates an audit record. Administrators can see the innovator's complete project portfolio, including each project's details and area of focus, from the innovator record page. Project names and focus areas are also searchable in the innovator directory and included in the CSV export.
+Innovators add projects from the dedicated **My projects** page linked in their sidebar. Project creation is transactional, duplicate names for the same innovator are rejected case-insensitively, and every successful addition creates an audit record. Administrators can see the innovator's complete project portfolio, including each project's details and area of focus, from the innovator record page. Project names and focus areas are also searchable in the innovator directory and included in the CSV export.
 
 The upgrade copies every existing profile project into the new portfolio model. Existing descriptions are retained; projects created before areas of focus were collected are marked `Not specified` rather than being assigned invented information.
 
@@ -101,7 +101,7 @@ The innovator workspace provides:
 
 - A centered personalized welcome to Tsavo Hub Management System
 - Hub booking form
-- Project creation form and complete project portfolio
+- Sidebar access to the dedicated project creation and portfolio page
 - Monthly booking and admitted-visit totals
 - Recent booking records
 - A private booking-history page
@@ -296,6 +296,7 @@ With `DEBUG=False`, the SMTP backend is selected automatically. Verify the sende
 
 /innovators/profile/
 /innovators/profile/edit/
+/innovators/projects/
 /innovators/manage/
 /innovators/export/
 /innovators/create/

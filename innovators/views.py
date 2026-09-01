@@ -15,9 +15,20 @@ from auditlog.models import AuditLog
 from auditlog.services import record_audit
 from core.permissions import admin_required, innovator_required
 
-from .forms import InnovatorAdminUpdateForm, InnovatorCreateForm, InnovatorSelfUpdateForm
+from .forms import (
+    InnovatorAdminUpdateForm,
+    InnovatorCreateForm,
+    InnovatorProjectForm,
+    InnovatorSelfUpdateForm,
+)
 from .models import InnovatorProfile
-from .services import create_innovator, send_deactivation_email, update_innovator
+from .services import (
+    ProjectError,
+    create_innovator,
+    create_project,
+    send_deactivation_email,
+    update_innovator,
+)
 
 
 def _spreadsheet_safe(value):
@@ -195,6 +206,35 @@ def my_profile(request):
     )
 
 
+@innovator_required
+def my_projects(request):
+    profile = get_object_or_404(
+        InnovatorProfile.objects.select_related("user").prefetch_related("projects"),
+        user=request.user,
+    )
+    form = InnovatorProjectForm(request.POST or None, profile=profile)
+    if request.method == "POST" and form.is_valid():
+        try:
+            project = create_project(
+                profile,
+                **form.cleaned_data,
+                actor=request.user,
+                request=request,
+            )
+        except ProjectError as exc:
+            form.add_error(None, str(exc))
+        else:
+            messages.success(request, f'Project "{project.name}" was added to your portfolio.')
+            return redirect("innovators:projects")
+    return render(
+        request,
+        "innovators/projects.html",
+        {
+            "form": form,
+            "projects": profile.projects.all(),
+            "project_count": profile.projects.count(),
+        },
+    )
 @innovator_required
 def edit_my_profile(request):
     profile = get_object_or_404(InnovatorProfile, user=request.user)

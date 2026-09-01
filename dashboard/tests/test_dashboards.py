@@ -123,23 +123,29 @@ class InnovatorDashboardTests(TestCase):
             response, f"Welcome, {self.user.first_name}, to Tsavo Hub Management System"
         )
         self.assertContains(response, "Book a hub visit")
-        self.assertContains(response, "Add a project")
+        self.assertContains(response, "My projects")
+        self.assertNotContains(response, 'id="add-project-title"')
+        self.assertNotContains(response, "Work done during this period")
+
+    def test_projects_have_a_dedicated_page(self):
+        response = self.client.get(reverse("innovators:projects"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="add-project-title"')
         self.assertContains(response, "Project portfolio")
         self.assertContains(response, "BlueWatch")
-        self.assertNotContains(response, "Work done during this period")
 
     def test_innovator_can_add_a_project_with_details_and_focus_area(self):
         response = self.client.post(
-            reverse("dashboard:innovator"),
+            reverse("innovators:projects"),
             {
-                "action": "add_project",
                 "name": "Afya Link",
                 "details": "A remote health consultation and patient follow-up platform.",
                 "area_of_focus": "Digital health",
             },
         )
 
-        self.assertRedirects(response, reverse("dashboard:innovator"))
+        self.assertRedirects(response, reverse("innovators:projects"))
         project = InnovatorProject.objects.get(
             profile=self.user.innovator_profile, name="Afya Link"
         )
@@ -154,9 +160,8 @@ class InnovatorDashboardTests(TestCase):
 
     def test_project_requires_details_and_rejects_duplicate_name(self):
         response = self.client.post(
-            reverse("dashboard:innovator"),
+            reverse("innovators:projects"),
             {
-                "action": "add_project",
                 "name": "bluewatch",
                 "details": "Too short",
                 "area_of_focus": "IoT",

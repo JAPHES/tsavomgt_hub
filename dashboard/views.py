@@ -12,8 +12,6 @@ from attendance.forms import HubBookingForm
 from attendance.models import HubBooking
 from attendance.services import BookingError, admit_booking, create_booking
 from core.permissions import admin_required, innovator_required
-from innovators.forms import InnovatorProjectForm
-from innovators.services import ProjectError, create_project
 
 from .forms import AttendanceFilterForm
 
@@ -35,17 +33,8 @@ def dashboard_index(request):
 
 @innovator_required
 def innovator_dashboard(request):
-    profile = request.user.innovator_profile
-    action = request.POST.get("action", "") if request.method == "POST" else ""
-    if not action and request.method == "POST":
-        action = "book_visit" if "visit_date" in request.POST else "add_project"
-    booking_form = HubBookingForm(
-        request.POST if action == "book_visit" else None, innovator=request.user
-    )
-    project_form = InnovatorProjectForm(
-        request.POST if action == "add_project" else None, profile=profile
-    )
-    if action == "book_visit" and booking_form.is_valid():
+    booking_form = HubBookingForm(request.POST or None, innovator=request.user)
+    if request.method == "POST" and booking_form.is_valid():
         try:
             booking = create_booking(request.user, **booking_form.cleaned_data)
         except BookingError as exc:
@@ -56,19 +45,6 @@ def innovator_dashboard(request):
                 f"Your hub visit for {booking.visit_date:%d %B %Y} at "
                 f"{booking.arrival_time:%H:%M} has been booked.",
             )
-            return redirect("dashboard:innovator")
-    if action == "add_project" and project_form.is_valid():
-        try:
-            project = create_project(
-                profile,
-                **project_form.cleaned_data,
-                actor=request.user,
-                request=request,
-            )
-        except ProjectError as exc:
-            project_form.add_error(None, str(exc))
-        else:
-            messages.success(request, f'Project "{project.name}" was added to your portfolio.')
             return redirect("dashboard:innovator")
     now = timezone.now()
     today = timezone.localdate(now)
@@ -85,9 +61,6 @@ def innovator_dashboard(request):
         {
             "now": now,
             "booking_form": booking_form,
-            "project_form": project_form,
-            "projects": profile.projects.all(),
-            "project_count": profile.projects.count(),
             "upcoming_bookings": upcoming_bookings[:5],
             "recent_bookings": bookings[:7],
             "bookings_this_month": bookings_this_month.count(),

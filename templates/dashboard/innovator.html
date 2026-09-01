@@ -67,42 +67,6 @@
     </div>
 </div>
 
-<div class="row g-4 project-dashboard-grid">
-    <div class="col-xl-5">
-        <section class="project-form-card h-100" aria-labelledby="add-project-title">
-            <div class="project-section-heading">
-                <span><i class="bi bi-lightbulb-fill" aria-hidden="true"></i></span>
-                <div><p class="eyebrow">Grow your portfolio</p><h2 id="add-project-title">Add a project</h2><small>Record each innovation separately with its focus and full details.</small></div>
-            </div>
-            <form method="post" novalidate>
-                {% csrf_token %}
-                <input type="hidden" name="action" value="add_project">
-                {% include "includes/form_fields.html" with form=project_form %}
-                <button class="btn btn-primary w-100" type="submit"><i class="bi bi-plus-circle me-2" aria-hidden="true"></i>Add project to portfolio</button>
-            </form>
-        </section>
-    </div>
-    <div class="col-xl-7">
-        <section class="project-portfolio-card h-100" aria-labelledby="portfolio-title">
-            <div class="project-portfolio-heading">
-                <div><p class="eyebrow">Your innovations</p><h2 id="portfolio-title">Project portfolio</h2><span>All projects associated with your innovator profile.</span></div>
-                <strong>{{ project_count }} project{{ project_count|pluralize }}</strong>
-            </div>
-            <div class="project-card-list">
-                {% for project in projects %}
-                    <article class="project-card-item">
-                        <div class="project-card-title"><h3>{{ project.name }}</h3><span class="project-focus-badge">{{ project.area_of_focus }}</span></div>
-                        <p>{{ project.details|linebreaksbr }}</p>
-                        <small>Added {{ project.created_at|date:"d M Y" }}</small>
-                    </article>
-                {% empty %}
-                    <div class="project-empty-state"><i class="bi bi-lightbulb" aria-hidden="true"></i><p>Add your first project using the form.</p></div>
-                {% endfor %}
-            </div>
-        </section>
-    </div>
-</div>
-
 <section class="card content-card student-history-card">
     <div class="student-history-header">
         <div><h2>Recent bookings</h2><p>Your latest planned and admitted hub visits.</p></div>

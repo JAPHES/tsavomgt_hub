@@ -57,10 +57,13 @@
                         <i class="bi bi-shield-check" aria-hidden="true"></i><span>Audit records</span>
                     </a>
                 {% elif user.role == 'INNOVATOR' %}
+                    <a class="sidebar-link {% if request.resolver_match.namespace == 'innovators' and request.resolver_match.url_name == 'projects' %}active{% endif %}" href="{% url 'innovators:projects' %}">
+                        <i class="bi bi-lightbulb-fill" aria-hidden="true"></i><span>My projects</span>
+                    </a>
                     <a class="sidebar-link {% if request.resolver_match.namespace == 'attendance' %}active{% endif %}" href="{% url 'attendance:booking-history' %}">
                         <i class="bi bi-calendar2-check-fill" aria-hidden="true"></i><span>My bookings</span>
                     </a>
-                    <a class="sidebar-link {% if request.resolver_match.namespace == 'innovators' %}active{% endif %}" href="{% url 'innovators:profile' %}">
+                    <a class="sidebar-link {% if request.resolver_match.namespace == 'innovators' and request.resolver_match.url_name == 'profile' or request.resolver_match.namespace == 'innovators' and request.resolver_match.url_name == 'profile-edit' %}active{% endif %}" href="{% url 'innovators:profile' %}">
                         <i class="bi bi-person-circle" aria-hidden="true"></i><span>My profile</span>
                     </a>
                 {% endif %}

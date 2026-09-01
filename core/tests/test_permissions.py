@@ -83,6 +83,7 @@ class PermissionTests(TestCase):
             rendered_html.index('class="hub-footer'),
         )
         self.assertEqual(self.client.get(reverse("innovators:create")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("innovators:projects")).status_code, 403)
         self.assertEqual(self.client.get(reverse("dashboard:bookings")).status_code, 200)
         self.assertEqual(self.client.get(reverse("auditlog:list")).status_code, 200)
         session_response = self.client.get(
@@ -140,12 +141,20 @@ class PermissionTests(TestCase):
                 self.assertContains(response, "mobile-card-table")
 
         self.client.force_login(self.innovator)
-        for route_name in ("dashboard:innovator", "attendance:booking-history"):
+        for route_name in (
+            "dashboard:innovator",
+            "attendance:booking-history",
+        ):
             with self.subTest(route_name=route_name):
                 response = self.client.get(reverse(route_name))
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'data-bs-target="#hubSidebar"')
                 self.assertContains(response, "mobile-card-table")
+
+        projects_response = self.client.get(reverse("innovators:projects"))
+        self.assertEqual(projects_response.status_code, 200)
+        self.assertContains(projects_response, 'data-bs-target="#hubSidebar"')
+        self.assertContains(projects_response, 'class="project-card-list"')
 
     def test_administrator_innovator_record_shows_profile_and_booking_summary(self):
         InnovatorProject.objects.create(
