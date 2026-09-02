@@ -5,18 +5,18 @@
     <div>
         <p class="eyebrow">Booking management</p>
         <h1>Hub booking records</h1>
-        <p>Find an innovator by name and review their planned and admitted visits.</p>
+        
     </div>
 </div>
 
 <section class="attendance-search-card" aria-labelledby="booking-search-title">
     <div class="attendance-search-intro">
         <div class="attendance-search-icon"><i class="bi bi-person-search" aria-hidden="true"></i></div>
-        <div><h2 id="booking-search-title">Find innovator bookings</h2><p>Search using the innovator's first name, last name, or full name.</p></div>
+        <div><h2 id="booking-search-title">Find innovator bookings</h2></div>
     </div>
     <form method="get" class="attendance-name-form" role="search" novalidate>
         <div class="attendance-name-field">
-            <label class="form-label" for="{{ form.innovator_name.id_for_label }}">{{ form.innovator_name.label }}</label>
+            <!--label class="form-label" for="{{ form.innovator_name.id_for_label }}">{{ form.innovat_name.label }}</label!-->
             <div class="search-input-wrap"><i class="bi bi-search" aria-hidden="true"></i>{{ form.innovator_name }}</div>
             {% for error in form.innovator_name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
@@ -31,7 +31,7 @@
     <div class="attendance-results-header">
         <div>
             <h2 id="booking-results-title">{% if filter_applied %}Search results{% else %}All booking records{% endif %}</h2>
-            {% if filter_applied %}<p>Showing bookings matching “{{ form.innovator_name.value }}”.</p>{% else %}<p>Newest planned visits appear first.</p>{% endif %}
+            {% if filter_applied %}<p>Showing bookings matching “{{ form.innovator_name.value }}”.</p>{% else %}{% endif %}
         </div>
         <span class="record-count"><i class="bi bi-calendar2-check" aria-hidden="true"></i>{{ page_obj.paginator.count }} booking{{ page_obj.paginator.count|pluralize }}</span>
     </div>
