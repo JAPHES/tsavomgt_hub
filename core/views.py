@@ -13,7 +13,14 @@ def permission_denied_view(request, exception=None):
 
 
 def page_not_found_view(request, exception=None):
-    return render(request, "errors/404.html", status=404)
+    response = render(
+        request,
+        "errors/404.html",
+        {"requested_path": request.path},
+        status=404,
+    )
+    response["X-Tsavo-Error-Page"] = "404"
+    return response
 
 
 def server_error_view(request):
