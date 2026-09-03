@@ -1,3 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Page not found{% endblock %}
-{% block content %}<div class="empty-state"><h1>Page not found</h1><p>The requested page could not be found.</p><a class="btn btn-primary" href="{% url 'core:home' %}">Return home</a></div>{% endblock %}
+{% block content %}
+<section class="not-found-page" aria-labelledby="not-found-heading">
+    <div class="not-found-card">
+        <div class="not-found-code" aria-hidden="true">404</div>
+        <span class="not-found-icon" aria-hidden="true"><i class="bi bi-signpost-split"></i></span>
+        <p class="eyebrow">Page not found</p>
+        <h1 id="not-found-heading">This page is not available</h1>
+        <a class="btn btn-primary not-found-action" href="{% url 'dashboard:index' %}">
+            <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Go back to dashboard
+        </a>
+    </div>
+</section>
+{% endblock %}
