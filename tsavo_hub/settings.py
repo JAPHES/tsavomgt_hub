@@ -163,7 +163,7 @@ STORAGES = {
     },
 }
 MEDIA_URL = "/media/"
-MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", BASE_DIR / "media"))
+MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT") or BASE_DIR / "media")
 # Bump this value for deployments that change local CSS or JavaScript. The
 # version is appended to shared asset URLs so browsers do not reuse stale files.
 STATIC_VERSION = os.getenv("STATIC_VERSION", "20260903.1")
