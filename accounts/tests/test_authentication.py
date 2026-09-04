@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.core import mail
 from django.test import TestCase, override_settings
+from django.templatetags.static import static
 from django.urls import reverse
 
 from accounts.models import User
@@ -31,8 +32,8 @@ class AuthenticationTests(TestCase):
         self.assertContains(response, 'class="login-welcome-panel"')
         self.assertContains(response, 'class="login-form-panel"')
         self.assertContains(response, "Tsavo Hub Management System")
-        self.assertContains(response, "/static/css/app.css?v=test-ui-version")
-        self.assertContains(response, "/static/js/app.js?v=test-ui-version")
+        self.assertContains(response, f'{static("css/app.css")}?v=test-ui-version')
+        self.assertContains(response, f'{static("js/app.js")}?v=test-ui-version')
         self.assertNotContains(response, "Activate account")
         self.assertNotContains(
             response, "Supported by Taita Taveta University &ndash; Home of Ideas"
