@@ -119,6 +119,8 @@ The separate booking-records page searches by innovator name only.
 tsavo_hub/
 |-- manage.py
 |-- requirements.txt
+|-- .python-version # Python runtime used by Render
+|-- build.sh        # Render dependency, static-file and migration build
 |-- .env.example
 |-- README.md
 |-- tsavo_hub/       # Settings, root URLs, ASGI and WSGI
@@ -191,19 +193,24 @@ Supported deployment variables include:
 SECRET_KEY
 DEBUG
 ALLOWED_HOSTS
+RENDER_EXTERNAL_HOSTNAME
 DATABASE_URL
+EMAIL_BACKEND
 EMAIL_HOST
 EMAIL_PORT
 EMAIL_HOST_USER
 EMAIL_HOST_PASSWORD
 EMAIL_USE_TLS
+EMAIL_TIMEOUT
 DEFAULT_FROM_EMAIL
+SITE_URL
 PASSWORD_RESET_TIMEOUT
 SECURE_SSL_REDIRECT
 CSRF_TRUSTED_ORIGINS
 SITE_LOGO_URL
 STATIC_VERSION
 TRUST_PROXY_SSL_HEADER
+MEDIA_ROOT
 ```
 
 `SITE_LOGO_URL` may point to an authorized deployment-specific logo. When it is blank, the application uses `static/image/tsavo_logo.jpeg`.
@@ -309,6 +316,7 @@ With `DEBUG=False`, the SMTP backend is selected automatically. Verify the sende
 /dashboard/bookings/
 
 /audit/
+/health/
 ```
 
 All management, export, booking, admission, legacy attendance-review, and audit routes enforce authorization on the server. Navigation visibility is not treated as a security boundary. Hub bookings and retained attendance records are read-only in Django Admin; admission occurs only through the protected application workflow.
@@ -332,6 +340,85 @@ For a production configuration review, provide non-placeholder environment value
 ```powershell
 py manage.py check --deploy
 ```
+
+## Deploying on Render
+
+Use one Render web service and one Render PostgreSQL database in the same region. The repository's executable `build.sh` installs the dependencies, collects production static assets, applies migrations, and runs Django's deployment checks. WhiteNoise serves the collected static assets, while `/health/` confirms that the web process can reach PostgreSQL.
+
+### Important plan choice
+
+For a real Tsavo Hub deployment, use a paid Render web instance and a paid PostgreSQL instance:
+
+- Free Render web services block outbound SMTP ports `25`, `465`, and `587`. Gmail activation and password-reset messages therefore cannot work from a free web instance.
+- A free Render PostgreSQL database expires after 30 days and has no backups.
+- Render's service filesystem is ephemeral. Profile photos require either a paid persistent disk mounted at `/opt/render/project/src/media` with `MEDIA_ROOT` set to that path, or a separately configured object-storage service.
+- Free web services do not provide Render Shell access, which is needed by the documented first-administrator workflow.
+
+The free plans are suitable only for a short interface test where email delivery, permanent data, and permanent profile photos are not required. Do not enter production data on them.
+
+### Create the database
+
+1. In Render, select **New > Postgres**.
+2. Name it `tsavo-hub-db` and choose the region that will also be used by the web service.
+3. Select a paid database plan for permanent use, then create the database.
+4. Keep its **Internal Database URL** available. Do not copy it into GitHub or any repository file.
+
+### Create the web service
+
+1. Select **New > Web Service** and choose the connected `tsavomgt_hub` repository.
+2. Use the `master` branch and the Python runtime.
+3. Choose the same region as the PostgreSQL database and a paid web plan when Gmail delivery is required.
+4. Set **Build Command** to `./build.sh`.
+5. Set **Start Command** to:
+
+   ```text
+   python -m gunicorn tsavo_hub.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile -
+   ```
+
+6. Set **Health Check Path** to `/health/`.
+7. Enable automatic deploys from `master` only after the first deployment is stable.
+
+Add these non-secret environment variables:
+
+```dotenv
+DEBUG=False
+ALLOWED_HOSTS=tsavohub.secora.dev
+CSRF_TRUSTED_ORIGINS=https://tsavohub.secora.dev
+SITE_URL=https://tsavohub.secora.dev
+SECURE_SSL_REDIRECT=True
+TRUST_PROXY_SSL_HEADER=True
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=tsavohub.noreply@gmail.com
+EMAIL_USE_TLS=True
+EMAIL_TIMEOUT=10
+DEFAULT_FROM_EMAIL=Tsavo Hub <tsavohub.noreply@gmail.com>
+```
+
+Add these protected values through Render's environment-variable screen:
+
+- `SECRET_KEY`: use Render's **Generate** option.
+- `DATABASE_URL`: select the internal connection string from `tsavo-hub-db`.
+- `EMAIL_HOST_PASSWORD`: enter the Gmail app password without spaces and never commit it.
+
+If a persistent disk is attached for profile photos, also set:
+
+```dotenv
+MEDIA_ROOT=/opt/render/project/src/media
+```
+
+Deploy the service and wait until the build log shows successful static collection, migrations, deployment checks, and a healthy web process. Open its temporary `.onrender.com` address and verify `/health/` returns `{"status": "ok"}`.
+
+### Create the first administrator and connect the domain
+
+From the paid web service's Render Shell, run:
+
+```bash
+python manage.py createsuperuser
+```
+
+Then add `tsavohub.secora.dev` under the web service's **Settings > Custom Domains**. At the DNS provider for `secora.dev`, create the exact CNAME record Render displays for the `tsavohub` host, return to Render, and verify the domain. Render provisions and renews HTTPS automatically. Test administrator login, innovator creation, Gmail delivery, the forced first-login password change, a booking, and admission before entering real records.
 
 ## Production deployment considerations
 
