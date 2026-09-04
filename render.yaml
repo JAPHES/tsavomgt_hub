@@ -36,6 +36,12 @@ services:
         sync: false
       - key: BREVO_API_KEY
         sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+      - key: ASSISTANT_SUPPORT_EMAIL
+        sync: false
+      - key: SUPPORT_PHONE
+        sync: false
       - key: CLOUDINARY_URL
         sync: false
       - key: INITIAL_ADMIN_EMAIL

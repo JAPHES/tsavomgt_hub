@@ -199,6 +199,9 @@ RENDER_EXTERNAL_HOSTNAME
 DATABASE_URL
 EMAIL_BACKEND
 BREVO_API_KEY
+SUPPORT_EMAIL
+ASSISTANT_SUPPORT_EMAIL
+SUPPORT_PHONE
 EMAIL_HOST
 EMAIL_PORT
 EMAIL_HOST_USER
@@ -380,12 +383,19 @@ when requested, and runs Django's deployment checks.
      `sslmode=require`. Use the direct rather than pooled hostname because the
      build runs database migrations.
    - `BREVO_API_KEY`: the transactional-email API key created in Brevo.
+   - `SUPPORT_EMAIL`: the primary Hub Administration support address.
+   - `ASSISTANT_SUPPORT_EMAIL`: the assistant administrator's support address.
+   - `SUPPORT_PHONE`: the support telephone number in international format.
    - `CLOUDINARY_URL`: the complete value copied from Cloudinary in the form
      `cloudinary://API_KEY:API_SECRET@CLOUD_NAME`.
    - `INITIAL_ADMIN_EMAIL`: the email address for the first Tsavo Hub
      administrator.
    - `INITIAL_ADMIN_PASSWORD`: a unique password of at least 10 characters that
      is not common, numeric-only, or similar to the administrator details.
+
+For an existing Blueprint, add newly introduced `sync: false` variables manually
+under the web service's **Environment** page. Render prompts for protected values
+only during the Blueprint's initial creation.
 
 Do not paste any of these values into GitHub, `render.yaml`, README files, issue
 comments, or chat messages. Render generates `SECRET_KEY` automatically.

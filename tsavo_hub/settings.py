@@ -204,6 +204,9 @@ DEFAULT_FROM_EMAIL = os.getenv(
 )
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000").rstrip("/")
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "").strip()
+ASSISTANT_SUPPORT_EMAIL = os.getenv("ASSISTANT_SUPPORT_EMAIL", "").strip()
+SUPPORT_PHONE = os.getenv("SUPPORT_PHONE", "").strip()
 
 LOGGING = {
     "version": 1,
