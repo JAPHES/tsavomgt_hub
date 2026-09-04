@@ -43,6 +43,9 @@ def _send_temporary_credentials_email(user, temporary_password, *, login_url, re
         "temporary_password": temporary_password,
         "login_url": login_url,
         "reissued": reissued,
+        "support_email": settings.SUPPORT_EMAIL,
+        "assistant_support_email": settings.ASSISTANT_SUPPORT_EMAIL,
+        "support_phone": settings.SUPPORT_PHONE,
     }
     subject = (
         "Your new Tsavo Hub temporary login credentials"
@@ -51,7 +54,14 @@ def _send_temporary_credentials_email(user, temporary_password, *, login_url, re
     )
     text_body = render_to_string("emails/account_credentials.txt", context)
     html_body = render_to_string("emails/account_credentials.html", context)
-    message = EmailMultiAlternatives(subject, text_body, settings.DEFAULT_FROM_EMAIL, [user.email])
+    reply_to = [settings.SUPPORT_EMAIL] if settings.SUPPORT_EMAIL else None
+    message = EmailMultiAlternatives(
+        subject,
+        text_body,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        reply_to=reply_to,
+    )
     message.attach_alternative(html_body, "text/html")
     try:
         message.send(fail_silently=False)

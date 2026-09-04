@@ -308,6 +308,27 @@ class AdministratorAccountCreationTests(TestCase):
         audit = AuditLog.objects.get(action=AuditLog.Action.ACCOUNT_CREATED)
         self.assertNotIn(TEMPORARY_PASSWORD, str(audit.new_values))
 
+    @override_settings(
+        SUPPORT_EMAIL="hub-support@example.com",
+        ASSISTANT_SUPPORT_EMAIL="assistant@example.com",
+        SUPPORT_PHONE="+254700000000",
+    )
+    @patch("accounts.services.generate_temporary_password", return_value=TEMPORARY_PASSWORD)
+    def test_credentials_email_includes_configured_support_contacts(self, generator):
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(reverse("innovators:create"), self.data)
+
+        message = mail.outbox[0]
+        html_body = message.alternatives[0].content
+        self.assertIn("hub-support@example.com", message.body)
+        self.assertIn("assistant@example.com", message.body)
+        self.assertIn("+254700000000", message.body)
+        self.assertIn("hub-support@example.com", html_body)
+        self.assertIn("assistant@example.com", html_body)
+        self.assertIn("+254700000000", html_body)
+        self.assertEqual(message.reply_to, ["hub-support@example.com"])
+        generator.assert_called_once_with()
+
     def test_duplicate_email_is_rejected(self):
         create_innovator(email=self.data["email"], registration_number="OTHER/001")
         response = self.client.post(reverse("innovators:create"), self.data)
