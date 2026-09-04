@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "anymail",
     "core",
     "accounts",
     "innovators",
@@ -176,10 +177,12 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", "3600"))
 MESSAGE_TAGS = {message_constants.ERROR: "danger"}
 
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY}
 DEFAULT_EMAIL_BACKEND = (
     "django.core.mail.backends.console.EmailBackend"
     if DEBUG
-    else "django.core.mail.backends.smtp.EmailBackend"
+    else "anymail.backends.brevo.EmailBackend"
 )
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", DEFAULT_EMAIL_BACKEND)
 EMAIL_HOST = os.getenv("EMAIL_HOST", "")
@@ -188,7 +191,11 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Tsavo Hub <noreply@localhost>")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    "Tsavo Innovation & Incubation Hub <noreply@secora.dev>",
+)
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
 SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000").rstrip("/")
 
 SESSION_COOKIE_HTTPONLY = True
