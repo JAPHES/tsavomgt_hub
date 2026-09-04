@@ -7,6 +7,9 @@
         <span class="not-found-icon" aria-hidden="true"><i class="bi bi-signpost-split"></i></span>
         <p class="eyebrow">Page not found</p>
         <h1 id="not-found-heading">This page is not available</h1>
+        {% if requested_path %}
+            <p class="text-muted">No page exists at <code>{{ requested_path }}</code>.</p>
+        {% endif %}
         <a class="btn btn-primary not-found-action" href="{% url 'dashboard:index' %}">
             <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Go back to dashboard
         </a>
