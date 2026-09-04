@@ -1,3 +1,4 @@
+import logging
 import secrets
 import string
 
@@ -13,7 +14,14 @@ from auditlog.services import record_audit
 from .models import User
 
 
+logger = logging.getLogger(__name__)
+
+
 class TemporaryCredentialError(Exception):
+    pass
+
+
+class TemporaryCredentialDeliveryError(TemporaryCredentialError):
     pass
 
 
@@ -45,7 +53,17 @@ def _send_temporary_credentials_email(user, temporary_password, *, login_url, re
     html_body = render_to_string("emails/account_credentials.html", context)
     message = EmailMultiAlternatives(subject, text_body, settings.DEFAULT_FROM_EMAIL, [user.email])
     message.attach_alternative(html_body, "text/html")
-    message.send(fail_silently=False)
+    try:
+        message.send(fail_silently=False)
+    except Exception as exc:
+        logger.exception(
+            "Temporary-credentials email delivery failed for user_id=%s.",
+            user.pk,
+        )
+        raise TemporaryCredentialDeliveryError(
+            "Credentials were saved, but the email could not be delivered. "
+            "Check the email service configuration and try reissuing them."
+        ) from exc
 
 
 def issue_temporary_credentials(user, *, actor=None, request=None, reissued=False):

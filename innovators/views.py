@@ -10,7 +10,11 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
-from accounts.services import TemporaryCredentialError, issue_temporary_credentials
+from accounts.services import (
+    TemporaryCredentialDeliveryError,
+    TemporaryCredentialError,
+    issue_temporary_credentials,
+)
 from auditlog.models import AuditLog
 from auditlog.services import record_audit
 from core.permissions import admin_required, innovator_required
@@ -87,7 +91,21 @@ def export_innovators(request):
 def innovator_create(request):
     form = InnovatorCreateForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        profile = create_innovator(form.cleaned_data, actor=request.user, request=request)
+        try:
+            profile = create_innovator(
+                form.cleaned_data,
+                actor=request.user,
+                request=request,
+            )
+        except TemporaryCredentialDeliveryError as exc:
+            profile = InnovatorProfile.objects.filter(
+                user__email__iexact=form.cleaned_data["email"]
+            ).first()
+            messages.error(request, str(exc))
+            if profile is not None:
+                return redirect("innovators:detail", pk=profile.pk)
+            form.add_error(None, str(exc))
+            return render(request, "innovators/create.html", {"form": form})
         messages.success(
             request,
             f"Account added for {profile.user.get_full_name()}. Temporary login credentials were emailed.",
@@ -126,7 +144,15 @@ def innovator_update(request, pk):
     profile = get_object_or_404(InnovatorProfile.objects.select_related("user"), pk=pk)
     form = InnovatorAdminUpdateForm(request.POST or None, request.FILES or None, instance=profile)
     if request.method == "POST" and form.is_valid():
-        _, email_changed = update_innovator(form, actor=request.user, request=request)
+        try:
+            _, email_changed = update_innovator(
+                form,
+                actor=request.user,
+                request=request,
+            )
+        except TemporaryCredentialDeliveryError as exc:
+            messages.error(request, str(exc))
+            return redirect("innovators:detail", pk=profile.pk)
         if email_changed:
             messages.success(
                 request,

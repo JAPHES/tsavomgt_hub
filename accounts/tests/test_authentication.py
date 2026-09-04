@@ -2,7 +2,7 @@ import string
 from unittest.mock import patch
 
 from django.core import mail
-from django.test import TestCase, override_settings
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.templatetags.static import static
 from django.urls import reverse
 
@@ -315,7 +315,10 @@ class AdministratorAccountCreationTests(TestCase):
         self.assertContains(response, "already exists")
 
     def test_duplicate_registration_number_is_rejected(self):
-        create_innovator(email="other@example.com", registration_number=self.data["registration_number"])
+        create_innovator(
+            email="other@example.com",
+            registration_number=self.data["registration_number"],
+        )
         response = self.client.post(reverse("innovators:create"), self.data)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "already in use")
@@ -348,3 +351,70 @@ class AdministratorAccountCreationTests(TestCase):
             action=AuditLog.Action.TEMPORARY_CREDENTIALS_REISSUED
         )
         self.assertNotIn(TEMPORARY_PASSWORD, str(audit.new_values))
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+class CredentialDeliveryFailureTests(TransactionTestCase):
+    def setUp(self):
+        self.admin = create_admin()
+        self.client.force_login(self.admin)
+
+    @patch("accounts.services.generate_temporary_password", return_value=TEMPORARY_PASSWORD)
+    @patch(
+        "accounts.services.EmailMultiAlternatives.send",
+        side_effect=RuntimeError("provider unavailable"),
+    )
+    def test_account_is_preserved_and_admin_sees_warning_when_delivery_fails(
+        self, send, generator
+    ):
+        with self.assertLogs("accounts.services", level="ERROR") as captured:
+            response = self.client.post(
+                reverse("innovators:create"),
+                {
+                    "first_name": "Neema",
+                    "last_name": "Mwangeka",
+                    "email": "neema@students.ttu.ac.ke",
+                    "registration_number": "TTU/INN/099",
+                    "phone_number": "0711223344",
+                },
+                follow=True,
+            )
+
+        profile = InnovatorProfile.objects.get(registration_number="TTU/INN/099")
+        self.assertRedirects(
+            response,
+            reverse("innovators:detail", kwargs={"pk": profile.pk}),
+        )
+        self.assertContains(response, "email could not be delivered")
+        self.assertTrue(profile.user.must_change_password)
+        generator.assert_called_once_with()
+        send.assert_called_once_with(fail_silently=False)
+        self.assertNotIn(TEMPORARY_PASSWORD, "\n".join(captured.output))
+
+    @patch(
+        "accounts.services.EmailMultiAlternatives.send",
+        side_effect=RuntimeError("provider unavailable"),
+    )
+    def test_reissue_redirects_with_warning_instead_of_server_error(self, send):
+        pending = create_innovator(
+            email="pending@example.com",
+            registration_number="TTU/INN/077",
+            password=make_test_password(),
+            must_change_password=True,
+        )
+
+        with self.assertLogs("accounts.services", level="ERROR"):
+            response = self.client.post(
+                reverse(
+                    "innovators:admin-reissue-credentials",
+                    kwargs={"pk": pending.innovator_profile.pk},
+                ),
+                follow=True,
+            )
+
+        self.assertRedirects(
+            response,
+            reverse("innovators:detail", kwargs={"pk": pending.innovator_profile.pk}),
+        )
+        self.assertContains(response, "email could not be delivered")
+        send.assert_called_once_with(fail_silently=False)
