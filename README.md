@@ -121,6 +121,7 @@ tsavo_hub/
 |-- requirements.txt
 |-- .python-version # Python runtime used by Render
 |-- build.sh        # Render dependency, static-file and migration build
+|-- render.yaml     # Free Render web-service Blueprint
 |-- .env.example
 |-- README.md
 |-- tsavo_hub/       # Settings, root URLs, ASGI and WSGI
@@ -141,7 +142,8 @@ tsavo_hub/
 - Django 6.0
 - SQLite for local development or PostgreSQL for production
 - Pillow for profile-photo handling
-- A production SMTP provider when real email delivery is required
+- A Brevo account for production transactional email
+- A Cloudinary account for production profile-photo storage
 
 Installable dependencies are pinned by compatible ranges in `requirements.txt`.
 
@@ -196,6 +198,7 @@ ALLOWED_HOSTS
 RENDER_EXTERNAL_HOSTNAME
 DATABASE_URL
 EMAIL_BACKEND
+BREVO_API_KEY
 EMAIL_HOST
 EMAIL_PORT
 EMAIL_HOST_USER
@@ -210,6 +213,11 @@ CSRF_TRUSTED_ORIGINS
 SITE_LOGO_URL
 STATIC_VERSION
 TRUST_PROXY_SSL_HEADER
+CLOUDINARY_URL
+INITIAL_ADMIN_EMAIL
+INITIAL_ADMIN_PASSWORD
+INITIAL_ADMIN_FIRST_NAME
+INITIAL_ADMIN_LAST_NAME
 MEDIA_ROOT
 ```
 
@@ -268,26 +276,31 @@ The forgot-password page uses the same branded two-panel layout as the login pag
 
 After upgrading an existing database, accounts that had not completed the former activation flow are preserved as pending. Open the innovator's administrator record and select **Reissue login credentials** to generate and email a usable temporary password.
 
-For production SMTP, use values similar to:
+Production uses Brevo's HTTPS API, which works on Render Free even though SMTP
+ports are blocked. Use values similar to:
 
 ```dotenv
 DEBUG=False
 SECRET_KEY=
-ALLOWED_HOSTS=hub.example.edu
+ALLOWED_HOSTS=tsavohub.secora.dev
 DATABASE_URL=postgresql://tsavo_user@database-host:5432/tsavo_hub
-EMAIL_HOST=smtp.example.edu
-EMAIL_PORT=587
-EMAIL_HOST_USER=smtp-account
-EMAIL_HOST_PASSWORD=
-EMAIL_USE_TLS=True
-DEFAULT_FROM_EMAIL=Tsavo Hub <noreply@example.edu>
+EMAIL_BACKEND=anymail.backends.brevo.EmailBackend
+BREVO_API_KEY=
+DEFAULT_FROM_EMAIL=Tsavo Innovation & Incubation Hub <noreply@secora.dev>
+CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
 SECURE_SSL_REDIRECT=True
-CSRF_TRUSTED_ORIGINS=https://hub.example.edu
+TRUST_PROXY_SSL_HEADER=True
+CSRF_TRUSTED_ORIGINS=https://tsavohub.secora.dev
 ```
 
-The blank `SECRET_KEY` and `EMAIL_HOST_PASSWORD` entries are deliberate. Supply them through the deployment platform's secret manager. Add the database password through the platform's protected `DATABASE_URL` value rather than committing it to documentation or source control.
+The blank `SECRET_KEY` and `BREVO_API_KEY` entries are deliberate. Supply them
+through the deployment platform's secret manager. Add the database password
+through the protected `DATABASE_URL` value rather than committing it to source
+control.
 
-With `DEBUG=False`, the SMTP backend is selected automatically. Verify the sender domain and delivery before onboarding real users.
+With `DEBUG=False`, the Brevo backend is selected automatically. Verify
+`secora.dev` in Brevo and keep `noreply@secora.dev` as an authenticated sender
+before onboarding real users.
 
 ## Main routes
 
@@ -343,82 +356,79 @@ py manage.py check --deploy
 
 ## Deploying on Render
 
-Use one Render web service and one Render PostgreSQL database in the same region. The repository's executable `build.sh` installs the dependencies, collects production static assets, applies migrations, and runs Django's deployment checks. WhiteNoise serves the collected static assets, while `/health/` confirms that the web process can reach PostgreSQL.
+The free deployment uses four services, each for one responsibility:
 
-### Important plan choice
+- Render Free runs the Django web application and serves collected static files
+  with WhiteNoise.
+- Neon stores PostgreSQL data outside Render's temporary filesystem.
+- Brevo sends transactional email over HTTPS rather than blocked SMTP ports.
+- Cloudinary stores uploaded profile photos outside Render's temporary filesystem.
 
-For a real Tsavo Hub deployment, use a paid Render web instance and a paid PostgreSQL instance:
+The committed `render.yaml` fixes the web service to Render's `free` plan and
+contains no secret values. The executable `build.sh` installs dependencies,
+collects static assets, applies migrations, safely creates the first administrator
+when requested, and runs Django's deployment checks.
 
-- Free Render web services block outbound SMTP ports `25`, `465`, and `587`. Gmail activation and password-reset messages therefore cannot work from a free web instance.
-- A free Render PostgreSQL database expires after 30 days and has no backups.
-- Render's service filesystem is ephemeral. Profile photos require either a paid persistent disk mounted at `/opt/render/project/src/media` with `MEDIA_ROOT` set to that path, or a separately configured object-storage service.
-- Free web services do not provide Render Shell access, which is needed by the documented first-administrator workflow.
+### Create the Blueprint
 
-The free plans are suitable only for a short interface test where email delivery, permanent data, and permanent profile photos are not required. Do not enter production data on them.
+1. In Render, open **Blueprints**, choose **New Blueprint Instance**, and connect
+   the `tsavomgt_hub` repository.
+2. Keep the Blueprint file path as `render.yaml` and apply it.
+3. Render will ask for each protected value marked `sync: false`. Enter:
 
-### Create the database
+   - `DATABASE_URL`: the Neon **direct** connection string, including
+     `sslmode=require`. Use the direct rather than pooled hostname because the
+     build runs database migrations.
+   - `BREVO_API_KEY`: the transactional-email API key created in Brevo.
+   - `CLOUDINARY_URL`: the complete value copied from Cloudinary in the form
+     `cloudinary://API_KEY:API_SECRET@CLOUD_NAME`.
+   - `INITIAL_ADMIN_EMAIL`: the email address for the first Tsavo Hub
+     administrator.
+   - `INITIAL_ADMIN_PASSWORD`: a unique password of at least 10 characters that
+     is not common, numeric-only, or similar to the administrator details.
 
-1. In Render, select **New > Postgres**.
-2. Name it `tsavo-hub-db` and choose the region that will also be used by the web service.
-3. Select a paid database plan for permanent use, then create the database.
-4. Keep its **Internal Database URL** available. Do not copy it into GitHub or any repository file.
+Do not paste any of these values into GitHub, `render.yaml`, README files, issue
+comments, or chat messages. Render generates `SECRET_KEY` automatically.
 
-### Create the web service
+The Blueprint supplies the remaining production configuration, including the
+Free plan, Frankfurt region, Gunicorn start command, `/health/` health check,
+Brevo backend, HTTPS security, and `tsavohub.secora.dev` host settings.
 
-1. Select **New > Web Service** and choose the connected `tsavomgt_hub` repository.
-2. Use the `master` branch and the Python runtime.
-3. Choose the same region as the PostgreSQL database and a paid web plan when Gmail delivery is required.
-4. Set **Build Command** to `./build.sh`.
-5. Set **Start Command** to:
+### Verify the first deployment
 
-   ```text
-   python -m gunicorn tsavo_hub.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile -
-   ```
+Wait for the deploy log to show successful migrations, an initial-administrator
+message, Django deployment checks, and a running Gunicorn process. Then:
 
-6. Set **Health Check Path** to `/health/`.
-7. Enable automatic deploys from `master` only after the first deployment is stable.
+1. Open the service's temporary `.onrender.com` URL.
+2. Open `/health/` and confirm the response is `{"status": "ok"}`.
+3. Sign in with `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD`.
+4. Change the administrator password from the application.
+5. In Render's **Environment** page, delete both `INITIAL_ADMIN_EMAIL` and
+   `INITIAL_ADMIN_PASSWORD`, save, and redeploy. Later deployments safely skip
+   bootstrap when these values are absent; they never replace an existing
+   administrator or password.
 
-Add these non-secret environment variables:
+### Connect `tsavohub.secora.dev`
 
-```dotenv
-DEBUG=False
-ALLOWED_HOSTS=tsavohub.secora.dev
-CSRF_TRUSTED_ORIGINS=https://tsavohub.secora.dev
-SITE_URL=https://tsavohub.secora.dev
-SECURE_SSL_REDIRECT=True
-TRUST_PROXY_SSL_HEADER=True
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_HOST_USER=tsavohub.noreply@gmail.com
-EMAIL_USE_TLS=True
-EMAIL_TIMEOUT=10
-DEFAULT_FROM_EMAIL=Tsavo Hub <tsavohub.noreply@gmail.com>
-```
+The Blueprint declares the custom domain. Open the service's **Settings > Custom
+Domains**, copy the CNAME target Render displays, and create that exact CNAME for
+the `tsavohub` host at the DNS provider for `secora.dev`. Return to Render and wait
+for verification and its managed TLS certificate. Keep the `.onrender.com` URL
+enabled until the custom address works.
 
-Add these protected values through Render's environment-variable screen:
+Finally, test the whole workflow: administrator login, innovator creation, Brevo
+email delivery, forced first-login password change, profile-photo upload, project
+creation, hub booking, and administrator admission.
 
-- `SECRET_KEY`: use Render's **Generate** option.
-- `DATABASE_URL`: select the internal connection string from `tsavo-hub-db`.
-- `EMAIL_HOST_PASSWORD`: enter the Gmail app password without spaces and never commit it.
+### Free-tier limitations
 
-If a persistent disk is attached for profile photos, also set:
-
-```dotenv
-MEDIA_ROOT=/opt/render/project/src/media
-```
-
-Deploy the service and wait until the build log shows successful static collection, migrations, deployment checks, and a healthy web process. Open its temporary `.onrender.com` address and verify `/health/` returns `{"status": "ok"}`.
-
-### Create the first administrator and connect the domain
-
-From the paid web service's Render Shell, run:
-
-```bash
-python manage.py createsuperuser
-```
-
-Then add `tsavohub.secora.dev` under the web service's **Settings > Custom Domains**. At the DNS provider for `secora.dev`, create the exact CNAME record Render displays for the `tsavohub` host, return to Render, and verify the domain. Render provisions and renews HTTPS automatically. Test administrator login, innovator creation, Gmail delivery, the forced first-login password change, a booking, and admission before entering real records.
+Render Free sleeps after 15 minutes without inbound traffic, so the first request
+after inactivity can take about a minute. It has 512 MB RAM, no Shell or one-off
+jobs, and an ephemeral filesystem. Neon and Cloudinary therefore remain the
+authoritative stores for records and uploads. Watch the usage dashboards and set
+up exports or backups appropriate for the data: a free deployment has availability,
+capacity, and support limits and should be upgraded before it becomes operationally
+critical.
 
 ## Production deployment considerations
 

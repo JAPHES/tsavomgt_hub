@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: tsavo-hub
+    runtime: python
+    plan: free
+    region: frankfurt
+    branch: master
+    buildCommand: ./build.sh
+    startCommand: python -m gunicorn tsavo_hub.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile -
+    healthCheckPath: /health/
+    autoDeployTrigger: commit
+    domains:
+      - tsavohub.secora.dev
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: tsavohub.secora.dev
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://tsavohub.secora.dev
+      - key: SITE_URL
+        value: https://tsavohub.secora.dev
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+      - key: TRUST_PROXY_SSL_HEADER
+        value: "True"
+      - key: EMAIL_BACKEND
+        value: anymail.backends.brevo.EmailBackend
+      - key: DEFAULT_FROM_EMAIL
+        value: "Tsavo Innovation & Incubation Hub <noreply@secora.dev>"
+      - key: STATIC_VERSION
+        value: "20260904.1"
+      - key: DATABASE_URL
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: INITIAL_ADMIN_EMAIL
+        sync: false
+      - key: INITIAL_ADMIN_PASSWORD
+        sync: false
