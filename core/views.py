@@ -1,4 +1,6 @@
 from django.contrib.auth.views import redirect_to_login
+from django.db import connection
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
 
@@ -6,6 +8,14 @@ def home(request):
     if not request.user.is_authenticated:
         return redirect_to_login(request.get_full_path())
     return redirect("dashboard:index")
+
+
+def health_check(request):
+    """Confirm that the web process can reach its configured database."""
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+    return JsonResponse({"status": "ok"})
 
 
 def permission_denied_view(request, exception=None):
