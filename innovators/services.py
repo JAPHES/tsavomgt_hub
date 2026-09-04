@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db import IntegrityError, transaction
 from django.template.loader import render_to_string
@@ -130,14 +131,21 @@ def create_project(profile, *, name, details, area_of_focus, actor, request=None
 
 
 def send_deactivation_email(user):
-    context = {"user": user}
+    context = {
+        "user": user,
+        "support_email": settings.SUPPORT_EMAIL,
+        "assistant_support_email": settings.ASSISTANT_SUPPORT_EMAIL,
+        "support_phone": settings.SUPPORT_PHONE,
+    }
     text_body = render_to_string("emails/account_deactivation.txt", context)
     html_body = render_to_string("emails/account_deactivation.html", context)
+    reply_to = [settings.SUPPORT_EMAIL] if settings.SUPPORT_EMAIL else None
     message = EmailMultiAlternatives(
         "Your Tsavo Hub account has been deactivated",
         text_body,
-        None,
+        settings.DEFAULT_FROM_EMAIL,
         [user.email],
+        reply_to=reply_to,
     )
     message.attach_alternative(html_body, "text/html")
     message.send(fail_silently=False)

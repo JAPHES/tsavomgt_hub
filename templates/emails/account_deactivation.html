@@ -1,6 +1,18 @@
 <p>Hello {{ user.first_name }},</p>
 <p>
-    Your Tsavo Hub account has been deactivated. Contact the hub administrator if you believe
-    this was an error.
+    Your Tsavo Hub account has been deactivated.
 </p>
+{% if support_email or assistant_support_email or support_phone %}
+<div style="background:#f7faf7;border:1px solid #dbe8db;margin:20px 0;max-width:520px;padding:16px">
+    <h2 style="color:#006400;font-size:18px;margin:0 0 10px">Was this an error?</h2>
+    <p>If you believe this was an error or need help, contact:</p>
+    {% if support_email %}<p><strong>Tsavo Hub Administration</strong><br>Email: <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>{% endif %}
+    {% if assistant_support_email %}<p><strong>Assistant Hub Administrator</strong><br>Email: <a href="mailto:{{ assistant_support_email }}">{{ assistant_support_email }}</a></p>{% endif %}
+    {% if support_phone %}<p>Phone: <a href="tel:{{ support_phone }}">{{ support_phone }}</a></p>{% endif %}
+    <p style="margin-bottom:0">When requesting assistance, share only your full name and registration number. Hub administrators will never ask you to send your password by email, phone, or message.</p>
+</div>
+{% else %}
+<p>Contact the hub administrator if you believe this was an error.</p>
+{% endif %}
+<p>This is an automated email. Please do not reply directly.</p>
 <p>Tsavo Innovation &amp; Incubation Hub</p>

@@ -1,5 +1,23 @@
 Hello {{ user.first_name }},
 
-Your Tsavo Hub account has been deactivated. Contact the hub administrator if you believe this was an error.
+Your Tsavo Hub account has been deactivated.
+
+{% if support_email or assistant_support_email or support_phone %}
+If you believe this was an error or need help, contact:
+{% if support_email %}
+Tsavo Hub Administration
+Email: {{ support_email }}
+{% endif %}{% if assistant_support_email %}
+Assistant Hub Administrator
+Email: {{ assistant_support_email }}
+{% endif %}{% if support_phone %}
+Phone: {{ support_phone }}
+{% endif %}
+When requesting assistance, share only your full name and registration number. Hub administrators will never ask you to send your password by email, phone, or message.
+{% else %}
+Contact the hub administrator if you believe this was an error.
+{% endif %}
+
+This is an automated email. Please do not reply directly.
 
 Tsavo Innovation & Incubation Hub
