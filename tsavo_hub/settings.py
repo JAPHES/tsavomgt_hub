@@ -174,7 +174,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT") or BASE_DIR / "media")
 # Bump this value for deployments that change local CSS or JavaScript. The
 # version is appended to shared asset URLs so browsers do not reuse stale files.
-STATIC_VERSION = os.getenv("STATIC_VERSION", "20260903.1")
+STATIC_VERSION = os.getenv("STATIC_VERSION", "20260905.1")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"

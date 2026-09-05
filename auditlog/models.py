@@ -8,6 +8,7 @@ class AuditLog(models.Model):
         ACCOUNT_UPDATED = "ACCOUNT_UPDATED", "Account updated"
         ACCOUNT_ACTIVATED = "ACCOUNT_ACTIVATED", "Account activated"
         ACCOUNT_DEACTIVATED = "ACCOUNT_DEACTIVATED", "Account deactivated"
+        ACCOUNT_DELETED = "ACCOUNT_DELETED", "Innovator account permanently deleted"
         TEMPORARY_CREDENTIALS_REISSUED = (
             "TEMPORARY_CREDENTIALS_REISSUED",
             "Temporary login credentials reissued",

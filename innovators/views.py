@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from accounts.models import User
 from accounts.services import (
@@ -27,9 +27,11 @@ from .forms import (
 )
 from .models import InnovatorProfile
 from .services import (
+    InnovatorDeletionError,
     ProjectError,
     create_innovator,
     create_project,
+    permanently_delete_innovator,
     send_deactivation_email,
     update_innovator,
 )
@@ -162,6 +164,40 @@ def innovator_update(request, pk):
             messages.success(request, "Innovator information updated.")
         return redirect("innovators:detail", pk=profile.pk)
     return render(request, "innovators/update.html", {"form": form, "profile": profile})
+
+
+@admin_required
+@require_http_methods(["GET", "POST"])
+def innovator_delete(request, pk):
+    profile = get_object_or_404(InnovatorProfile.objects.select_related("user"), pk=pk)
+    if request.method == "POST":
+        if request.POST.get("confirmation") != "permanently-delete":
+            messages.error(request, "Confirm the permanent deletion before continuing.")
+        else:
+            try:
+                permanently_delete_innovator(
+                    profile,
+                    actor=request.user,
+                    request=request,
+                )
+            except InnovatorDeletionError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(
+                    request,
+                    "The innovator account and all associated records were permanently deleted.",
+                )
+                return redirect("innovators:manage")
+    return render(
+        request,
+        "innovators/confirm_delete.html",
+        {
+            "profile": profile,
+            "project_count": profile.projects.count(),
+            "booking_count": profile.user.hub_bookings.count(),
+            "attendance_count": profile.user.attendance_sessions.count(),
+        },
+    )
 
 
 @admin_required

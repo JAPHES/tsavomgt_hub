@@ -1,18 +1,45 @@
+import logging
+
 from django.conf import settings
+from django.contrib.auth import SESSION_KEY
+from django.contrib.sessions.models import Session
 from django.core.mail import EmailMultiAlternatives
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.template.loader import render_to_string
 
 from accounts.models import User
 from accounts.services import issue_temporary_credentials
+from attendance.models import AttendanceCorrection, AttendanceSession, HubBooking
 from auditlog.models import AuditLog
-from auditlog.services import record_audit
+from auditlog.services import client_ip, record_audit
 
 from .models import InnovatorProfile, InnovatorProject
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectError(Exception):
     pass
+
+
+class InnovatorDeletionError(Exception):
+    pass
+
+
+def _delete_profile_photo(storage, name):
+    try:
+        storage.delete(name)
+    except Exception:
+        logger.exception("Could not delete innovator profile photo %s.", name)
+
+
+def _session_keys_for_user(user_id):
+    session_keys = []
+    for session in Session.objects.all().iterator():
+        if str(session.get_decoded().get(SESSION_KEY, "")) == str(user_id):
+            session_keys.append(session.session_key)
+    return session_keys
 
 
 @transaction.atomic
@@ -128,6 +155,83 @@ def create_project(profile, *, name, details, area_of_focus, actor, request=None
         request=request,
     )
     return project
+
+
+@transaction.atomic
+def permanently_delete_innovator(profile, *, actor, request=None):
+    locked_profile = (
+        InnovatorProfile.objects.select_for_update().select_related("user").get(pk=profile.pk)
+    )
+    user = User.objects.select_for_update().get(pk=locked_profile.user_id)
+    if actor.role != User.Role.ADMIN:
+        raise InnovatorDeletionError("Only an administrator can permanently delete an innovator.")
+    if user.role != User.Role.INNOVATOR:
+        raise InnovatorDeletionError("Only innovator accounts can be permanently deleted here.")
+
+    project_ids = list(locked_profile.projects.values_list("pk", flat=True))
+    booking_ids = list(user.hub_bookings.values_list("pk", flat=True))
+    attendance_ids = list(user.attendance_sessions.values_list("pk", flat=True))
+    correction_ids = list(
+        AttendanceCorrection.objects.filter(
+            Q(attendance_id__in=attendance_ids) | Q(administrator=user)
+        ).values_list("pk", flat=True)
+    )
+    session_keys = _session_keys_for_user(user.pk)
+
+    related_audits = Q(actor=user) | Q(
+        target_model=User._meta.label,
+        target_id=str(user.pk),
+    ) | Q(
+        target_model=InnovatorProfile._meta.label,
+        target_id=str(locked_profile.pk),
+    )
+    for model, object_ids in (
+        (InnovatorProject, project_ids),
+        (HubBooking, booking_ids),
+        (AttendanceSession, attendance_ids),
+        (AttendanceCorrection, correction_ids),
+    ):
+        if object_ids:
+            related_audits |= Q(
+                target_model=model._meta.label,
+                target_id__in=[str(object_id) for object_id in object_ids],
+            )
+
+    deleted_counts = {
+        "projects": len(project_ids),
+        "bookings": len(booking_ids),
+        "attendance_records": len(attendance_ids),
+        "attendance_corrections": len(correction_ids),
+        "audit_records": AuditLog.objects.filter(related_audits).count(),
+        "login_sessions": len(session_keys),
+    }
+    photo_name = locked_profile.profile_photo.name
+    photo_storage = locked_profile.profile_photo.storage if photo_name else None
+
+    AuditLog.objects.filter(related_audits).delete()
+    AttendanceCorrection.objects.filter(pk__in=correction_ids).delete()
+    AttendanceSession.objects.filter(pk__in=attendance_ids).delete()
+    HubBooking.objects.filter(pk__in=booking_ids).delete()
+    InnovatorProject.objects.filter(pk__in=project_ids).delete()
+    Session.objects.filter(session_key__in=session_keys).delete()
+    locked_profile.delete()
+    user.delete()
+
+    AuditLog.objects.create(
+        actor=actor,
+        action=AuditLog.Action.ACCOUNT_DELETED,
+        target_model=User._meta.label,
+        target_id="",
+        target_repr="Deleted innovator account",
+        new_values={"deleted_records": deleted_counts},
+        reason="Administrator confirmed permanent innovator deletion",
+        ip_address=client_ip(request),
+    )
+    if photo_name:
+        transaction.on_commit(
+            lambda: _delete_profile_photo(photo_storage, photo_name),
+        )
+    return deleted_counts
 
 
 def send_deactivation_email(user):

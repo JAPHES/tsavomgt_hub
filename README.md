@@ -40,9 +40,16 @@ Administrators can:
 - Reissue temporary login credentials for an innovator who has not completed the first-login password change
 - Deactivate accounts after an explicit confirmation warning
 - Restore inactive accounts
+- Permanently delete an innovator and all associated records after a separate confirmation step
 - Download all innovators as a CSV containing full name, email, projects, and areas of focus
 
 The CSV export is administrator-only, includes the complete list regardless of pagination or search, uses UTF-8 for Excel compatibility, and sanitizes spreadsheet-formula prefixes.
+
+Permanent deletion is administrator-only and transactional. It removes the innovator account,
+profile, projects, bookings, retained attendance records, corrections, login sessions, associated
+audit entries, and uploaded profile photo. The confirmation page shows the affected record counts
+before the administrator proceeds. A non-identifying audit event is retained to record that a
+permanent deletion occurred without retaining the innovator's personal information.
 
 Innovators can update only:
 
@@ -321,6 +328,7 @@ before onboarding real users.
 /innovators/export/
 /innovators/create/
 /innovators/<id>/
+/innovators/<id>/delete/
 
 /attendance/bookings/
 /attendance/session/<id>/admin/

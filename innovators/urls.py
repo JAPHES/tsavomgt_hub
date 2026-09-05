@@ -14,6 +14,7 @@ urlpatterns = [
     path("create/success/<int:pk>/", views.create_success, name="create-success"),
     path("<int:pk>/", views.innovator_detail, name="detail"),
     path("<int:pk>/edit/", views.innovator_update, name="update"),
+    path("<int:pk>/delete/", views.innovator_delete, name="delete"),
     path("<int:pk>/status/", views.toggle_status, name="toggle-status"),
     path(
         "<int:pk>/reissue-credentials/",

@@ -31,7 +31,7 @@ services:
       - key: DEFAULT_FROM_EMAIL
         value: "Tsavo Innovation & Incubation Hub <noreply@secora.dev>"
       - key: STATIC_VERSION
-        value: "20260904.1"
+        value: "20260905.1"
       - key: DATABASE_URL
         sync: false
       - key: BREVO_API_KEY

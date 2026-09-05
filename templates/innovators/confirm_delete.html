@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Confirm permanent deletion{% endblock %}
+{% block content %}
+<div class="innovator-record-toolbar">
+    <a class="innovator-back-link" href="{% url 'innovators:detail' profile.pk %}">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>Back to innovator record
+    </a>
+    <span>Critical administrator action</span>
+</div>
+
+<section class="content-card narrow-card overflow-hidden" aria-labelledby="delete-innovator-heading">
+    <div class="critical-action-header">
+        <span class="critical-warning-icon"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></span>
+        <div>
+            <p class="eyebrow">Permanent deletion</p>
+            <h1 id="delete-innovator-heading">Delete this innovator?</h1>
+        </div>
+    </div>
+    <div class="critical-action-body">
+        <p>
+            You are about to permanently delete <strong>{{ profile.user.get_full_name }}</strong>
+            ({{ profile.registration_number }}). Are you sure you want to continue?
+        </p>
+        <div class="critical-impact-list">
+            <div><i class="bi bi-person-x-fill" aria-hidden="true"></i><span>The innovator account and profile will be removed.</span></div>
+            <div><i class="bi bi-lightbulb-fill" aria-hidden="true"></i><span>{{ project_count }} project{{ project_count|pluralize }} will be permanently deleted.</span></div>
+            <div><i class="bi bi-calendar-x-fill" aria-hidden="true"></i><span>{{ booking_count }} booking{{ booking_count|pluralize }} will be permanently deleted.</span></div>
+            <div><i class="bi bi-clock-history" aria-hidden="true"></i><span>{{ attendance_count }} retained attendance record{{ attendance_count|pluralize }} and related corrections will be permanently deleted.</span></div>
+            <div><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span>This action cannot be undone or restored after confirmation.</span></div>
+        </div>
+    </div>
+    <div class="critical-action-footer d-flex flex-wrap justify-content-end">
+        <a class="btn btn-light" href="{% url 'innovators:detail' profile.pk %}">Cancel and keep account</a>
+        <form method="post">
+            {% csrf_token %}
+            <button class="btn btn-danger" type="submit" name="confirmation" value="permanently-delete">Yes, permanently delete innovator</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

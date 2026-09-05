@@ -121,6 +121,15 @@
     {% endif %}
 </section>
 
+<section class="record-access-card permanent-delete-card" aria-labelledby="permanent-delete-heading">
+    <div>
+        <p class="eyebrow">Permanent deletion</p>
+        <h2 id="permanent-delete-heading">Delete innovator and records</h2>
+        <p>This permanently removes the account, profile, projects, bookings and attendance records. This action cannot be undone.</p>
+    </div>
+    <a class="btn btn-danger" href="{% url 'innovators:delete' profile.pk %}">Delete innovator permanently</a>
+</section>
+
 {% if profile.user.account_status != 'INACTIVE' %}
 <div class="modal fade" id="deactivateAccountModal" tabindex="-1" aria-labelledby="deactivateAccountModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

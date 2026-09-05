@@ -392,6 +392,7 @@ textarea.form-control { min-height: auto; }
 .record-access-card { align-items: center; border-left: 4px solid var(--ttu-danger); display: flex; gap: 1.5rem; justify-content: space-between; padding: 1.2rem 1.35rem; }
 .record-access-card p:last-child { color: var(--ttu-medium-gray); font-size: .72rem; margin: .25rem 0 0; }
 .record-access-card .btn { white-space: nowrap; }
+.permanent-delete-card { background: #fff8f8; border-left-color: #8b0000; margin-top: 1rem; }
 .critical-action-modal { border: 0; border-radius: 1rem; box-shadow: 0 22px 60px rgba(52,58,64,.24); overflow: hidden; }
 .critical-action-header { align-items: center; background: #fff5f6; border-bottom: 1px solid #f2d7da; display: flex; gap: .9rem; padding: 1.2rem 1.3rem; }
 .critical-action-header .eyebrow { color: #a42432; margin-bottom: .1rem; }
