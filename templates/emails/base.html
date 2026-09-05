@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>{% block email_title %}Tsavo Hub notification{% endblock %}</title>
+</head>
+<body data-email-template="tsavo-hub" style="margin:0;background:#f3f7f4;color:#17352a;font-family:Arial,Helvetica,sans-serif;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">{% block preheader %}An account notification from Tsavo Innovation &amp; Incubation Hub.{% endblock %}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f3f7f4;padding:32px 12px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#ffffff;border:1px solid #dce8e1;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(17,67,48,0.08);">
+                    <tr>
+                        <td style="background:#12633f;padding:24px 32px;color:#ffffff;">
+                            <div style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#cbe8d8;">{% block header_label %}Tsavo Hub account{% endblock %}</div>
+                            <div style="margin-top:6px;font-size:22px;font-weight:700;line-height:1.3;">{% block header_title %}Account notification{% endblock %}</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:32px;">
+                            {% block email_content %}{% endblock %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border-top:1px solid #e4ece7;padding:20px 32px;font-size:13px;line-height:1.5;color:#60736b;">
+                            <strong style="color:#385449;">Tsavo Innovation &amp; Incubation Hub</strong><br>
+                            This is an automated account notification. Please do not reply directly.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

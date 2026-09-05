@@ -1,18 +1,23 @@
-<p>Hello {{ user.first_name }},</p>
-<p>
-    Your Tsavo Hub account has been deactivated.
-</p>
+{% extends "emails/base.html" %}
+
+{% block email_title %}Your Tsavo Hub account has been deactivated{% endblock %}
+{% block preheader %}Your access to the Tsavo Hub Management System has been deactivated.{% endblock %}
+{% block header_label %}Account access{% endblock %}
+{% block header_title %}Your account has been deactivated{% endblock %}
+
+{% block email_content %}
+<p style="margin:0 0 18px;font-size:18px;font-weight:700;">Hello {{ user.first_name|default:"there" }},</p>
+<p style="margin:0 0 22px;line-height:1.65;color:#40584f;">Your access to the Tsavo Innovation &amp; Incubation Hub Management System has been deactivated. You will not be able to sign in while the account remains inactive.</p>
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#fff8e7;border-left:4px solid #d49b20;border-radius:8px;">
+    <tr>
+        <td style="padding:16px 18px;line-height:1.6;color:#6f5a28;"><strong style="color:#694b08;">Think this was a mistake?</strong><br>If you believe this was an error, contact the hub administration using the details below.</td>
+    </tr>
+</table>
+
 {% if support_email or assistant_support_email or support_phone %}
-<div style="background:#f7faf7;border:1px solid #dbe8db;margin:20px 0;max-width:520px;padding:16px">
-    <h2 style="color:#006400;font-size:18px;margin:0 0 10px">Was this an error?</h2>
-    <p>If you believe this was an error or need help, contact:</p>
-    {% if support_email %}<p><strong>Tsavo Hub Administration</strong><br>Email: <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>{% endif %}
-    {% if assistant_support_email %}<p><strong>Assistant Hub Administrator</strong><br>Email: <a href="mailto:{{ assistant_support_email }}">{{ assistant_support_email }}</a></p>{% endif %}
-    {% if support_phone %}<p>Phone: <a href="tel:{{ support_phone }}">{{ support_phone }}</a></p>{% endif %}
-    <p style="margin-bottom:0">When requesting assistance, share only your full name and registration number. Hub administrators will never ask you to send your password by email, phone, or message.</p>
-</div>
+    {% include "emails/includes/support_contacts.html" with heading="Was this an error?" introduction="For clarification or help restoring access, contact:" %}
 {% else %}
-<p>Contact the hub administrator if you believe this was an error.</p>
+    <p style="margin:22px 0 0;line-height:1.65;color:#40584f;">Contact the hub administrator if you believe this was an error.</p>
 {% endif %}
-<p>This is an automated email. Please do not reply directly.</p>
-<p>Tsavo Innovation &amp; Incubation Hub</p>
+{% endblock %}
