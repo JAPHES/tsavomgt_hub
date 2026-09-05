@@ -1,10 +1,13 @@
 import string
 from unittest.mock import patch
 
+from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.test import TestCase, TransactionTestCase, override_settings
 from django.templatetags.static import static
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from accounts.models import User
 from accounts.services import generate_temporary_password
@@ -82,7 +85,18 @@ class AuthenticationTests(TestCase):
         response = self.client.post(reverse("accounts:password-reset"), {"email": user.email})
         self.assertRedirects(response, reverse("accounts:password-reset-done"))
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn("password-reset", mail.outbox[0].body)
+        message = mail.outbox[0]
+        self.assertIn("Hello Amina,", message.body)
+        self.assertIn("strong, unique password", message.body)
+        self.assertIn("If you did not request this password reset", message.body)
+        self.assertIn("Your current password will remain unchanged", message.body)
+        self.assertIn("password-reset", message.body)
+        self.assertEqual(len(message.alternatives), 1)
+        html_body = message.alternatives[0].content
+        self.assertIn("Hello Amina,", html_body)
+        self.assertIn("Choose a new password", html_body)
+        self.assertIn("Did not request this?", html_body)
+        self.assertIn("Your current password will remain unchanged", html_body)
 
         pending = create_innovator(
             email="pending@example.com",
@@ -99,6 +113,83 @@ class AuthenticationTests(TestCase):
         )
         self.assertRedirects(response, reverse("accounts:password-reset-done"))
         self.assertEqual(len(mail.outbox), 1)
+
+    def test_password_reset_confirm_page_is_personalized_and_styled(self):
+        user = create_innovator(first_name="Japhes")
+        reset_url = reverse(
+            "accounts:password-reset-confirm",
+            kwargs={
+                "uidb64": urlsafe_base64_encode(force_bytes(user.pk)),
+                "token": default_token_generator.make_token(user),
+            },
+        )
+
+        response = self.client.get(reset_url)
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(response.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'class="login-layout password-reset-layout password-reset-confirm-layout"',
+        )
+        self.assertContains(response, "Hello Japhes,")
+        self.assertContains(response, "Strong password checklist")
+        self.assertContains(response, 'class="password-input-shell')
+        self.assertContains(response, "data-password-toggle", count=2)
+        self.assertContains(response, 'autocomplete="new-password"', count=2)
+        self.assertContains(response, 'placeholder="Enter your new password"')
+        self.assertNotContains(
+            response, "Supported by Taita Taveta University &ndash; Home of Ideas"
+        )
+
+    def test_password_reset_confirm_validates_and_changes_password(self):
+        user = create_innovator(first_name="Japhes")
+        reset_url = reverse(
+            "accounts:password-reset-confirm",
+            kwargs={
+                "uidb64": urlsafe_base64_encode(force_bytes(user.pk)),
+                "token": default_token_generator.make_token(user),
+            },
+        )
+        response = self.client.get(reset_url)
+        confirm_url = response.url
+
+        response = self.client.post(
+            confirm_url,
+            {"new_password1": "short", "new_password2": "short"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Password requirements")
+        self.assertContains(response, "This password is too short")
+
+        response = self.client.post(
+            confirm_url,
+            {
+                "new_password1": NEW_PERSONAL_PASSWORD,
+                "new_password2": NEW_PERSONAL_PASSWORD,
+            },
+        )
+        self.assertRedirects(response, reverse("accounts:password-reset-complete"))
+        user.refresh_from_db()
+        self.assertTrue(user.check_password(NEW_PERSONAL_PASSWORD))
+
+    def test_invalid_password_reset_link_has_a_clear_recovery_action(self):
+        user = create_innovator()
+        response = self.client.get(
+            reverse(
+                "accounts:password-reset-confirm",
+                kwargs={
+                    "uidb64": urlsafe_base64_encode(force_bytes(user.pk)),
+                    "token": "invalid-token",
+                },
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Reset link unavailable")
+        self.assertContains(response, "Request another reset link")
+        self.assertContains(response, "Back to sign in")
 
     def test_password_change_hides_rules_until_validation_fails(self):
         user = create_innovator()

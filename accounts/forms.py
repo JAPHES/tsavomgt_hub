@@ -26,18 +26,35 @@ class EmailAuthenticationForm(BootstrapFormMixin, AuthenticationForm):
         self.apply_bootstrap()
 
 
-class FirstLoginPasswordChangeForm(BootstrapFormMixin, SetPasswordForm):
+class TsavoSetPasswordForm(BootstrapFormMixin, SetPasswordForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["new_password1"].label = "New password"
         self.fields["new_password2"].label = "Confirm new password"
         self.fields["new_password1"].widget.attrs.update(
-            {"autocomplete": "new-password", "placeholder": "Enter your new password", "autofocus": True}
+            {
+                "autocomplete": "new-password",
+                "placeholder": "Enter your new password",
+                "spellcheck": "false",
+                "autofocus": True,
+            }
         )
         self.fields["new_password2"].widget.attrs.update(
-            {"autocomplete": "new-password", "placeholder": "Enter the new password again"}
+            {
+                "autocomplete": "new-password",
+                "placeholder": "Enter the new password again",
+                "spellcheck": "false",
+            }
         )
         self.apply_bootstrap()
+
+
+class FirstLoginPasswordChangeForm(TsavoSetPasswordForm):
+    pass
+
+
+class TsavoPasswordResetConfirmForm(TsavoSetPasswordForm):
+    pass
 
 
 class TsavoPasswordResetForm(BootstrapFormMixin, PasswordResetForm):

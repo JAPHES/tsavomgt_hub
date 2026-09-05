@@ -18,6 +18,7 @@ from .forms import (
     EmailAuthenticationForm,
     FirstLoginPasswordChangeForm,
     TsavoPasswordChangeForm,
+    TsavoPasswordResetConfirmForm,
     TsavoPasswordResetForm,
 )
 from .services import (
@@ -84,7 +85,13 @@ class TsavoPasswordResetDoneView(PasswordResetDoneView):
 
 class TsavoPasswordResetConfirmView(PasswordResetConfirmView):
     template_name = "accounts/password_reset_confirm.html"
+    form_class = TsavoPasswordResetConfirmForm
     success_url = reverse_lazy("accounts:password-reset-complete")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["reset_user"] = self.user
+        return context
 
 
 class TsavoPasswordResetCompleteView(PasswordResetCompleteView):
