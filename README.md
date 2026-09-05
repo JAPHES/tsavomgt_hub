@@ -18,7 +18,7 @@ The application uses Django templates, Bootstrap 5, JavaScript, SQLite for local
 - Professional two-panel login page with a prominent centered circular logo and branded welcome area on the left, and the sign-in form on the right
 - Professional administrator, innovator, profile, booking-history, streamlined innovator-record, and legacy attendance-record pages
 - Account-deactivation confirmation warning before the destructive request is submitted
-- Audit records for important administrative actions
+- Database audit records for important administrative actions, available read-only in Django Admin
 
 ### Innovator management
 
@@ -137,7 +137,7 @@ tsavo_hub/
 |-- innovators/      # Innovator profiles, multi-project portfolios, management and CSV export
 |-- attendance/      # Hub bookings, admission services and retained legacy attendance data
 |-- dashboard/       # Role dashboards and booking search
-|-- auditlog/        # Administrative audit records
+|-- auditlog/        # Database audit records and read-only Django Admin integration
 |-- templates/       # Shared, page and email templates
 |-- static/          # Branding, responsive CSS and interface JavaScript
 `-- media/           # Uploaded profile photos
@@ -339,11 +339,13 @@ before onboarding real users.
 /dashboard/admin/bookings/<id>/admit/
 /dashboard/bookings/
 
-/audit/
 /health/
 ```
 
-All management, export, booking, admission, legacy attendance-review, and audit routes enforce authorization on the server. Navigation visibility is not treated as a security boundary. Hub bookings and retained attendance records are read-only in Django Admin; admission occurs only through the protected application workflow.
+All management, export, booking, admission, and legacy attendance-review routes enforce authorization on the server.
+Navigation visibility is not treated as a security boundary. Audit records remain available read-only in Django
+Admin. Hub bookings and retained attendance records are read-only there; admission occurs only through the protected
+application workflow.
 
 ## Tests and verification
 

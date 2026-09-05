@@ -53,9 +53,6 @@
                     <a class="sidebar-link {% if request.resolver_match.url_name == 'bookings' or request.resolver_match.url_name == 'live-attendance' %}active{% endif %}" href="{% url 'dashboard:bookings' %}">
                         <i class="bi bi-calendar2-check-fill" aria-hidden="true"></i><span>Bookings</span>
                     </a>
-                    <a class="sidebar-link {% if request.resolver_match.namespace == 'auditlog' %}active{% endif %}" href="{% url 'auditlog:list' %}">
-                        <i class="bi bi-shield-check" aria-hidden="true"></i><span>Audit records</span>
-                    </a>
                 {% elif user.role == 'INNOVATOR' %}
                     <a class="sidebar-link {% if request.resolver_match.namespace == 'innovators' and request.resolver_match.url_name == 'projects' %}active{% endif %}" href="{% url 'innovators:projects' %}">
                         <i class="bi bi-lightbulb-fill" aria-hidden="true"></i><span>My projects</span>

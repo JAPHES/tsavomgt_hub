@@ -90,7 +90,10 @@ class PermissionTests(TestCase):
         self.assertEqual(self.client.get(reverse("innovators:create")).status_code, 200)
         self.assertEqual(self.client.get(reverse("innovators:projects")).status_code, 403)
         self.assertEqual(self.client.get(reverse("dashboard:bookings")).status_code, 200)
-        self.assertEqual(self.client.get(reverse("auditlog:list")).status_code, 200)
+        self.assertNotContains(manage_response, "Audit records")
+        removed_audit_page = self.client.get("/audit/")
+        self.assertEqual(removed_audit_page.status_code, 404)
+        self.assertTemplateUsed(removed_audit_page, "errors/404.html")
         session_response = self.client.get(
             reverse("attendance:admin-detail", kwargs={"pk": self.other_session.pk})
         )
@@ -133,7 +136,6 @@ class PermissionTests(TestCase):
             "dashboard:admin",
             "dashboard:bookings",
             "innovators:manage",
-            "auditlog:list",
         ):
             with self.subTest(route_name=route_name):
                 response = self.client.get(reverse(route_name))
