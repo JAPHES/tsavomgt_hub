@@ -19,6 +19,10 @@ class DeactivationEmailTests(TestCase):
 
         message = mail.outbox[0]
         html_body = message.alternatives[0].content
+        self.assertIn('data-email-template="tsavo-hub"', html_body)
+        self.assertIn("Account access", html_body)
+        self.assertIn("Your account has been deactivated", html_body)
+        self.assertIn("You will not be able to sign in", html_body)
         self.assertIn("hub-support@example.com", message.body)
         self.assertIn("assistant@example.com", message.body)
         self.assertIn("+254700000000", message.body)

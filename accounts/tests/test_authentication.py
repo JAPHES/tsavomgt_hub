@@ -93,6 +93,8 @@ class AuthenticationTests(TestCase):
         self.assertIn("password-reset", message.body)
         self.assertEqual(len(message.alternatives), 1)
         html_body = message.alternatives[0].content
+        self.assertIn('data-email-template="tsavo-hub"', html_body)
+        self.assertIn("Reset your Tsavo Hub password", html_body)
         self.assertIn("Hello Amina,", html_body)
         self.assertIn("Choose a new password", html_body)
         self.assertIn("Did not request this?", html_body)
@@ -394,8 +396,17 @@ class AdministratorAccountCreationTests(TestCase):
         self.assertEqual(user.account_status, User.AccountStatus.PENDING)
         self.assertFalse(profile.projects.exists())
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn(user.email, mail.outbox[0].body)
-        self.assertIn(TEMPORARY_PASSWORD, mail.outbox[0].body)
+        message = mail.outbox[0]
+        html_body = message.alternatives[0].content
+        self.assertIn(user.email, message.body)
+        self.assertIn(TEMPORARY_PASSWORD, message.body)
+        self.assertIn('data-email-template="tsavo-hub"', html_body)
+        self.assertIn("Welcome to Tsavo Hub", html_body)
+        self.assertIn("Your account is ready", html_body)
+        self.assertIn(user.email, html_body)
+        self.assertIn(TEMPORARY_PASSWORD, html_body)
+        self.assertIn("Sign in to Tsavo Hub", html_body)
+        self.assertIn("Keep these credentials private", html_body)
         audit = AuditLog.objects.get(action=AuditLog.Action.ACCOUNT_CREATED)
         self.assertNotIn(TEMPORARY_PASSWORD, str(audit.new_values))
 
@@ -459,6 +470,10 @@ class AdministratorAccountCreationTests(TestCase):
         pending.refresh_from_db()
         self.assertTrue(pending.check_password(TEMPORARY_PASSWORD))
         self.assertEqual(len(mail.outbox), 1)
+        html_body = mail.outbox[0].alternatives[0].content
+        self.assertIn('data-email-template="tsavo-hub"', html_body)
+        self.assertIn("Account access updated", html_body)
+        self.assertIn("New temporary login credentials", html_body)
         audit = AuditLog.objects.get(
             action=AuditLog.Action.TEMPORARY_CREDENTIALS_REISSUED
         )
