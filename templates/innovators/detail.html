@@ -50,6 +50,10 @@
                 <div><dt>Registration number</dt><dd>{{ profile.registration_number }}</dd></div>
                 <div><dt>Email address</dt><dd><a href="mailto:{{ profile.user.email }}">{{ profile.user.email }}</a></dd></div>
                 <div><dt>Phone number</dt><dd><a href="tel:{{ profile.phone_number }}">{{ profile.phone_number }}</a></dd></div>
+                <div><dt>Gender</dt><dd>{{ profile.get_gender_display|default:"Not provided" }}</dd></div>
+                <div><dt>School</dt><dd>{{ profile.school|default:"Not provided" }}</dd></div>
+                <div><dt>Department</dt><dd>{{ profile.department|default:"Not provided" }}</dd></div>
+                <div><dt>County of origin</dt><dd>{{ profile.county|default:"Not provided" }}</dd></div>
                 <div><dt>Account status</dt><dd><span class="status-badge status-{{ profile.user.account_status|lower }}">{{ profile.user.get_account_status_display }}</span></dd></div>
                 <div><dt>Last login</dt><dd>{{ profile.user.last_login|date:"d M Y, H:i"|default:"Never" }}</dd></div>
                 <div><dt>Profile updated</dt><dd>{{ profile.updated_at|date:"d M Y, H:i" }}</dd></div>
