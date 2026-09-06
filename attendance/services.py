@@ -39,9 +39,7 @@ def create_booking(innovator, *, visit_date, arrival_time, purpose):
 @transaction.atomic
 def admit_booking(administrator, booking, *, now=None, request=None):
     now = now or timezone.now()
-    locked_booking = HubBooking.objects.select_for_update().select_related(
-        "innovator", "admitted_by"
-    ).get(pk=booking.pk)
+    locked_booking = HubBooking.objects.select_for_update().get(pk=booking.pk)
     if administrator.role != User.Role.ADMIN:
         raise BookingError("Only an administrator can admit a hub booking.")
     if locked_booking.status == HubBooking.Status.ADMITTED:
