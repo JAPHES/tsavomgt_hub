@@ -6,6 +6,57 @@ from django.core.validators import MinLengthValidator
 from django.db import models
 
 
+KENYAN_COUNTIES = (
+    "Baringo",
+    "Bomet",
+    "Bungoma",
+    "Busia",
+    "Elgeyo-Marakwet",
+    "Embu",
+    "Garissa",
+    "Homa Bay",
+    "Isiolo",
+    "Kajiado",
+    "Kakamega",
+    "Kericho",
+    "Kiambu",
+    "Kilifi",
+    "Kirinyaga",
+    "Kisii",
+    "Kisumu",
+    "Kitui",
+    "Kwale",
+    "Laikipia",
+    "Lamu",
+    "Machakos",
+    "Makueni",
+    "Mandera",
+    "Marsabit",
+    "Meru",
+    "Migori",
+    "Mombasa",
+    "Murang'a",
+    "Nairobi",
+    "Nakuru",
+    "Nandi",
+    "Narok",
+    "Nyamira",
+    "Nyandarua",
+    "Nyeri",
+    "Samburu",
+    "Siaya",
+    "Taita Taveta",
+    "Tana River",
+    "Tharaka-Nithi",
+    "Trans Nzoia",
+    "Turkana",
+    "Uasin Gishu",
+    "Vihiga",
+    "Wajir",
+    "West Pokot",
+)
+
+
 def validate_kenyan_phone(value):
     compact = re.sub(r"[\s-]", "", value or "")
     if not re.fullmatch(r"(?:\+254|0)(?:7|1)\d{8}", compact):
@@ -13,11 +64,24 @@ def validate_kenyan_phone(value):
 
 
 class InnovatorProfile(models.Model):
+    class Gender(models.TextChoices):
+        MALE = "MALE", "Male"
+        FEMALE = "FEMALE", "Female"
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="innovator_profile"
     )
     registration_number = models.CharField(max_length=50, unique=True)
     phone_number = models.CharField(max_length=20, validators=[validate_kenyan_phone])
+    gender = models.CharField(max_length=10, choices=Gender.choices, blank=True, default="")
+    school = models.CharField(max_length=200, blank=True, default="")
+    department = models.CharField(max_length=200, blank=True, default="")
+    county = models.CharField(
+        max_length=30,
+        choices=[(county, county) for county in KENYAN_COUNTIES],
+        blank=True,
+        default="",
+    )
     # Retained for backward database compatibility. New projects live in InnovatorProject.
     innovation_project_name = models.CharField(max_length=200, blank=True, default="")
     profile_photo = models.ImageField(upload_to="profile_photos/%Y/%m/", null=True, blank=True)
@@ -35,7 +99,16 @@ class InnovatorProfile(models.Model):
     def save(self, *args, **kwargs):
         self.registration_number = self.registration_number.strip().upper()
         self.phone_number = re.sub(r"[\s-]", "", self.phone_number or "")
+        self.school = " ".join((self.school or "").split())
+        self.department = " ".join((self.department or "").split())
         super().save(*args, **kwargs)
+
+    @property
+    def has_completed_required_details(self):
+        return all(
+            (getattr(self, field, "") or "").strip()
+            for field in ("gender", "school", "department", "county")
+        )
 
     def __str__(self):
         return f"{self.user.get_full_name()} ({self.registration_number})"
