@@ -97,6 +97,7 @@ class AuthenticationTests(TestCase):
         self.assertIn("Reset your Tsavo Hub password", html_body)
         self.assertIn("Hello Amina,", html_body)
         self.assertIn("Choose a new password", html_body)
+        self.assertIn("expires after one hour", html_body)
         self.assertIn("Did not request this?", html_body)
         self.assertIn("Your current password will remain unchanged", html_body)
 
