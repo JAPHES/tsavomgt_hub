@@ -70,6 +70,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "accounts.middleware.ForceFirstLoginPasswordChangeMiddleware",
+    "innovators.middleware.ForceInnovatorProfileCompletionMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "core.middleware.CustomNotFoundMiddleware",

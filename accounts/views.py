@@ -35,6 +35,9 @@ class TsavoLoginView(LoginView):
     def get_success_url(self):
         if self.request.user.must_change_password:
             return reverse("accounts:first-login-password-change")
+        profile = getattr(self.request.user, "innovator_profile", None)
+        if profile is not None and not profile.has_completed_required_details:
+            return reverse("innovators:profile-complete")
         return super().get_success_url()
 
 

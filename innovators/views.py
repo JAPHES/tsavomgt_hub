@@ -22,6 +22,7 @@ from core.permissions import admin_required, innovator_required
 from .forms import (
     InnovatorAdminUpdateForm,
     InnovatorCreateForm,
+    InnovatorProfileCompletionForm,
     InnovatorProjectForm,
     InnovatorSelfUpdateForm,
 )
@@ -253,6 +254,44 @@ def admin_reissue_credentials(request, pk):
     else:
         messages.success(request, "New temporary login credentials were emailed.")
     return redirect("innovators:detail", pk=profile.pk)
+
+
+@innovator_required
+@require_http_methods(["GET", "POST"])
+def complete_my_profile(request):
+    profile = get_object_or_404(InnovatorProfile, user=request.user)
+    if profile.has_completed_required_details:
+        return redirect("innovators:profile")
+
+    form = InnovatorProfileCompletionForm(request.POST or None, instance=profile)
+    if request.method == "POST" and form.is_valid():
+        previous_values = {
+            field: getattr(profile, field)
+            for field in ("gender", "school", "department", "county")
+        }
+        with transaction.atomic():
+            profile = form.save()
+            record_audit(
+                actor=request.user,
+                action=AuditLog.Action.ACCOUNT_UPDATED,
+                target=request.user,
+                previous_values=previous_values,
+                new_values={
+                    "gender": profile.gender,
+                    "school": profile.school,
+                    "department": profile.department,
+                    "county": profile.county,
+                },
+                reason="Innovator completed required profile details",
+                request=request,
+            )
+        messages.success(request, "Your profile is complete. Welcome to your dashboard.")
+        return redirect("dashboard:innovator")
+    return render(
+        request,
+        "innovators/profile_complete.html",
+        {"form": form, "profile": profile},
+    )
 
 
 @innovator_required

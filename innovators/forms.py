@@ -70,14 +70,57 @@ class InnovatorAdminUpdateForm(BootstrapFormMixin, forms.ModelForm):
         return number
 
 
-class InnovatorSelfUpdateForm(BootstrapFormMixin, forms.ModelForm):
+class InnovatorProfileCompletionForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = InnovatorProfile
-        fields = ["phone_number", "profile_photo"]
+        fields = ["gender", "school", "department", "county"]
+        labels = {
+            "county": "County of origin",
+        }
+        help_texts = {
+            "school": "Enter the full name of your school.",
+            "department": "Enter the department where you study or work.",
+            "county": "Select the Kenyan county you come from.",
+        }
+        widgets = {
+            "school": forms.TextInput(
+                attrs={"placeholder": "e.g. School of Science and Informatics"}
+            ),
+            "department": forms.TextInput(
+                attrs={"placeholder": "e.g. Informatics and Computing"}
+            ),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for field_name in ("gender", "school", "department", "county"):
+            self.fields[field_name].required = True
+        self.fields["gender"].choices = [
+            ("", "Select gender"),
+            *InnovatorProfile.Gender.choices,
+        ]
+        self.fields["county"].choices = [
+            ("", "Select county"),
+            *(
+                (value, label)
+                for value, label in self.fields["county"].choices
+                if value
+            ),
+        ]
+        self.fields["gender"].widget.attrs["autofocus"] = True
         self.apply_bootstrap()
+
+
+class InnovatorSelfUpdateForm(InnovatorProfileCompletionForm):
+    class Meta(InnovatorProfileCompletionForm.Meta):
+        fields = [
+            "phone_number",
+            "gender",
+            "school",
+            "department",
+            "county",
+            "profile_photo",
+        ]
 
 
 class InnovatorProjectForm(BootstrapFormMixin, forms.ModelForm):

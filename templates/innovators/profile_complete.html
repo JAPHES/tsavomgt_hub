@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Complete your profile{% endblock %}
+{% block content %}
+<header class="profile-edit-heading">
+    <p class="eyebrow">Final setup step</p>
+    <h1>Complete your innovator profile</h1>
+    <p>Hello {{ request.user.first_name|default:"there" }}, tell the hub a little more about yourself before continuing to your dashboard.</p>
+</header>
+
+<div class="card content-card narrow-card profile-edit-card">
+    <div class="card-body p-4 p-lg-5">
+        <div class="alert alert-success d-flex gap-3 align-items-start" role="status">
+            <i class="bi bi-person-check-fill fs-4" aria-hidden="true"></i>
+            <div>
+                <strong>Why these details matter</strong>
+                <div class="small mt-1">Your information helps the hub understand and support innovators across different schools, departments and counties.</div>
+            </div>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% include "includes/form_fields.html" %}
+            <div class="profile-edit-actions">
+                <button class="btn btn-primary" type="submit">Save and continue to dashboard</button>
+            </div>
+        </form>
+
+        <div class="password-auth-footer first-login-password-footer mt-3">
+            All fields on this page are required before you can continue.
+            <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button class="btn btn-link p-0" type="submit">Sign out</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
