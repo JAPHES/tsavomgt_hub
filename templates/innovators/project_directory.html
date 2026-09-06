@@ -47,7 +47,12 @@
                         {{ form.department }}
                         {% for error in form.department.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
-                    <div class="col-md-6 col-xl-4">
+                    <div class="col-md-6 col-xl-3">
+                        <label class="form-label" for="{{ form.result_view.id_for_label }}">{{ form.result_view.label }}</label>
+                        {{ form.result_view }}
+                        {% for error in form.result_view.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6 col-xl-3">
                         <label class="form-label" for="{{ form.sort_by.id_for_label }}">{{ form.sort_by.label }}</label>
                         {{ form.sort_by }}
                         {% for error in form.sort_by.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
@@ -62,12 +67,41 @@
     </div>
 
     <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
-        <div><strong>{{ matched_count }}</strong> project{{ matched_count|pluralize }} {% if filter_applied %}matched your filters{% else %}across all innovators{% endif %}</div>
-        <span class="text-muted small">{{ total_projects }} total project{{ total_projects|pluralize }}</span>
+        <div>
+            <strong>{{ matched_count }}</strong> project{{ matched_count|pluralize }} from
+            <strong>{{ matched_innovator_count }}</strong> unique innovator{{ matched_innovator_count|pluralize }}
+            {% if filter_applied %}matched your filters{% else %}across the directory{% endif %}
+            <span class="d-block text-muted small">{{ total_projects }} registered project{{ total_projects|pluralize }} in total</span>
+        </div>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Directory result view">
+            <a class="btn {% if result_view == 'projects' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?{{ project_view_query }}">Projects</a>
+            <a class="btn {% if result_view == 'innovators' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?{{ innovator_view_query }}">Unique innovators</a>
+        </div>
     </div>
 
     <div class="card content-card project-directory-table-card">
         <div class="table-responsive mobile-card-table-wrap">
+            {% if result_view == 'innovators' %}
+            <table class="table mobile-card-table align-middle mb-0">
+                <thead>
+                    <tr><th>Innovator</th><th>Registration</th><th>Academic background</th><th>County</th><th>Matching projects</th><th><span class="visually-hidden">Action</span></th></tr>
+                </thead>
+                <tbody>
+                    {% for profile in page_obj %}
+                        <tr>
+                            <td data-label="Innovator"><strong>{{ profile.user.get_full_name }}</strong><span class="d-block text-muted small">{{ profile.user.email }}</span></td>
+                            <td data-label="Registration">{{ profile.registration_number }}</td>
+                            <td data-label="Academic background"><strong>{{ profile.school|default:"Not provided" }}</strong><span class="d-block text-muted small mt-1">{{ profile.department|default:"Department not provided" }}</span></td>
+                            <td data-label="County">{{ profile.county|default:"Not provided" }}</td>
+                            <td data-label="Matching projects">{{ profile.matching_project_count }}</td>
+                            <td data-label="Action"><a class="btn btn-sm btn-outline-primary" href="{% url 'innovators:detail' profile.pk %}">View innovator</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6"><div class="record-attendance-empty"><i class="bi bi-search" aria-hidden="true"></i><strong>No matching innovators</strong><span>Adjust or clear the filters to search again.</span></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
             <table class="table mobile-card-table align-middle mb-0">
                 <thead>
                     <tr><th>Project</th><th>Technology focus</th><th>Innovator</th><th>Academic background</th><th>County</th><th><span class="visually-hidden">Action</span></th></tr>
@@ -87,6 +121,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            {% endif %}
         </div>
     </div>
     {% include "includes/pagination.html" %}
