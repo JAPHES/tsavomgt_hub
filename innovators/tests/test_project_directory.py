@@ -76,6 +76,7 @@ class ProjectDirectoryTests(TestCase):
                 "area_of_study",
                 "school",
                 "department",
+                "result_view",
                 "sort_by",
             ],
         )
@@ -115,6 +116,35 @@ class ProjectDirectoryTests(TestCase):
 
         self.assertEqual(self.project_names(response), ["Afya Link"])
         self.assertNotContains(response, "AgriSense")
+
+    def test_combines_only_the_selected_geographical_and_department_filters(self):
+        response = self.client.get(
+            reverse("innovators:project-directory"),
+            {"county": "Mombasa", "department": "Crop Sciences"},
+        )
+
+        self.assertEqual(self.project_names(response), ["AgriSense"])
+        self.assertEqual(response.context["matched_innovator_count"], 1)
+        self.assertNotContains(response, "Afya Link")
+
+    def test_technology_choices_only_come_from_registered_projects(self):
+        response = self.client.get(reverse("innovators:project-directory"))
+
+        choices = dict(response.context["form"].fields["technology_focus"].choices)
+        self.assertIn("Climate technology", choices)
+        self.assertIn("Agricultural technology", choices)
+        self.assertNotIn("Unregistered technology", choices)
+
+        invalid_response = self.client.get(
+            reverse("innovators:project-directory"),
+            {"technology_focus": "Unregistered technology"},
+        )
+        self.assertEqual(invalid_response.context["matched_count"], 0)
+        self.assertFormError(
+            invalid_response.context["form"],
+            "technology_focus",
+            "Select a valid choice. Unregistered technology is not one of the available choices.",
+        )
 
     def test_general_search_finds_project_or_innovator(self):
         for search_term, expected_project in (
@@ -169,6 +199,29 @@ class ProjectDirectoryTests(TestCase):
             response,
             "?technology_focus=Climate+technology&amp;sort_by=project&amp;page=2",
         )
+
+    def test_unique_innovator_view_removes_duplicate_people(self):
+        InnovatorProject.objects.create(
+            profile=self.climate_innovator.innovator_profile,
+            name="Eco Monitor",
+            details="A sufficiently detailed second climate monitoring project.",
+            area_of_focus="Climate technology",
+        )
+
+        response = self.client.get(
+            reverse("innovators:project-directory"),
+            {
+                "county": "Taita Taveta",
+                "result_view": "innovators",
+            },
+        )
+
+        profiles = list(response.context["page_obj"].object_list)
+        self.assertEqual(profiles, [self.climate_innovator.innovator_profile])
+        self.assertEqual(response.context["matched_count"], 2)
+        self.assertEqual(response.context["matched_innovator_count"], 1)
+        self.assertEqual(profiles[0].matching_project_count, 2)
+        self.assertContains(response, "Unique innovators")
 
     def test_innovators_cannot_access_project_directory(self):
         self.client.force_login(self.climate_innovator)
