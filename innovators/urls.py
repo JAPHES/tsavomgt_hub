@@ -9,6 +9,12 @@ urlpatterns = [
     path("profile/", views.my_profile, name="profile"),
     path("profile/edit/", views.edit_my_profile, name="profile-edit"),
     path("projects/", views.my_projects, name="projects"),
+    path("projects/<int:pk>/edit/", views.update_my_project, name="project-update"),
+    path(
+        "projects/<int:pk>/proposal/",
+        views.download_project_proposal,
+        name="project-proposal",
+    ),
     path("manage/", views.innovator_list, name="manage"),
     path("project-directory/", views.project_directory, name="project-directory"),
     path("export/", views.export_innovators, name="export"),

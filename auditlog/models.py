@@ -17,6 +17,7 @@ class AuditLog(models.Model):
         INCOMPLETE_SESSION_CLOSED = "INCOMPLETE_SESSION_CLOSED", "Incomplete session closed"
         BOOKING_ADMITTED = "BOOKING_ADMITTED", "Hub booking admitted"
         PROJECT_CREATED = "PROJECT_CREATED", "Innovator project added"
+        PROJECT_UPDATED = "PROJECT_UPDATED", "Innovator project updated"
         ROLE_CHANGED = "ROLE_CHANGED", "User role changed"
 
     actor = models.ForeignKey(

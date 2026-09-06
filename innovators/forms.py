@@ -3,7 +3,15 @@ from django import forms
 from accounts.forms import BootstrapFormMixin
 from accounts.models import User
 
-from .models import InnovatorProfile, InnovatorProject, validate_kenyan_phone
+from .models import (
+    InnovatorProfile,
+    InnovatorProject,
+    ProjectFocusArea,
+    validate_kenyan_phone,
+)
+
+
+MAX_PROJECT_PROPOSAL_SIZE = 10 * 1024 * 1024
 
 
 class InnovatorCreateForm(BootstrapFormMixin, forms.Form):
@@ -143,7 +151,7 @@ class ProjectDirectoryFilterForm(BootstrapFormMixin, forms.Form):
         max_length=300,
         label="Search projects or innovators",
         widget=forms.SearchInput(
-            attrs={"placeholder": "Project name, details, innovator, email or registration"}
+            attrs={"placeholder": "Project name, focus area, innovator, email or registration"}
         ),
     )
     technology_focus = forms.ChoiceField(
@@ -208,33 +216,38 @@ class ProjectDirectoryFilterForm(BootstrapFormMixin, forms.Form):
 class InnovatorProjectForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = InnovatorProject
-        fields = ["name", "details", "area_of_focus"]
+        fields = ["name", "focus_areas", "proposal"]
         labels = {
             "name": "Project name",
-            "details": "Project details",
-            "area_of_focus": "Area of focus",
+            "focus_areas": "Areas of focus",
+            "proposal": "Upload project proposal",
         }
         help_texts = {
-            "area_of_focus": (
-                "For example: Climate technology, agriculture, health, education, or fintech."
-            ),
+            "focus_areas": "Select every area that applies. You may choose more than two.",
+            "proposal": "Upload one PDF document, up to 10 MB.",
         }
         widgets = {
-            "details": forms.Textarea(
-                attrs={
-                    "rows": 5,
-                    "placeholder": "Describe the problem, your solution, and the progress made so far.",
-                }
-            ),
-            "area_of_focus": forms.TextInput(
-                attrs={"placeholder": "e.g. Climate technology"}
+            "focus_areas": forms.CheckboxSelectMultiple(),
+            "proposal": forms.FileInput(
+                attrs={"accept": "application/pdf,.pdf"}
             ),
         }
 
     def __init__(self, *args, profile=None, **kwargs):
         self.profile = profile
         super().__init__(*args, **kwargs)
+        self.fields["focus_areas"].queryset = ProjectFocusArea.objects.exclude(
+            name__iexact="Not specified"
+        ).order_by("name")
+        has_existing_proposal = bool(self.instance.pk and self.instance.proposal)
+        self.fields["proposal"].required = not has_existing_proposal
+        if has_existing_proposal:
+            self.fields["proposal"].help_text = (
+                "Upload a new PDF only if you want to replace the current proposal. "
+                "Maximum size: 10 MB."
+            )
         self.apply_bootstrap()
+        self.fields["focus_areas"].widget.attrs["class"] = "project-focus-options"
 
     def clean_name(self):
         name = " ".join(self.cleaned_data["name"].split())
@@ -242,21 +255,30 @@ class InnovatorProjectForm(BootstrapFormMixin, forms.ModelForm):
             raise forms.ValidationError("Enter a meaningful project name.")
         if (
             self.profile
-            and InnovatorProject.objects.filter(profile=self.profile, name__iexact=name).exists()
+            and InnovatorProject.objects.filter(profile=self.profile, name__iexact=name)
+            .exclude(pk=self.instance.pk)
+            .exists()
         ):
             raise forms.ValidationError("You already have a project with this name.")
         return name
 
-    def clean_details(self):
-        details = self.cleaned_data["details"].strip()
-        if len(details) < 20:
-            raise forms.ValidationError(
-                "Describe the project in at least 20 characters."
-            )
-        return details
-
-    def clean_area_of_focus(self):
-        area = " ".join(self.cleaned_data["area_of_focus"].split())
-        if len(area) < 3:
-            raise forms.ValidationError("Enter a meaningful area of focus.")
-        return area
+    def clean_proposal(self):
+        proposal = self.cleaned_data.get("proposal")
+        uploaded_proposal = self.files.get(self.add_prefix("proposal"))
+        if uploaded_proposal is None:
+            if proposal:
+                return proposal
+            raise forms.ValidationError("Upload the project proposal as a PDF document.")
+        if uploaded_proposal.size > MAX_PROJECT_PROPOSAL_SIZE:
+            raise forms.ValidationError("The project proposal must not exceed 10 MB.")
+        if uploaded_proposal.content_type not in {
+            "application/pdf",
+            "application/octet-stream",
+        }:
+            raise forms.ValidationError("Upload a valid PDF project proposal.")
+        position = uploaded_proposal.tell()
+        signature = uploaded_proposal.read(5)
+        uploaded_proposal.seek(position)
+        if signature != b"%PDF-":
+            raise forms.ValidationError("Upload a valid PDF project proposal.")
+        return uploaded_proposal

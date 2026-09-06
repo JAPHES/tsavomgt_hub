@@ -1,10 +1,12 @@
 import csv
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, Q
-from django.http import HttpResponse
+from django.db.models import Count, Min, Q
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
@@ -27,7 +29,7 @@ from .forms import (
     InnovatorSelfUpdateForm,
     ProjectDirectoryFilterForm,
 )
-from .models import InnovatorProfile, InnovatorProject
+from .models import InnovatorProfile, InnovatorProject, ProjectFocusArea
 from .services import (
     InnovatorDeletionError,
     ProjectError,
@@ -36,6 +38,7 @@ from .services import (
     permanently_delete_innovator,
     send_deactivation_email,
     update_innovator,
+    update_project,
 )
 
 
@@ -58,7 +61,7 @@ def innovator_list(request):
             | Q(registration_number__icontains=query)
             | Q(innovation_project_name__icontains=query)
             | Q(projects__name__icontains=query)
-            | Q(projects__area_of_focus__icontains=query)
+            | Q(projects__focus_areas__name__icontains=query)
         ).distinct()
     page_obj = Paginator(profiles, 20).get_page(request.GET.get("page"))
     return render(request, "innovators/manage.html", {"page_obj": page_obj, "query": query})
@@ -68,8 +71,7 @@ def filter_project_directory(queryset, cleaned_data):
     for term in cleaned_data.get("query", "").split():
         queryset = queryset.filter(
             Q(name__icontains=term)
-            | Q(details__icontains=term)
-            | Q(area_of_focus__icontains=term)
+            | Q(focus_areas__name__icontains=term)
             | Q(profile__user__first_name__icontains=term)
             | Q(profile__user__last_name__icontains=term)
             | Q(profile__user__email__icontains=term)
@@ -77,7 +79,7 @@ def filter_project_directory(queryset, cleaned_data):
         )
 
     if technology_focus := cleaned_data.get("technology_focus"):
-        queryset = queryset.filter(area_of_focus=technology_focus)
+        queryset = queryset.filter(focus_areas__name=technology_focus)
     if county := cleaned_data.get("county"):
         queryset = queryset.filter(profile__county=county)
 
@@ -94,29 +96,34 @@ def filter_project_directory(queryset, cleaned_data):
     ordering = {
         "newest": ("-created_at", "name"),
         "project": ("name", "profile__user__last_name", "profile__user__first_name"),
-        "technology": ("area_of_focus", "name"),
         "innovator": ("profile__user__last_name", "profile__user__first_name", "name"),
         "county": ("profile__county", "name"),
         "school": ("profile__school", "name"),
         "department": ("profile__department", "name"),
     }
+    if cleaned_data.get("sort_by") == "technology":
+        return queryset.annotate(primary_focus=Min("focus_areas__name")).order_by(
+            "primary_focus", "name"
+        )
     selected_order = ordering.get(cleaned_data.get("sort_by"), ordering["newest"])
-    return queryset.order_by(*selected_order)
+    return queryset.order_by(*selected_order).distinct()
 
 
 @admin_required
 def project_directory(request):
     technology_focuses = (
-        InnovatorProject.objects.exclude(area_of_focus="")
-        .order_by("area_of_focus")
-        .values_list("area_of_focus", flat=True)
+        ProjectFocusArea.objects.filter(projects__isnull=False)
+        .order_by("name")
+        .values_list("name", flat=True)
         .distinct()
     )
     form = ProjectDirectoryFilterForm(
         request.GET or None,
         technology_focuses=technology_focuses,
     )
-    projects = InnovatorProject.objects.select_related("profile__user")
+    projects = InnovatorProject.objects.select_related("profile__user").prefetch_related(
+        "focus_areas"
+    )
     form_is_valid = form.is_valid()
     if form_is_valid:
         projects = filter_project_directory(projects, form.cleaned_data)
@@ -213,7 +220,7 @@ def export_innovators(request):
     writer.writerow(["Full name", "Email", "Projects", "Areas of focus"])
     profiles = (
         InnovatorProfile.objects.select_related("user")
-        .prefetch_related("projects")
+        .prefetch_related("projects__focus_areas")
         .order_by("user__last_name", "user__first_name", "user__email")
     )
     for profile in profiles:
@@ -223,7 +230,9 @@ def export_innovators(request):
                 _spreadsheet_safe(profile.user.get_full_name()),
                 _spreadsheet_safe(profile.user.email),
                 _spreadsheet_safe("; ".join(project.name for project in projects)),
-                _spreadsheet_safe("; ".join(project.area_of_focus for project in projects)),
+                _spreadsheet_safe(
+                    "; ".join(project.focus_area_names for project in projects)
+                ),
             ]
         )
     return response
@@ -265,7 +274,10 @@ def create_success(request, pk):
 @admin_required
 def innovator_detail(request, pk):
     profile = get_object_or_404(
-        InnovatorProfile.objects.select_related("user").prefetch_related("projects"), pk=pk
+        InnovatorProfile.objects.select_related("user").prefetch_related(
+            "projects__focus_areas"
+        ),
+        pk=pk,
     )
     bookings = profile.user.hub_bookings.order_by("-visit_date", "-arrival_time")
     recent_bookings = list(bookings[:10])
@@ -436,7 +448,9 @@ def complete_my_profile(request):
 @innovator_required
 def my_profile(request):
     profile = get_object_or_404(
-        InnovatorProfile.objects.select_related("user").prefetch_related("projects"),
+        InnovatorProfile.objects.select_related("user").prefetch_related(
+            "projects__focus_areas"
+        ),
         user=request.user,
     )
     return render(
@@ -449,15 +463,23 @@ def my_profile(request):
 @innovator_required
 def my_projects(request):
     profile = get_object_or_404(
-        InnovatorProfile.objects.select_related("user").prefetch_related("projects"),
+        InnovatorProfile.objects.select_related("user").prefetch_related(
+            "projects__focus_areas"
+        ),
         user=request.user,
     )
-    form = InnovatorProjectForm(request.POST or None, profile=profile)
+    form = InnovatorProjectForm(
+        request.POST or None,
+        request.FILES or None,
+        profile=profile,
+    )
     if request.method == "POST" and form.is_valid():
         try:
             project = create_project(
                 profile,
-                **form.cleaned_data,
+                name=form.cleaned_data["name"],
+                focus_areas=form.cleaned_data["focus_areas"],
+                proposal=form.cleaned_data["proposal"],
                 actor=request.user,
                 request=request,
             )
@@ -475,6 +497,68 @@ def my_projects(request):
             "project_count": profile.projects.count(),
         },
     )
+
+
+@innovator_required
+def update_my_project(request, pk):
+    profile = get_object_or_404(InnovatorProfile, user=request.user)
+    project = get_object_or_404(
+        InnovatorProject.objects.prefetch_related("focus_areas"),
+        pk=pk,
+        profile=profile,
+    )
+    form = InnovatorProjectForm(
+        request.POST or None,
+        request.FILES or None,
+        instance=project,
+        profile=profile,
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            updated_project = update_project(
+                project,
+                name=form.cleaned_data["name"],
+                focus_areas=form.cleaned_data["focus_areas"],
+                proposal=request.FILES.get("proposal"),
+                actor=request.user,
+                request=request,
+            )
+        except ProjectError as exc:
+            form.add_error(None, str(exc))
+        else:
+            messages.success(
+                request,
+                f'Project "{updated_project.name}" was updated.',
+            )
+            return redirect("innovators:projects")
+    return render(
+        request,
+        "innovators/project_update.html",
+        {"form": form, "project": project},
+    )
+
+
+@login_required
+def download_project_proposal(request, pk):
+    project = get_object_or_404(
+        InnovatorProject.objects.select_related("profile__user"),
+        pk=pk,
+    )
+    if (
+        request.user.role != User.Role.ADMIN
+        and request.user.pk != project.profile.user_id
+    ):
+        raise PermissionDenied
+    if not project.proposal:
+        raise Http404("This project does not have an uploaded proposal.")
+    return FileResponse(
+        project.proposal.open("rb"),
+        as_attachment=True,
+        filename=f"{project.name} proposal.pdf",
+        content_type="application/pdf",
+    )
+
+
 @innovator_required
 def edit_my_profile(request):
     profile = get_object_or_404(InnovatorProfile, user=request.user)

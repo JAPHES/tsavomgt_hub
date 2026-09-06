@@ -1,9 +1,12 @@
 import re
+import uuid
+from pathlib import Path
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinLengthValidator
+from django.core.validators import FileExtensionValidator, MinLengthValidator
 from django.db import models
+from django.utils.text import slugify
 
 
 KENYAN_COUNTIES = (
@@ -63,6 +66,15 @@ def validate_kenyan_phone(value):
         raise ValidationError("Enter a valid Kenyan mobile number, for example 0712345678.")
 
 
+def project_proposal_upload_to(instance, filename):
+    extension = Path(filename).suffix.lower()
+    project_name = slugify(instance.name)[:70] or "project"
+    return (
+        f"project_proposals/{instance.profile_id}/"
+        f"{project_name}-{uuid.uuid4().hex}{extension}"
+    )
+
+
 class InnovatorProfile(models.Model):
     class Gender(models.TextChoices):
         MALE = "MALE", "Male"
@@ -114,6 +126,20 @@ class InnovatorProfile(models.Model):
         return f"{self.user.get_full_name()} ({self.registration_number})"
 
 
+class ProjectFocusArea(models.Model):
+    name = models.CharField(max_length=150, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def save(self, *args, **kwargs):
+        self.name = " ".join((self.name or "").split())
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class InnovatorProject(models.Model):
     profile = models.ForeignKey(
         InnovatorProfile,
@@ -121,8 +147,22 @@ class InnovatorProject(models.Model):
         related_name="projects",
     )
     name = models.CharField(max_length=200, validators=[MinLengthValidator(2)])
-    details = models.TextField(validators=[MinLengthValidator(20)])
-    area_of_focus = models.CharField(max_length=150, validators=[MinLengthValidator(3)])
+    focus_areas = models.ManyToManyField(ProjectFocusArea, related_name="projects")
+    proposal = models.FileField(
+        upload_to=project_proposal_upload_to,
+        validators=[FileExtensionValidator(["pdf"])],
+        max_length=500,
+        blank=True,
+    )
+    # Retain information entered before proposal uploads and multiple focus
+    # areas were introduced. New project forms do not expose these fields.
+    legacy_details = models.TextField(blank=True, default="", editable=False)
+    legacy_area_of_focus = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        editable=False,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -137,14 +177,15 @@ class InnovatorProject(models.Model):
         ]
         indexes = [
             models.Index(fields=["profile", "created_at"]),
-            models.Index(fields=["area_of_focus"]),
         ]
 
     def save(self, *args, **kwargs):
         self.name = " ".join((self.name or "").split())
-        self.area_of_focus = " ".join((self.area_of_focus or "").split())
-        self.details = (self.details or "").strip()
         super().save(*args, **kwargs)
+
+    @property
+    def focus_area_names(self):
+        return ", ".join(focus.name for focus in self.focus_areas.all())
 
     def __str__(self):
         return f"{self.name} — {self.profile.user}"

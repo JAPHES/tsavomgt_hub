@@ -27,11 +27,15 @@ class InnovatorDeletionError(Exception):
     pass
 
 
-def _delete_profile_photo(storage, name):
+def _delete_uploaded_file(storage, name):
     try:
         storage.delete(name)
     except Exception:
-        logger.exception("Could not delete innovator profile photo %s.", name)
+        logger.exception("Could not delete uploaded file %s.", name)
+
+
+def _delete_profile_photo(storage, name):
+    _delete_uploaded_file(storage, name)
 
 
 def _session_keys_for_user(user_id):
@@ -122,7 +126,7 @@ def update_innovator(form, *, actor, request=None):
 
 
 @transaction.atomic
-def create_project(profile, *, name, details, area_of_focus, actor, request=None):
+def create_project(profile, *, name, focus_areas, proposal, actor, request=None):
     locked_profile = (
         InnovatorProfile.objects.select_for_update().select_related("user").get(pk=profile.pk)
     )
@@ -132,29 +136,109 @@ def create_project(profile, *, name, details, area_of_focus, actor, request=None
         profile=locked_profile, name__iexact=name.strip()
     ).exists():
         raise ProjectError("You already have a project with this name.")
+    selected_focus_areas = list(focus_areas)
+    if not selected_focus_areas:
+        raise ProjectError("Select at least one area of focus.")
+    if not proposal:
+        raise ProjectError("Upload the project proposal as a PDF document.")
 
     project = InnovatorProject(
         profile=locked_profile,
         name=name,
-        details=details,
-        area_of_focus=area_of_focus,
+        proposal=proposal,
     )
     project.full_clean(validate_unique=False, validate_constraints=False)
     try:
         project.save()
     except IntegrityError as exc:
         raise ProjectError("You already have a project with this name.") from exc
+    project.focus_areas.set(selected_focus_areas)
     record_audit(
         actor=actor,
         action=AuditLog.Action.PROJECT_CREATED,
         target=project,
         new_values={
             "name": project.name,
-            "area_of_focus": project.area_of_focus,
+            "focus_areas": [focus.name for focus in selected_focus_areas],
+            "proposal": project.proposal.name,
         },
         request=request,
     )
     return project
+
+
+@transaction.atomic
+def update_project(project, *, name, focus_areas, proposal, actor, request=None):
+    locked_project = (
+        InnovatorProject.objects.select_for_update()
+        .select_related("profile__user")
+        .prefetch_related("focus_areas")
+        .get(pk=project.pk)
+    )
+    if actor.pk != locked_project.profile.user_id or actor.role != User.Role.INNOVATOR:
+        raise ProjectError("You can only update projects in your own portfolio.")
+    if (
+        InnovatorProject.objects.filter(
+            profile=locked_project.profile,
+            name__iexact=name.strip(),
+        )
+        .exclude(pk=locked_project.pk)
+        .exists()
+    ):
+        raise ProjectError("You already have a project with this name.")
+
+    selected_focus_areas = list(focus_areas)
+    if not selected_focus_areas:
+        raise ProjectError("Select at least one area of focus.")
+    if not proposal and not locked_project.proposal:
+        raise ProjectError("Upload the project proposal as a PDF document.")
+
+    previous_name = locked_project.name
+    previous_focus_areas = list(
+        locked_project.focus_areas.values_list("name", flat=True)
+    )
+    previous_proposal_name = locked_project.proposal.name
+    previous_proposal_storage = (
+        locked_project.proposal.storage if previous_proposal_name else None
+    )
+    locked_project.name = name
+    if proposal:
+        locked_project.proposal = proposal
+    locked_project.full_clean(validate_unique=False, validate_constraints=False)
+    try:
+        locked_project.save()
+    except IntegrityError as exc:
+        raise ProjectError("You already have a project with this name.") from exc
+    locked_project.focus_areas.set(selected_focus_areas)
+
+    record_audit(
+        actor=actor,
+        action=AuditLog.Action.PROJECT_UPDATED,
+        target=locked_project,
+        previous_values={
+            "name": previous_name,
+            "focus_areas": previous_focus_areas,
+            "proposal": previous_proposal_name,
+        },
+        new_values={
+            "name": locked_project.name,
+            "focus_areas": [focus.name for focus in selected_focus_areas],
+            "proposal": locked_project.proposal.name,
+        },
+        request=request,
+    )
+    if (
+        proposal
+        and previous_proposal_name
+        and previous_proposal_name != locked_project.proposal.name
+    ):
+        transaction.on_commit(
+            lambda: _delete_uploaded_file(
+                previous_proposal_storage,
+                previous_proposal_name,
+            )
+        )
+    return locked_project
 
 
 @transaction.atomic
@@ -207,6 +291,10 @@ def permanently_delete_innovator(profile, *, actor, request=None):
     }
     photo_name = locked_profile.profile_photo.name
     photo_storage = locked_profile.profile_photo.storage if photo_name else None
+    proposal_files = [
+        (project.proposal.storage, project.proposal.name)
+        for project in locked_profile.projects.exclude(proposal="")
+    ]
 
     AuditLog.objects.filter(related_audits).delete()
     AttendanceCorrection.objects.filter(pk__in=correction_ids).delete()
@@ -230,6 +318,13 @@ def permanently_delete_innovator(profile, *, actor, request=None):
     if photo_name:
         transaction.on_commit(
             lambda: _delete_profile_photo(photo_storage, photo_name),
+        )
+    for proposal_storage, proposal_name in proposal_files:
+        transaction.on_commit(
+            lambda storage=proposal_storage, name=proposal_name: _delete_uploaded_file(
+                storage,
+                name,
+            )
         )
     return deleted_counts
 

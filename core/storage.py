@@ -13,7 +13,7 @@ from django.utils.deconstruct import deconstructible
 
 @deconstructible
 class CloudinaryMediaStorage(Storage):
-    """Store user-uploaded images in Cloudinary through authenticated HTTPS calls."""
+    """Store user-uploaded images and PDF documents in Cloudinary."""
 
     resource_type = "image"
 
