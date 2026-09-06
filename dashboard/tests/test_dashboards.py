@@ -1,5 +1,6 @@
 from datetime import time, timedelta
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -7,7 +8,7 @@ from django.utils import timezone
 from attendance.models import HubBooking
 from auditlog.models import AuditLog
 from core.tests.factories import create_admin, create_innovator
-from innovators.models import InnovatorProject
+from innovators.models import InnovatorProject, ProjectFocusArea
 from innovators.services import ProjectError, create_project
 
 
@@ -135,13 +136,21 @@ class InnovatorDashboardTests(TestCase):
         self.assertContains(response, "Project portfolio")
         self.assertContains(response, "BlueWatch")
 
-    def test_innovator_can_add_a_project_with_details_and_focus_area(self):
+    def test_innovator_can_add_a_project_proposal_with_multiple_focus_areas(self):
+        focus_areas = [
+            ProjectFocusArea.objects.get_or_create(name=name)[0]
+            for name in ("Digital health", "Artificial Intelligence", "Internet of Things")
+        ]
         response = self.client.post(
             reverse("innovators:projects"),
             {
                 "name": "Afya Link",
-                "details": "A remote health consultation and patient follow-up platform.",
-                "area_of_focus": "Digital health",
+                "focus_areas": [focus.pk for focus in focus_areas],
+                "proposal": SimpleUploadedFile(
+                    "afya-link.pdf",
+                    b"%PDF-1.4\nProject proposal",
+                    content_type="application/pdf",
+                ),
             },
         )
 
@@ -149,7 +158,12 @@ class InnovatorDashboardTests(TestCase):
         project = InnovatorProject.objects.get(
             profile=self.user.innovator_profile, name="Afya Link"
         )
-        self.assertEqual(project.area_of_focus, "Digital health")
+        self.addCleanup(project.proposal.delete, save=False)
+        self.assertEqual(
+            set(project.focus_areas.values_list("name", flat=True)),
+            {"Digital health", "Artificial Intelligence", "Internet of Things"},
+        )
+        self.assertTrue(project.proposal.name.endswith(".pdf"))
         self.assertTrue(
             AuditLog.objects.filter(
                 actor=self.user,
@@ -158,19 +172,16 @@ class InnovatorDashboardTests(TestCase):
             ).exists()
         )
 
-    def test_project_requires_details_and_rejects_duplicate_name(self):
+    def test_project_rejects_duplicate_name(self):
         response = self.client.post(
             reverse("innovators:projects"),
             {
                 "name": "bluewatch",
-                "details": "Too short",
-                "area_of_focus": "IoT",
             },
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "already have a project with this name")
-        self.assertContains(response, "at least 20 characters")
         self.assertEqual(self.user.innovator_profile.projects.count(), 1)
 
     def test_innovator_cannot_add_a_project_to_another_profile(self):
@@ -182,8 +193,8 @@ class InnovatorDashboardTests(TestCase):
             create_project(
                 other.innovator_profile,
                 name="Unauthorized project",
-                details="This project must not be attached to another innovator.",
-                area_of_focus="Security",
+                focus_areas=[],
+                proposal=None,
                 actor=self.user,
             )
         self.assertFalse(

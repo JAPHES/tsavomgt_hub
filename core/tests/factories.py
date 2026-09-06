@@ -1,7 +1,7 @@
 import secrets
 
 from accounts.models import User
-from innovators.models import InnovatorProfile, InnovatorProject
+from innovators.models import InnovatorProfile, InnovatorProject, ProjectFocusArea
 
 
 def make_test_password():
@@ -37,6 +37,7 @@ def create_innovator(
     project="BlueWatch",
     project_details="A water-quality monitoring and alert platform for local communities.",
     area_of_focus="Climate technology",
+    focus_areas=None,
     must_change_password=False,
     profile_complete=True,
     gender=InnovatorProfile.Gender.FEMALE,
@@ -73,10 +74,14 @@ def create_innovator(
         innovation_project_name=project,
         project_description=project_details,
     )
-    InnovatorProject.objects.create(
+    project_record = InnovatorProject.objects.create(
         profile=profile,
         name=project,
-        details=project_details,
-        area_of_focus=area_of_focus,
+        legacy_details=project_details,
+        legacy_area_of_focus=area_of_focus,
+    )
+    focus_names = focus_areas or [area_of_focus]
+    project_record.focus_areas.add(
+        *(ProjectFocusArea.objects.get_or_create(name=name)[0] for name in focus_names)
     )
     return user

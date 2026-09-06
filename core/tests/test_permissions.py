@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from attendance.models import AttendanceSession, HubBooking
-from innovators.models import InnovatorProject
+from innovators.models import InnovatorProject, ProjectFocusArea
 
 from .factories import create_admin, create_innovator
 
@@ -164,11 +164,14 @@ class PermissionTests(TestCase):
         self.assertContains(projects_response, 'class="project-card-list"')
 
     def test_administrator_innovator_record_shows_profile_and_booking_summary(self):
-        InnovatorProject.objects.create(
+        project = InnovatorProject.objects.create(
             profile=self.other.innovator_profile,
             name="Market Bridge",
-            details="A produce market matching platform for smallholder farmers.",
-            area_of_focus="Agricultural technology",
+            legacy_details="A produce market matching platform for smallholder farmers.",
+            legacy_area_of_focus="Agricultural technology",
+        )
+        project.focus_areas.add(
+            ProjectFocusArea.objects.get_or_create(name="Agricultural technology")[0]
         )
         self.client.force_login(self.admin)
         response = self.client.get(

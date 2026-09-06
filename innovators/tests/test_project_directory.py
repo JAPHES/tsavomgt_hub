@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from core.tests.factories import create_admin, create_innovator
-from innovators.models import InnovatorProject
+from innovators.models import InnovatorProject, ProjectFocusArea
 
 
 class ProjectDirectoryTests(TestCase):
@@ -39,6 +39,7 @@ class ProjectDirectoryTests(TestCase):
             department="Nursing",
             county="Kilifi",
         )
+        self.climate_focus = ProjectFocusArea.objects.get(name="Climate technology")
         self.client.force_login(self.administrator)
 
     def project_names(self, response):
@@ -148,7 +149,7 @@ class ProjectDirectoryTests(TestCase):
 
     def test_general_search_finds_project_or_innovator(self):
         for search_term, expected_project in (
-            ("precision agriculture", "AgriSense"),
+            ("AgriSense", "AgriSense"),
             ("Neema", "Afya Link"),
             ("TTU/INN/001", "BlueWatch"),
         ):
@@ -179,12 +180,11 @@ class ProjectDirectoryTests(TestCase):
 
     def test_pagination_keeps_active_filters_and_sorting(self):
         for index in range(30):
-            InnovatorProject.objects.create(
+            project = InnovatorProject.objects.create(
                 profile=self.climate_innovator.innovator_profile,
                 name=f"Climate Project {index:02d}",
-                details="A sufficiently detailed climate technology project description.",
-                area_of_focus="Climate technology",
             )
+            project.focus_areas.add(self.climate_focus)
 
         response = self.client.get(
             reverse("innovators:project-directory"),
@@ -201,12 +201,11 @@ class ProjectDirectoryTests(TestCase):
         )
 
     def test_unique_innovator_view_removes_duplicate_people(self):
-        InnovatorProject.objects.create(
+        project = InnovatorProject.objects.create(
             profile=self.climate_innovator.innovator_profile,
             name="Eco Monitor",
-            details="A sufficiently detailed second climate monitoring project.",
-            area_of_focus="Climate technology",
         )
+        project.focus_areas.add(self.climate_focus)
 
         response = self.client.get(
             reverse("innovators:project-directory"),
