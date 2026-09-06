@@ -120,6 +120,8 @@ class InnovatorDashboardTests(TestCase):
         response = self.client.get(reverse("dashboard:innovator"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<div class="sidebar-brand"', html=False)
+        self.assertNotContains(response, '<a class="sidebar-brand"', html=False)
         self.assertContains(
             response, f"Welcome, {self.user.first_name}, to Tsavo Hub Management System"
         )

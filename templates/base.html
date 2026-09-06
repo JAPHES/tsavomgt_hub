@@ -27,7 +27,7 @@
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#hubSidebar" aria-label="Close navigation"></button>
         </div>
         <div class="sidebar-inner">
-            <a class="sidebar-brand" href="{% url 'core:home' %}" aria-label="Tsavo Hub dashboard">
+            <div class="sidebar-brand" aria-label="Tsavo Innovation and Incubation Hub">
                 <span class="sidebar-logo-panel">
                     {% if site_logo_url %}
                         <img class="sidebar-logo" src="{{ site_logo_url }}" alt="Tsavo Innovation and Incubation Hub logo">
@@ -36,7 +36,7 @@
                     {% endif %}
                 </span>
                 <span class="sidebar-brand-name">Tsavo Hub Management System</span>
-            </a>
+            </div>
 
             <nav class="sidebar-navigation" aria-label="Application navigation">
                 <p class="sidebar-section-label">Main menu</p>
@@ -109,14 +109,14 @@
 {% else %}
 {% block public_navigation %}
 <nav class="public-navbar" aria-label="Public navigation">
-    <a class="public-brand" href="{% url 'core:home' %}">
+    <div class="public-brand" aria-label="Tsavo Innovation and Incubation Hub">
         {% if site_logo_url %}
             <img class="public-logo" src="{{ site_logo_url }}" alt="Tsavo Innovation and Incubation Hub logo">
         {% else %}
             <img class="public-logo" src="{% static 'image/tsavo_logo.jpeg' %}?v={{ static_version|urlencode }}" alt="Tsavo Innovation and Incubation Hub logo">
         {% endif %}
         <span><strong>Tsavo Innovation &amp; Incubation Hub</strong><small>Tsavo Hub Management System</small></span>
-    </a>
+    </div>
 </nav>
 {% endblock %}
 {% block public_support_banner %}
