@@ -38,6 +38,11 @@ def create_innovator(
     project_details="A water-quality monitoring and alert platform for local communities.",
     area_of_focus="Climate technology",
     must_change_password=False,
+    profile_complete=True,
+    gender=InnovatorProfile.Gender.FEMALE,
+    school="School of Science and Informatics",
+    department="Informatics and Computing",
+    county="Taita Taveta",
 ):
     user = User.objects.create_user(
         email=email,
@@ -61,6 +66,10 @@ def create_innovator(
         user=user,
         registration_number=registration_number,
         phone_number="0712345678",
+        gender=gender if profile_complete else "",
+        school=school if profile_complete else "",
+        department=department if profile_complete else "",
+        county=county if profile_complete else "",
         innovation_project_name=project,
         project_description=project_details,
     )

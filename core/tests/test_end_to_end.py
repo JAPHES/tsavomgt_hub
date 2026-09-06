@@ -53,8 +53,20 @@ class CompleteHubFlowTests(TestCase):
                 reverse("accounts:login"),
                 {"username": innovator.email, "password": DEFAULT_PASSWORD},
             ),
-            reverse("dashboard:index"),
+            reverse("innovators:profile-complete"),
             fetch_redirect_response=False,
+        )
+        self.assertRedirects(
+            self.client.post(
+                reverse("innovators:profile-complete"),
+                {
+                    "gender": "FEMALE",
+                    "school": "School of Science and Informatics",
+                    "department": "Informatics and Computing",
+                    "county": "Taita Taveta",
+                },
+            ),
+            reverse("dashboard:innovator"),
         )
 
         self.assertRedirects(
