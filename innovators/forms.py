@@ -123,6 +123,78 @@ class InnovatorSelfUpdateForm(InnovatorProfileCompletionForm):
         ]
 
 
+class ProjectDirectoryFilterForm(BootstrapFormMixin, forms.Form):
+    SORT_CHOICES = (
+        ("newest", "Newest projects"),
+        ("project", "Project name"),
+        ("technology", "Technology focus"),
+        ("innovator", "Innovator name"),
+        ("county", "County"),
+        ("school", "School"),
+        ("department", "Department"),
+    )
+
+    query = forms.CharField(
+        required=False,
+        max_length=300,
+        label="Search projects or innovators",
+        widget=forms.SearchInput(
+            attrs={"placeholder": "Project name, details, innovator, email or registration"}
+        ),
+    )
+    technology_focus = forms.ChoiceField(
+        required=False,
+        choices=(),
+        label="Technology / project focus",
+    )
+    county = forms.ChoiceField(
+        required=False,
+        choices=[
+            ("", "All counties"),
+            *InnovatorProfile._meta.get_field("county").choices,
+        ],
+        label="Geographical area",
+    )
+    area_of_study = forms.CharField(
+        required=False,
+        max_length=200,
+        label="Area of study",
+        help_text="Searches across both school and department.",
+        widget=forms.SearchInput(attrs={"placeholder": "e.g. computing, engineering"}),
+    )
+    school = forms.CharField(
+        required=False,
+        max_length=200,
+        label="School of study",
+        widget=forms.SearchInput(attrs={"placeholder": "e.g. Science and Informatics"}),
+    )
+    department = forms.CharField(
+        required=False,
+        max_length=200,
+        widget=forms.SearchInput(attrs={"placeholder": "e.g. Informatics and Computing"}),
+    )
+    sort_by = forms.ChoiceField(
+        required=False,
+        choices=SORT_CHOICES,
+        initial="newest",
+        label="Sort results by",
+    )
+
+    def __init__(self, *args, technology_focuses=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["technology_focus"].choices = [
+            ("", "All technology areas"),
+            *((focus, focus) for focus in technology_focuses),
+        ]
+        self.apply_bootstrap()
+
+    def clean(self):
+        cleaned = super().clean()
+        for field_name in ("query", "area_of_study", "school", "department"):
+            cleaned[field_name] = " ".join(cleaned.get(field_name, "").split())
+        return cleaned
+
+
 class InnovatorProjectForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = InnovatorProject

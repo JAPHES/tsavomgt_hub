@@ -25,8 +25,9 @@ from .forms import (
     InnovatorProfileCompletionForm,
     InnovatorProjectForm,
     InnovatorSelfUpdateForm,
+    ProjectDirectoryFilterForm,
 )
-from .models import InnovatorProfile
+from .models import InnovatorProfile, InnovatorProject
 from .services import (
     InnovatorDeletionError,
     ProjectError,
@@ -61,6 +62,94 @@ def innovator_list(request):
         ).distinct()
     page_obj = Paginator(profiles, 20).get_page(request.GET.get("page"))
     return render(request, "innovators/manage.html", {"page_obj": page_obj, "query": query})
+
+
+def filter_project_directory(queryset, cleaned_data):
+    for term in cleaned_data.get("query", "").split():
+        queryset = queryset.filter(
+            Q(name__icontains=term)
+            | Q(details__icontains=term)
+            | Q(area_of_focus__icontains=term)
+            | Q(profile__user__first_name__icontains=term)
+            | Q(profile__user__last_name__icontains=term)
+            | Q(profile__user__email__icontains=term)
+            | Q(profile__registration_number__icontains=term)
+        )
+
+    if technology_focus := cleaned_data.get("technology_focus"):
+        queryset = queryset.filter(area_of_focus=technology_focus)
+    if county := cleaned_data.get("county"):
+        queryset = queryset.filter(profile__county=county)
+
+    for term in cleaned_data.get("area_of_study", "").split():
+        queryset = queryset.filter(
+            Q(profile__school__icontains=term)
+            | Q(profile__department__icontains=term)
+        )
+    if school := cleaned_data.get("school"):
+        queryset = queryset.filter(profile__school__icontains=school)
+    if department := cleaned_data.get("department"):
+        queryset = queryset.filter(profile__department__icontains=department)
+
+    ordering = {
+        "newest": ("-created_at", "name"),
+        "project": ("name", "profile__user__last_name", "profile__user__first_name"),
+        "technology": ("area_of_focus", "name"),
+        "innovator": ("profile__user__last_name", "profile__user__first_name", "name"),
+        "county": ("profile__county", "name"),
+        "school": ("profile__school", "name"),
+        "department": ("profile__department", "name"),
+    }
+    selected_order = ordering.get(cleaned_data.get("sort_by"), ordering["newest"])
+    return queryset.order_by(*selected_order)
+
+
+@admin_required
+def project_directory(request):
+    technology_focuses = (
+        InnovatorProject.objects.exclude(area_of_focus="")
+        .order_by("area_of_focus")
+        .values_list("area_of_focus", flat=True)
+        .distinct()
+    )
+    form = ProjectDirectoryFilterForm(
+        request.GET or None,
+        technology_focuses=technology_focuses,
+    )
+    projects = InnovatorProject.objects.select_related("profile__user")
+    if form.is_valid():
+        projects = filter_project_directory(projects, form.cleaned_data)
+    else:
+        projects = projects.order_by("-created_at", "name")
+
+    matched_count = projects.count()
+    page_obj = Paginator(projects, 30).get_page(request.GET.get("page"))
+    pagination_parameters = request.GET.copy()
+    pagination_parameters.pop("page", None)
+    filter_fields = (
+        "query",
+        "technology_focus",
+        "county",
+        "area_of_study",
+        "school",
+        "department",
+    )
+    return render(
+        request,
+        "innovators/project_directory.html",
+        {
+            "form": form,
+            "page_obj": page_obj,
+            "matched_count": matched_count,
+            "total_projects": InnovatorProject.objects.count(),
+            "filter_applied": bool(
+                form.is_bound
+                and form.is_valid()
+                and any(form.cleaned_data.get(field) for field in filter_fields)
+            ),
+            "pagination_query": pagination_parameters.urlencode(),
+        },
+    )
 
 
 @admin_required

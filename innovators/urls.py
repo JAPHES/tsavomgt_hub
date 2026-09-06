@@ -10,6 +10,7 @@ urlpatterns = [
     path("profile/edit/", views.edit_my_profile, name="profile-edit"),
     path("projects/", views.my_projects, name="projects"),
     path("manage/", views.innovator_list, name="manage"),
+    path("project-directory/", views.project_directory, name="project-directory"),
     path("export/", views.export_innovators, name="export"),
     path("create/", views.innovator_create, name="create"),
     path("create/success/<int:pk>/", views.create_success, name="create-success"),
