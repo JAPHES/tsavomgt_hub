@@ -3,7 +3,7 @@ import csv
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -117,15 +117,61 @@ def project_directory(request):
         technology_focuses=technology_focuses,
     )
     projects = InnovatorProject.objects.select_related("profile__user")
-    if form.is_valid():
+    form_is_valid = form.is_valid()
+    if form_is_valid:
         projects = filter_project_directory(projects, form.cleaned_data)
+    elif form.is_bound:
+        projects = projects.none()
     else:
         projects = projects.order_by("-created_at", "name")
 
     matched_count = projects.count()
-    page_obj = Paginator(projects, 30).get_page(request.GET.get("page"))
+    matching_profile_ids = projects.order_by().values_list("profile_id", flat=True).distinct()
+    matched_innovator_count = matching_profile_ids.count()
+    result_view = "projects"
+    if form_is_valid:
+        result_view = form.cleaned_data.get("result_view") or result_view
+
+    if result_view == "innovators":
+        innovator_ordering = {
+            "county": ("county", "user__last_name", "user__first_name"),
+            "school": ("school", "user__last_name", "user__first_name"),
+            "department": ("department", "user__last_name", "user__first_name"),
+        }
+        selected_sort = form.cleaned_data.get("sort_by")
+        results = (
+            InnovatorProfile.objects.select_related("user")
+            .filter(pk__in=matching_profile_ids)
+            .order_by(
+                *innovator_ordering.get(
+                    selected_sort,
+                    ("user__last_name", "user__first_name", "registration_number"),
+                )
+            )
+        )
+    else:
+        results = projects
+
+    page_obj = Paginator(results, 30).get_page(request.GET.get("page"))
+    if result_view == "innovators":
+        profiles_on_page = list(page_obj.object_list)
+        project_counts = {
+            row["profile_id"]: row["total"]
+            for row in projects.filter(profile_id__in=[profile.pk for profile in profiles_on_page])
+            .order_by()
+            .values("profile_id")
+            .annotate(total=Count("pk"))
+        }
+        for profile in profiles_on_page:
+            profile.matching_project_count = project_counts.get(profile.pk, 0)
+        page_obj.object_list = profiles_on_page
+
     pagination_parameters = request.GET.copy()
     pagination_parameters.pop("page", None)
+    project_view_parameters = pagination_parameters.copy()
+    project_view_parameters["result_view"] = "projects"
+    innovator_view_parameters = pagination_parameters.copy()
+    innovator_view_parameters["result_view"] = "innovators"
     filter_fields = (
         "query",
         "technology_focus",
@@ -140,14 +186,18 @@ def project_directory(request):
         {
             "form": form,
             "page_obj": page_obj,
+            "result_view": result_view,
             "matched_count": matched_count,
+            "matched_innovator_count": matched_innovator_count,
             "total_projects": InnovatorProject.objects.count(),
             "filter_applied": bool(
                 form.is_bound
-                and form.is_valid()
+                and form_is_valid
                 and any(form.cleaned_data.get(field) for field in filter_fields)
             ),
             "pagination_query": pagination_parameters.urlencode(),
+            "project_view_query": project_view_parameters.urlencode(),
+            "innovator_view_query": innovator_view_parameters.urlencode(),
         },
     )
 

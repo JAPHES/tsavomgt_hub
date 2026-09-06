@@ -124,6 +124,10 @@ class InnovatorSelfUpdateForm(InnovatorProfileCompletionForm):
 
 
 class ProjectDirectoryFilterForm(BootstrapFormMixin, forms.Form):
+    RESULT_VIEW_CHOICES = (
+        ("projects", "Projects"),
+        ("innovators", "Unique innovators"),
+    )
     SORT_CHOICES = (
         ("newest", "Newest projects"),
         ("project", "Project name"),
@@ -172,6 +176,12 @@ class ProjectDirectoryFilterForm(BootstrapFormMixin, forms.Form):
         required=False,
         max_length=200,
         widget=forms.SearchInput(attrs={"placeholder": "e.g. Informatics and Computing"}),
+    )
+    result_view = forms.ChoiceField(
+        required=False,
+        choices=RESULT_VIEW_CHOICES,
+        initial="projects",
+        label="Show results as",
     )
     sort_by = forms.ChoiceField(
         required=False,
