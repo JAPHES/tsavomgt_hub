@@ -109,8 +109,8 @@
                 <tbody>
                     {% for project in page_obj %}
                         <tr>
-                            <td data-label="Project"><strong>{{ project.name }}</strong><span class="d-block text-muted small mt-1">{{ project.details|truncatechars:105 }}</span></td>
-                            <td data-label="Technology focus"><span class="project-focus-badge">{{ project.area_of_focus }}</span></td>
+                            <td data-label="Project"><strong>{{ project.name }}</strong>{% if project.proposal %}<a class="d-block small mt-1" href="{% url 'innovators:project-proposal' project.pk %}"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Download proposal</a>{% else %}<span class="d-block text-muted small mt-1">Proposal not uploaded</span>{% endif %}</td>
+                            <td data-label="Technology focus"><div class="project-focus-list">{% for focus in project.focus_areas.all %}<span class="project-focus-badge">{{ focus.name }}</span>{% empty %}<span class="text-muted small">Not recorded</span>{% endfor %}</div></td>
                             <td data-label="Innovator"><strong>{{ project.profile.user.get_full_name }}</strong><span class="d-block text-muted small">{{ project.profile.registration_number }}</span></td>
                             <td data-label="Academic background"><strong>{{ project.profile.school|default:"Not provided" }}</strong><span class="d-block text-muted small mt-1">{{ project.profile.department|default:"Department not provided" }}</span></td>
                             <td data-label="County">{{ project.profile.county|default:"Not provided" }}</td>

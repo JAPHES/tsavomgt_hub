@@ -5,7 +5,7 @@
     <div>
         <p class="eyebrow">Innovation portfolio</p>
         <h1>My projects</h1>
-        <p>Add new innovations and keep a complete record of their details and areas of focus.</p>
+        <p>Add innovations, select all relevant focus areas, and attach each project proposal.</p>
     </div>
     <span class="record-count"><i class="bi bi-lightbulb-fill" aria-hidden="true"></i>{{ project_count }} project{{ project_count|pluralize }}</span>
 </header>
@@ -15,9 +15,9 @@
         <section class="project-form-card h-100" aria-labelledby="add-project-title">
             <div class="project-section-heading">
                 <span><i class="bi bi-lightbulb-fill" aria-hidden="true"></i></span>
-                <div><p class="eyebrow">Grow your portfolio</p><h2 id="add-project-title">Add a project</h2><small>Record each innovation separately with its focus and full details.</small></div>
+                <div><p class="eyebrow">Grow your portfolio</p><h2 id="add-project-title">Add a project</h2><small>Upload a PDF proposal and select every focus area that applies.</small></div>
             </div>
-            <form method="post" novalidate>
+            <form method="post" enctype="multipart/form-data" novalidate>
                 {% csrf_token %}
                 {% include "includes/form_fields.html" %}
                 <button class="btn btn-primary w-100" type="submit"><i class="bi bi-plus-circle me-2" aria-hidden="true"></i>Add project to portfolio</button>
@@ -33,9 +33,18 @@
             <div class="project-card-list">
                 {% for project in projects %}
                     <article class="project-card-item">
-                        <div class="project-card-title"><h3>{{ project.name }}</h3><span class="project-focus-badge">{{ project.area_of_focus }}</span></div>
-                        <p>{{ project.details|linebreaksbr }}</p>
-                        <small>Added {{ project.created_at|date:"d M Y" }}</small>
+                        <div class="project-card-title"><h3>{{ project.name }}</h3><a class="btn btn-sm btn-outline-primary" href="{% url 'innovators:project-update' project.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit project</a></div>
+                        <div class="project-focus-list" aria-label="Areas of focus">
+                            {% for focus in project.focus_areas.all %}<span class="project-focus-badge">{{ focus.name }}</span>{% empty %}<span class="text-muted small">No focus area recorded</span>{% endfor %}
+                        </div>
+                        {% if project.proposal %}
+                            <a class="project-proposal-link" href="{% url 'innovators:project-proposal' project.pk %}"><i class="bi bi-file-earmark-pdf-fill" aria-hidden="true"></i>Download project proposal</a>
+                        {% elif project.legacy_details %}
+                            <div class="project-legacy-note"><strong>Proposal upload pending</strong><p>{{ project.legacy_details|linebreaksbr }}</p></div>
+                        {% else %}
+                            <span class="project-proposal-missing">Proposal upload pending</span>
+                        {% endif %}
+                        <small>Added {{ project.created_at|date:"d M Y" }} · Updated {{ project.updated_at|date:"d M Y" }}</small>
                     </article>
                 {% empty %}
                     <div class="project-empty-state"><i class="bi bi-lightbulb" aria-hidden="true"></i><p>Add your first project using the form.</p></div>

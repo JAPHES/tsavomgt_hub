@@ -247,6 +247,23 @@ a { color: var(--ttu-primary-green); }
 .project-card-title h3 { font-family: "Poppins", sans-serif; font-size: .94rem; margin: .12rem 0 .5rem; }
 .project-card-item p { color: #586258; font-size: .76rem; line-height: 1.65; margin: 0 0 .6rem; }
 .project-card-item > small { color: #899189; font-size: .65rem; }
+.project-focus-options { display: grid; gap: .5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.project-focus-options > div { min-width: 0; }
+.project-focus-options label { align-items: flex-start; background: #f8fbf9; border: 1px solid #dce8e1; border-radius: .65rem; cursor: pointer; display: flex; font-size: .76rem; gap: .55rem; height: 100%; line-height: 1.4; padding: .7rem .75rem; transition: border-color .15s ease, background-color .15s ease; }
+.project-focus-options label:has(input:checked) { background: var(--ttu-light-green); border-color: rgba(0,100,0,.35); color: var(--ttu-dark-green); font-weight: 600; }
+.project-focus-options input { accent-color: var(--ttu-primary-green); flex: 0 0 auto; margin-top: .15rem; }
+.project-focus-list { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .8rem; }
+.project-proposal-link { align-items: center; color: var(--ttu-primary-green); display: inline-flex; font-size: .75rem; font-weight: 600; gap: .35rem; margin: 0 0 .75rem; text-decoration: none; }
+.project-proposal-link:hover { color: var(--ttu-dark-green); text-decoration: underline; }
+.project-proposal-missing { color: #856404; display: block; font-size: .72rem; font-weight: 600; margin: 0 0 .7rem; }
+.project-legacy-note { background: #fff8e7; border-left: 3px solid #d49b20; border-radius: .45rem; margin: 0 0 .75rem; padding: .65rem .75rem; }
+.project-legacy-note strong { color: #694b08; display: block; font-size: .72rem; margin-bottom: .3rem; }
+.project-legacy-note p { margin: 0; }
+.project-update-card { margin: 1rem auto 2rem; max-width: 780px; }
+.project-update-card h1 { font-size: 1.65rem; margin: 0 0 .15rem; }
+.project-current-proposal { align-items: center; background: var(--ttu-light-green); border: 1px solid rgba(0,100,0,.12); border-radius: .7rem; display: flex; font-size: .76rem; gap: 1rem; justify-content: space-between; margin-bottom: 1.2rem; padding: .8rem 1rem; }
+.project-current-proposal span { align-items: center; display: flex; font-weight: 600; gap: .45rem; }
+.project-current-proposal a { font-weight: 600; }
 .project-empty-state { color: var(--ttu-medium-gray); padding: 2rem 1rem; text-align: center; }
 .project-empty-state i { color: #9bb39b; display: block; font-size: 1.7rem; margin-bottom: .45rem; }
 .project-empty-state p { margin: 0; }
@@ -665,6 +682,7 @@ textarea.form-control { min-height: auto; }
     .project-portfolio-heading { align-items: flex-start; flex-direction: column; margin: -1rem -1rem 1rem; padding: 1rem; }
     .project-card-title { flex-direction: column; }
     .project-focus-badge { white-space: normal; }
+    .project-focus-options { grid-template-columns: 1fr; }
     .project-count-line { align-items: flex-start; flex-direction: column; }
 }
 

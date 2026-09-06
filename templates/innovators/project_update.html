@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Update {{ project.name }}{% endblock %}
+{% block content %}
+<div class="form-page-shell">
+    <a class="innovator-back-link" href="{% url 'innovators:projects' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Back to my projects</a>
+    <section class="project-form-card project-update-card" aria-labelledby="update-project-heading">
+        <div class="project-section-heading">
+            <span><i class="bi bi-pencil-square" aria-hidden="true"></i></span>
+            <div>
+                <p class="eyebrow">Project portfolio</p>
+                <h1 id="update-project-heading">Update project</h1>
+                <small>Update the name, focus areas, or replace the uploaded proposal.</small>
+            </div>
+        </div>
+        {% if project.proposal %}
+            <div class="project-current-proposal">
+                <span><i class="bi bi-file-earmark-pdf-fill" aria-hidden="true"></i>Current proposal</span>
+                <a href="{% url 'innovators:project-proposal' project.pk %}">Download PDF</a>
+            </div>
+        {% elif project.legacy_details %}
+            <div class="alert alert-warning">This older project does not have a proposal yet. Upload one before saving the update.</div>
+        {% endif %}
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            {% include "includes/form_fields.html" %}
+            <div class="d-flex flex-wrap gap-2 justify-content-end mt-4">
+                <a class="btn btn-light" href="{% url 'innovators:projects' %}">Cancel</a>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-check-circle me-2" aria-hidden="true"></i>Save project changes</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

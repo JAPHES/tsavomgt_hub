@@ -71,8 +71,17 @@
             <div class="project-card-list admin-project-list">
                 {% for project in projects %}
                     <article class="project-card-item">
-                        <div class="project-card-title"><h3>{{ project.name }}</h3><span class="project-focus-badge">{{ project.area_of_focus }}</span></div>
-                        <p>{{ project.details|linebreaksbr }}</p>
+                        <div class="project-card-title"><h3>{{ project.name }}</h3></div>
+                        <div class="project-focus-list" aria-label="Areas of focus">
+                            {% for focus in project.focus_areas.all %}<span class="project-focus-badge">{{ focus.name }}</span>{% empty %}<span class="text-muted small">No focus area recorded</span>{% endfor %}
+                        </div>
+                        {% if project.proposal %}
+                            <a class="project-proposal-link" href="{% url 'innovators:project-proposal' project.pk %}"><i class="bi bi-file-earmark-pdf-fill" aria-hidden="true"></i>Download project proposal</a>
+                        {% elif project.legacy_details %}
+                            <div class="project-legacy-note"><strong>Proposal upload pending</strong><p>{{ project.legacy_details|linebreaksbr }}</p></div>
+                        {% else %}
+                            <span class="project-proposal-missing">Proposal upload pending</span>
+                        {% endif %}
                         <small>Added {{ project.created_at|date:"d M Y" }}</small>
                     </article>
                 {% empty %}
