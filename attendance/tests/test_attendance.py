@@ -1,8 +1,9 @@
 from datetime import time, timedelta
 
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
@@ -82,6 +83,26 @@ class HubBookingServiceTests(TestCase):
                 target_id=str(booking.pk),
             ).exists()
         )
+
+    def test_admission_lock_query_does_not_join_nullable_relations(self):
+        booking = create_booking(
+            self.innovator,
+            visit_date=timezone.localdate(),
+            arrival_time=time(10, 0),
+            purpose="Verify that admission locks only the booking record.",
+        )
+
+        with CaptureQueriesContext(connection) as queries:
+            admit_booking(self.admin, booking)
+
+        booking_selects = [
+            query["sql"]
+            for query in queries.captured_queries
+            if query["sql"].lstrip().upper().startswith("SELECT")
+            and "attendance_hubbooking" in query["sql"]
+        ]
+        self.assertTrue(booking_selects)
+        self.assertNotIn("JOIN", booking_selects[0].upper())
 
     def test_future_booking_cannot_be_admitted(self):
         booking = create_booking(
