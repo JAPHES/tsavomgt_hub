@@ -1,4 +1,5 @@
 import csv
+import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -40,6 +41,9 @@ from .services import (
     update_innovator,
     update_project,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def _spreadsheet_safe(value):
@@ -551,8 +555,24 @@ def download_project_proposal(request, pk):
         raise PermissionDenied
     if not project.proposal:
         raise Http404("This project does not have an uploaded proposal.")
+    try:
+        proposal_file = project.proposal.open("rb")
+    except OSError:
+        logger.exception(
+            "Project proposal delivery failed for project_id=%s and user_id=%s.",
+            project.pk,
+            request.user.pk,
+        )
+        messages.error(
+            request,
+            "The project proposal could not be downloaded right now. "
+            "Please try again shortly or contact the hub administrator.",
+        )
+        if request.user.role == User.Role.ADMIN:
+            return redirect("innovators:detail", pk=project.profile_id)
+        return redirect("innovators:projects")
     return FileResponse(
-        project.proposal.open("rb"),
+        proposal_file,
         as_attachment=True,
         filename=f"{project.name} proposal.pdf",
         content_type="application/pdf",

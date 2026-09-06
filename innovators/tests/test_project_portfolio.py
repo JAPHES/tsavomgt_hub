@@ -1,4 +1,5 @@
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
@@ -203,3 +204,36 @@ class ProjectPortfolioTests(TestCase):
                 self.assertEqual(response["Content-Type"], "application/pdf")
                 self.assertIn("attachment;", response["Content-Disposition"])
                 self.assertTrue(b"".join(response.streaming_content).startswith(b"%PDF-"))
+
+    def test_storage_failure_returns_owner_to_projects_with_a_clear_message(self):
+        project = self.create_uploaded_project()
+        self.client.force_login(self.owner)
+
+        with patch(
+            "django.db.models.fields.files.FieldFile.open",
+            side_effect=OSError("remote delivery blocked"),
+        ), patch("innovators.views.logger.exception"):
+            response = self.client.get(
+                reverse("innovators:project-proposal", kwargs={"pk": project.pk}),
+                follow=True,
+            )
+
+        self.assertRedirects(response, reverse("innovators:projects"))
+        self.assertContains(response, "could not be downloaded right now")
+
+    def test_storage_failure_returns_administrator_to_innovator_profile(self):
+        project = self.create_uploaded_project()
+        self.client.force_login(self.administrator)
+
+        with patch(
+            "django.db.models.fields.files.FieldFile.open",
+            side_effect=OSError("remote delivery blocked"),
+        ), patch("innovators.views.logger.exception"):
+            response = self.client.get(
+                reverse("innovators:project-proposal", kwargs={"pk": project.pk})
+            )
+
+        self.assertRedirects(
+            response,
+            reverse("innovators:detail", kwargs={"pk": project.profile_id}),
+        )

@@ -11,6 +11,10 @@ from django.utils.crypto import get_random_string
 from django.utils.deconstruct import deconstructible
 
 
+class CloudinaryMediaAccessError(OSError):
+    """Raised when a stored asset cannot be retrieved from Cloudinary."""
+
+
 @deconstructible
 class CloudinaryMediaStorage(Storage):
     """Store user-uploaded images and PDF documents in Cloudinary."""
@@ -59,8 +63,13 @@ class CloudinaryMediaStorage(Storage):
     def _open(self, name, mode="rb"):
         if mode not in {"r", "rb"}:
             raise ValueError("Cloudinary media can only be opened for reading.")
-        response = requests.get(self.url(name), timeout=30)
-        response.raise_for_status()
+        try:
+            response = requests.get(self.url(name), timeout=30)
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            raise CloudinaryMediaAccessError(
+                "Cloudinary could not deliver the requested media file."
+            ) from exc
         return ContentFile(response.content, name=PurePosixPath(name).name)
 
     def delete(self, name):

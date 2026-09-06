@@ -150,7 +150,7 @@ tsavo_hub/
 - SQLite for local development or PostgreSQL for production
 - Pillow for profile-photo handling
 - A Brevo account for production transactional email
-- A Cloudinary account for production profile-photo storage
+- A Cloudinary account for production profile-photo and project-proposal storage
 
 Installable dependencies are pinned by compatible ranges in `requirements.txt`.
 
@@ -375,7 +375,14 @@ The free deployment uses four services, each for one responsibility:
   with WhiteNoise.
 - Neon stores PostgreSQL data outside Render's temporary filesystem.
 - Brevo sends transactional email over HTTPS rather than blocked SMTP ports.
-- Cloudinary stores uploaded profile photos outside Render's temporary filesystem.
+- Cloudinary stores uploaded profile photos and project proposals outside
+  Render's temporary filesystem.
+
+Cloudinary Free accepts PDF uploads but blocks their delivery by default. In the
+Cloudinary Console, open **Settings > Product environment > Security**, enable
+**Allow delivery of PDF and ZIP files**, accept the confirmation, and save. This
+setting is required before innovators and administrators can download uploaded
+project proposals from the deployed application.
 
 The committed `render.yaml` fixes the web service to Render's `free` plan and
 contains no secret values. The executable `build.sh` installs dependencies,

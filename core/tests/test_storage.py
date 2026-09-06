@@ -1,10 +1,11 @@
 from unittest.mock import Mock, patch
 
+import requests
 from cloudinary.exceptions import NotFound
 from django.core.files.base import ContentFile
 from django.test import SimpleTestCase
 
-from core.storage import CloudinaryMediaStorage
+from core.storage import CloudinaryMediaAccessError, CloudinaryMediaStorage
 
 
 class CloudinaryMediaStorageTests(SimpleTestCase):
@@ -83,3 +84,23 @@ class CloudinaryMediaStorageTests(SimpleTestCase):
         self.assertEqual(opened.read(), b"remote image")
         get.assert_called_once_with("https://example.test/avatar.jpg", timeout=30)
         build_url.assert_called_once_with("profile/avatar.jpg")
+
+    @patch("core.storage.requests.get")
+    @patch.object(
+        CloudinaryMediaStorage,
+        "url",
+        return_value="https://example.test/project-proposal.pdf",
+    )
+    def test_open_translates_cloudinary_delivery_failure(self, build_url, get):
+        response = Mock()
+        response.raise_for_status.side_effect = requests.HTTPError("delivery blocked")
+        get.return_value = response
+
+        with self.assertRaises(CloudinaryMediaAccessError):
+            self.storage.open("project-proposal.pdf")
+
+        get.assert_called_once_with(
+            "https://example.test/project-proposal.pdf",
+            timeout=30,
+        )
+        build_url.assert_called_once_with("project-proposal.pdf")
