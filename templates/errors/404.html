@@ -10,9 +10,15 @@
         {% if requested_path %}
             <p class="text-muted">No page exists at <code>{{ requested_path }}</code>.</p>
         {% endif %}
-        <a class="btn btn-primary not-found-action" href="{% url 'dashboard:index' %}">
-            <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Go back to dashboard
-        </a>
+        {% if user.is_authenticated %}
+            <a class="btn btn-primary not-found-action" href="{% url 'dashboard:index' %}">
+                <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Go back to dashboard
+            </a>
+        {% else %}
+            <a class="btn btn-primary not-found-action" href="{% url 'accounts:login' %}">
+                <i class="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i>Return to sign in
+            </a>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

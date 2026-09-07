@@ -11,13 +11,23 @@ class CustomNotFoundPageTests(TestCase):
         self.assertEqual(response["X-Tsavo-Error-Page"], "404")
         self.assertTemplateUsed(response, "errors/404.html")
         self.assertContains(response, "This page is not available", status_code=404)
-        self.assertContains(response, "Go back to dashboard", status_code=404)
         self.assertContains(response, requested_path, status_code=404)
-        self.assertContains(
-            response,
-            f'href="{reverse("dashboard:index")}"',
-            status_code=404,
-        )
+        if response.wsgi_request.user.is_authenticated:
+            self.assertContains(response, "Go back to dashboard", status_code=404)
+            self.assertContains(
+                response,
+                f'href="{reverse("dashboard:index")}"',
+                status_code=404,
+            )
+            self.assertNotContains(response, "Return to sign in", status_code=404)
+        else:
+            self.assertContains(response, "Return to sign in", status_code=404)
+            self.assertContains(
+                response,
+                f'href="{reverse("accounts:login")}"',
+                status_code=404,
+            )
+            self.assertNotContains(response, "Go back to dashboard", status_code=404)
         self.assertNotContains(response, "Using the URLconf", status_code=404)
 
     def test_missing_public_url_uses_custom_page_in_debug_mode(self):
