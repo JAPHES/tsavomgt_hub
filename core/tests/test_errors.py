@@ -38,6 +38,32 @@ class CustomNotFoundPageTests(TestCase):
 
         self.assert_custom_not_found(response, requested_path)
 
+    def test_django_admin_login_is_hidden_behind_custom_not_found_page(self):
+        requested_path = "/admin/login/"
+
+        response = self.client.get(f"{requested_path}?next=/admin/")
+
+        self.assert_custom_not_found(response, requested_path)
+        self.assertNotContains(response, "Django administration", status_code=404)
+
+    def test_anonymous_admin_root_redirects_to_hidden_login_page(self):
+        response = self.client.get("/admin/", follow=True)
+
+        self.assertEqual(
+            response.redirect_chain,
+            [("/admin/login/?next=/admin/", 302)],
+        )
+        self.assert_custom_not_found(response, "/admin/login/")
+
+    def test_authenticated_staff_can_still_open_database_admin(self):
+        administrator = create_admin()
+        self.client.force_login(administrator)
+
+        response = self.client.get("/admin/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Site administration")
+
     def test_missing_application_object_uses_custom_page_in_debug_mode(self):
         administrator = create_admin()
         self.client.force_login(administrator)
