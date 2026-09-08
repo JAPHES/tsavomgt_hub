@@ -93,17 +93,22 @@ class PermissionTests(TestCase):
         self.assertNotContains(manage_response, "<th>Projects</th>", html=True)
         self.assertContains(
             manage_response,
-            f'<a href="mailto:{self.innovator.email}">{self.innovator.email}</a>',
+            (
+                '<td class="innovator-email-cell" data-label="Email">'
+                f"{self.innovator.email}</td>"
+            ),
             html=True,
         )
         self.assertContains(
             manage_response,
             (
-                f'<a href="tel:{self.innovator.innovator_profile.phone_number}">'
-                f"{self.innovator.innovator_profile.phone_number}</a>"
+                '<td class="innovator-phone-cell" data-label="Mobile number">'
+                f"{self.innovator.innovator_profile.phone_number}</td>"
             ),
             html=True,
         )
+        self.assertNotContains(manage_response, "mailto:")
+        self.assertNotContains(manage_response, "tel:")
         self.assertContains(manage_response, "View innovator")
         self.assertContains(manage_response, 'class="hub-footer')
         rendered_html = manage_response.content.decode()
