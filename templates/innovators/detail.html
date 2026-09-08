@@ -6,7 +6,6 @@
     <a class="innovator-back-link" href="{% url 'innovators:manage' %}">
         <i class="bi bi-arrow-left" aria-hidden="true"></i>Back to innovators
     </a>
-    <span>Innovator record #{{ profile.pk }}</span>
 </div>
 
 <section class="innovator-record-hero">
@@ -17,14 +16,9 @@
             <div class="innovator-record-avatar innovator-record-initials" aria-hidden="true">{{ profile.user.first_name|first }}{{ profile.user.last_name|first }}</div>
         {% endif %}
         <div class="innovator-record-name">
-            <p class="eyebrow">Innovator record</p>
             <div class="innovator-name-line">
                 <h1>{{ profile.user.get_full_name }}</h1>
                 <span class="status-badge status-{{ profile.user.account_status|lower }}">{{ profile.user.get_account_status_display }}</span>
-            </div>
-            <div class="innovator-record-meta">
-                <span><i class="bi bi-person-vcard" aria-hidden="true"></i>{{ profile.registration_number }}</span>
-                <span><i class="bi bi-envelope" aria-hidden="true"></i>{{ profile.user.email }}</span>
             </div>
         </div>
     </div>
