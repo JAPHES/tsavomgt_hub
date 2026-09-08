@@ -377,7 +377,6 @@ textarea.form-control { min-height: auto; }
 .record-detail-card, .record-attendance-card, .record-access-card { background: var(--ttu-white); border: 1px solid rgba(0,100,0,.09); border-radius: 1rem; box-shadow: 0 8px 26px rgba(31,55,31,.06); }
 .record-detail-card { padding: 1.35rem; }
 .record-card-heading { align-items: center; border-bottom: 1px solid #e7eee7; display: flex; justify-content: space-between; margin-bottom: 1rem; padding-bottom: .9rem; }
-.record-card-heading .eyebrow, .record-attendance-heading .eyebrow, .record-access-card .eyebrow { margin-bottom: .15rem; }
 .record-card-heading h2, .record-attendance-heading h2, .record-access-card h2 { font-size: 1.5rem; margin: 0; }
 .record-card-heading > i { color: var(--ttu-primary-green); font-size: 1.2rem; }
 .record-detail-list { margin: 0; }
@@ -404,7 +403,6 @@ textarea.form-control { min-height: auto; }
 .record-attendance-empty strong { color: var(--ttu-dark-gray); font-size: .85rem; }
 .record-attendance-empty span { font-size: .72rem; }
 .record-access-card { align-items: center; border-left: 4px solid var(--ttu-danger); display: flex; gap: 1.5rem; justify-content: space-between; padding: 1.2rem 1.35rem; }
-.record-access-card p:last-child { color: var(--ttu-medium-gray); font-size: .72rem; margin: .25rem 0 0; }
 .record-access-card .btn { white-space: nowrap; }
 .permanent-delete-card { background: #fff8f8; border-left-color: #8b0000; margin-top: 1rem; }
 .critical-action-modal { border: 0; border-radius: 1rem; box-shadow: 0 22px 60px rgba(52,58,64,.24); overflow: hidden; }
