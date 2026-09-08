@@ -110,6 +110,15 @@ class AdministratorDashboardTests(TestCase):
         self.assertContains(response, "BlueWatch sensor dashboard")
         self.assertNotContains(response, "AgriSense soil monitoring")
 
+    def test_booking_records_page_uses_branded_search_card_without_page_heading(self):
+        response = self.client.get(reverse("dashboard:bookings"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="attendance-search-card"')
+        self.assertContains(response, "Find innovator bookings")
+        self.assertNotContains(response, "Booking management")
+        self.assertNotContains(response, "Hub booking records")
+
 
 class InnovatorDashboardTests(TestCase):
     def setUp(self):
