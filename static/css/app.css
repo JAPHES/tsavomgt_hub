@@ -127,6 +127,10 @@ a { color: var(--ttu-primary-green); }
 .innovator-email-cell, .innovator-phone-cell { font-size: .78rem; }
 .innovator-phone-cell { white-space: nowrap; }
 .innovator-directory-page .pagination { margin-bottom: 0; }
+.project-directory-intro-card { align-items: center; background: linear-gradient(120deg, var(--ttu-dark-green), var(--ttu-primary-green) 72%, #28772d); border: 1px solid rgba(0,77,0,.35); border-radius: 1rem; box-shadow: 0 12px 32px rgba(0,77,0,.18); display: flex; gap: 1rem; margin-bottom: 1.5rem; padding: 1.1rem 1.25rem; }
+.project-directory-intro-icon { align-items: center; background: var(--ttu-gold); border-radius: .75rem; color: var(--ttu-dark-green); display: flex; flex: 0 0 48px; font-size: 1.25rem; height: 48px; justify-content: center; }
+.project-directory-intro-card h1 { color: var(--ttu-white); font-size: 1.55rem; margin: 0 0 .25rem; }
+.project-directory-intro-card p { color: rgba(255,255,255,.82); font-size: .8rem; line-height: 1.6; margin: 0; max-width: 980px; }
 .create-innovator-card { margin-top: clamp(.25rem, 2vw, 1.5rem); }
 .form-card-heading { align-items: center; display: flex; gap: 1rem; }
 .form-card-heading h1 { font-size: clamp(2rem, 4vw, 2.7rem); margin-bottom: .35rem; }
@@ -659,6 +663,7 @@ textarea.form-control { min-height: auto; }
     .app-content { padding-inline: .75rem !important; }
     .sidebar-logo-panel { height: 108px; width: 108px; }
     .innovator-list-actions, .attendance-search-actions { grid-template-columns: 1fr; }
+    .project-directory-intro-card { align-items: flex-start; flex-direction: column; padding: 1rem; }
     .form-card-heading { flex-direction: column; }
     .form-card-icon { flex-basis: 46px; height: 46px; width: 46px; }
     .narrow-card form > .btn { margin: .2rem 0; width: 100%; }
