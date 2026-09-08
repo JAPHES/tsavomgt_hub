@@ -144,8 +144,21 @@ class InnovatorDashboardTests(TestCase):
         self.assertContains(response, '<div class="sidebar-brand"', html=False)
         self.assertNotContains(response, '<a class="sidebar-brand"', html=False)
         self.assertContains(
+            response,
+            'class="student-dashboard-heading student-dashboard-card"',
+        )
+        self.assertContains(response, "Innovator workspace")
+        self.assertContains(
             response, f"Welcome, {self.user.first_name}, to Tsavo Hub Management System"
         )
+        self.assertContains(
+            response,
+            "Book your visit before coming to the hub and tell the team what you intend to work on.",
+        )
+        self.assertContains(response, 'class="student-dashboard-date"')
+        self.assertContains(response, 'class="student-history-header"')
+        self.assertContains(response, "Recent bookings")
+        self.assertContains(response, "Your latest planned and admitted hub visits.")
         self.assertContains(response, "Book a hub visit")
         self.assertContains(response, "<span>Projects</span>", html=True)
         self.assertContains(response, "<span>Booking</span>", html=True)
