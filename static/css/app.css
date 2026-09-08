@@ -124,7 +124,7 @@ a { color: var(--ttu-primary-green); }
 .innovator-directory-page { max-width: 100%; min-width: 0; width: 100%; }
 .innovator-directory-table-card { max-width: 100%; overflow: hidden; }
 .innovator-email-cell { max-width: 260px; overflow-wrap: anywhere; }
-.innovator-email-cell a, .innovator-phone-cell a { font-size: .78rem; text-decoration: none; }
+.innovator-email-cell, .innovator-phone-cell { font-size: .78rem; }
 .innovator-phone-cell { white-space: nowrap; }
 .innovator-directory-page .pagination { margin-bottom: 0; }
 .create-innovator-card { margin-top: clamp(.25rem, 2vw, 1.5rem); }

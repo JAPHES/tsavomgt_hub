@@ -30,8 +30,8 @@
                 <tr>
                     <td data-label="Name"><strong>{{ profile.user.get_full_name }}</strong></td>
                     <td data-label="Registration">{{ profile.registration_number }}</td>
-                    <td class="innovator-email-cell" data-label="Email"><a href="mailto:{{ profile.user.email }}">{{ profile.user.email }}</a></td>
-                    <td class="innovator-phone-cell" data-label="Mobile number"><a href="tel:{{ profile.phone_number }}">{{ profile.phone_number }}</a></td>
+                    <td class="innovator-email-cell" data-label="Email">{{ profile.user.email }}</td>
+                    <td class="innovator-phone-cell" data-label="Mobile number">{{ profile.phone_number }}</td>
                     <td data-label="Status"><span class="status-badge status-{{ profile.user.account_status|lower }}">{{ profile.user.get_account_status_display }}</span></td>
                     <td data-label="Action"><a class="btn btn-sm btn-outline-primary" href="{% url 'innovators:detail' profile.pk %}">View innovator</a></td>
                 </tr>
