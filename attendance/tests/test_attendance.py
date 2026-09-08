@@ -165,6 +165,16 @@ class BookingViewTests(TestCase):
         response = self.client.get(reverse("attendance:booking-history"))
 
         self.assertEqual(list(response.context["page_obj"].object_list), [own_booking])
+        self.assertContains(
+            response,
+            'class="attendance-history-heading attendance-history-heading-card"',
+        )
+        self.assertContains(response, "My bookings")
+        self.assertContains(response, "Hub booking history")
+        self.assertContains(
+            response,
+            "Your planned visits and the arrivals confirmed by a hub administrator.",
+        )
         self.assertContains(response, "own device prototype")
         self.assertNotContains(response, "must remain private")
 
