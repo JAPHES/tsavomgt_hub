@@ -110,12 +110,8 @@
     </div>
 </section>
 
-<section class="record-access-card" aria-labelledby="account-access-heading">
-    <div>
-        <p class="eyebrow">Administrative control</p>
-        <h2 id="account-access-heading">Account access</h2>
-        <p>{% if profile.user.account_status == 'INACTIVE' %}Restore access when this innovator is permitted to use the system again.{% else %}Deactivating the account immediately prevents the innovator from signing in.{% endif %}</p>
-    </div>
+<section class="record-access-card" aria-labelledby="administrative-control-heading">
+    <h2 id="administrative-control-heading">Administrative control</h2>
     {% if profile.user.account_status == 'INACTIVE' %}
         <form method="post" action="{% url 'innovators:toggle-status' profile.pk %}">
             {% csrf_token %}
