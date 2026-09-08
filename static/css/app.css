@@ -110,12 +110,16 @@ a { color: var(--ttu-primary-green); }
 .content-card, .auth-card, .summary-card, .attendance-hero { border: 1px solid rgba(0,100,0,.08); border-radius: .9rem; box-shadow: 0 8px 26px rgba(31,55,31,.07); }
 .content-card { background: var(--ttu-white); }
 .narrow-card { margin-left: auto; margin-right: auto; max-width: 780px; }
-.innovator-management-card { background: linear-gradient(135deg, var(--ttu-white) 68%, var(--ttu-light-green)); border: 1px solid rgba(0,100,0,.12); border-top: 4px solid var(--ttu-primary-green); border-radius: 1rem; box-shadow: 0 10px 30px rgba(31,55,31,.08); margin-bottom: 1.5rem; padding: 1.35rem; }
+.innovator-management-card { background: linear-gradient(120deg, var(--ttu-dark-green), var(--ttu-primary-green) 72%, #28772d); border: 1px solid rgba(0,77,0,.35); border-radius: 1rem; box-shadow: 0 14px 36px rgba(0,77,0,.2); margin-bottom: 1.5rem; padding: 1.35rem; }
 .innovator-management-header { align-items: center; display: flex; gap: 1rem; justify-content: space-between; }
-.innovator-management-copy h1 { font-size: clamp(2rem, 4vw, 2.7rem); margin: 0 0 .3rem; }
-.innovator-management-copy p { color: var(--ttu-medium-gray); margin: 0; }
+.innovator-management-copy h1 { color: var(--ttu-white); font-size: clamp(2rem, 4vw, 2.7rem); margin: 0 0 .3rem; }
+.innovator-management-copy p { color: rgba(255,255,255,.82); margin: 0; }
 .innovator-list-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
-.innovator-management-search { align-items: center; border-top: 1px solid rgba(0,100,0,.12); display: grid; gap: .75rem; grid-template-columns: minmax(0, 1fr) auto; margin-top: 1.15rem; padding-top: 1.15rem; }
+.innovator-management-card .btn-primary { background: var(--ttu-gold); border-color: var(--ttu-gold); color: #1d2b1d; }
+.innovator-management-card .btn-primary:hover, .innovator-management-card .btn-primary:focus { background: #e2c45c; border-color: #e2c45c; color: #1d2b1d; }
+.innovator-management-card .btn-outline-primary { border-color: rgba(255,255,255,.76); color: var(--ttu-white); }
+.innovator-management-card .btn-outline-primary:hover, .innovator-management-card .btn-outline-primary:focus { background: var(--ttu-white); border-color: var(--ttu-white); color: var(--ttu-dark-green); }
+.innovator-management-search { align-items: center; border-top: 1px solid rgba(255,255,255,.2); display: grid; gap: .75rem; grid-template-columns: minmax(0, 1fr) auto; margin-top: 1.15rem; padding-top: 1.15rem; }
 .innovator-management-search .btn { min-width: 130px; }
 .innovator-directory-page { max-width: 100%; min-width: 0; width: 100%; }
 .innovator-directory-table-card { max-width: 100%; overflow: hidden; }
