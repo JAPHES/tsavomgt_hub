@@ -147,7 +147,12 @@ class InnovatorDashboardTests(TestCase):
             response, f"Welcome, {self.user.first_name}, to Tsavo Hub Management System"
         )
         self.assertContains(response, "Book a hub visit")
-        self.assertContains(response, "My projects")
+        self.assertContains(response, "<span>Projects</span>", html=True)
+        self.assertContains(response, "<span>Booking</span>", html=True)
+        self.assertContains(response, "<span>Profile</span>", html=True)
+        self.assertNotContains(response, "<span>My projects</span>", html=True)
+        self.assertNotContains(response, "<span>My bookings</span>", html=True)
+        self.assertNotContains(response, "<span>My profile</span>", html=True)
         self.assertNotContains(response, 'id="add-project-title"')
         self.assertNotContains(response, "Work done during this period")
 
