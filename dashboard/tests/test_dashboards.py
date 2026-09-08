@@ -33,6 +33,18 @@ class AdministratorDashboardTests(TestCase):
         response = self.client.get(reverse("dashboard:admin"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'class="presence-dashboard-heading presence-dashboard-card"',
+        )
+        self.assertContains(response, "Today's hub bookings")
+        self.assertContains(response, "Welcome Hub Administrator")
+        self.assertContains(
+            response,
+            "Review everyone expected today and admit innovators when they arrive.",
+        )
+        self.assertContains(response, 'class="presence-updated"')
+        self.assertContains(response, 'class="presence-title-line"')
         self.assertContains(response, self.user.get_full_name())
         self.assertContains(response, "Build and test the BlueWatch")
         self.assertEqual(
