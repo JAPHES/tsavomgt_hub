@@ -51,7 +51,18 @@ class ProjectDirectoryTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["matched_count"], 3)
         self.assertEqual(response.context["total_projects"], 3)
-        self.assertContains(response, "Project directory")
+        self.assertContains(response, 'class="project-directory-intro-card"')
+        self.assertContains(response, "Explore hub innovations")
+        self.assertContains(response, "Combine only the filters relevant to your search.")
+        self.assertNotContains(response, '<p class="eyebrow">Administration</p>', html=True)
+        self.assertNotContains(
+            response,
+            '<h1 id="project-directory-heading">Project directory</h1>',
+            html=True,
+        )
+        self.assertNotContains(response, "View innovators")
+        self.assertNotContains(response, "projects from")
+        self.assertNotContains(response, "registered projects in total")
         self.assertContains(response, 'class="table mobile-card-table')
         self.assertContains(response, reverse("innovators:project-directory"))
         self.assertContains(response, "BlueWatch")
