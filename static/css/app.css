@@ -119,6 +119,8 @@ a { color: var(--ttu-primary-green); }
 .innovator-management-search .btn { min-width: 130px; }
 .innovator-directory-page { max-width: 100%; min-width: 0; width: 100%; }
 .innovator-directory-table-card { max-width: 100%; overflow: hidden; }
+.innovator-email-cell { max-width: 260px; overflow-wrap: anywhere; }
+.innovator-email-cell a { font-size: .78rem; text-decoration: none; }
 .innovator-directory-page .pagination { margin-bottom: 0; }
 .create-innovator-card { margin-top: clamp(.25rem, 2vw, 1.5rem); }
 .form-card-heading { align-items: center; display: flex; gap: 1rem; }
@@ -572,7 +574,7 @@ textarea.form-control { min-height: auto; }
     .sidebar-inner { height: auto; max-height: calc(100dvh - 61px); overflow-y: auto; }
     .presence-table, .attendance-records-table { min-width: 940px; }
     .attendance-history-table, .record-attendance-table { min-width: 720px; }
-    .innovator-directory-table-card .table { min-width: 650px; }
+    .innovator-directory-table-card .table { min-width: 800px; }
 }
 
 @media (max-width: 767.98px) {
