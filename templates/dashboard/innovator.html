@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Innovator dashboard{% endblock %}
 {% block content %}
-<header class="student-dashboard-heading">
+<header class="student-dashboard-heading student-dashboard-card" aria-labelledby="innovator-welcome-heading">
     <div>
         <p class="eyebrow">Innovator workspace</p>
-        <h1>Welcome, {{ user.first_name }}, to Tsavo Hub Management System</h1>
+        <h1 id="innovator-welcome-heading">Welcome, {{ user.first_name }}, to Tsavo Hub Management System</h1>
         <p>Book your visit before coming to the hub and tell the team what you intend to work on.</p>
     </div>
     <span class="student-dashboard-date"><i class="bi bi-calendar3" aria-hidden="true"></i>{{ now|date:"l, d F Y" }}</span>
