@@ -360,20 +360,16 @@ textarea.form-control { min-height: auto; }
 .detail-list { display: grid; gap: .8rem; grid-template-columns: minmax(120px, 35%) 1fr; margin-bottom: 0; }
 .detail-list dt { color: var(--ttu-medium-gray); font-size: .78rem; }
 .detail-list dd { margin: 0; }
-.innovator-record-toolbar { align-items: center; color: var(--ttu-medium-gray); display: flex; font-size: .7rem; justify-content: space-between; margin-bottom: .8rem; }
+.innovator-record-toolbar { align-items: center; color: var(--ttu-medium-gray); display: flex; font-size: .7rem; margin-bottom: .8rem; }
 .innovator-back-link { align-items: center; color: var(--ttu-primary-green); display: inline-flex; font-weight: 600; gap: .4rem; text-decoration: none; }
 .innovator-back-link:hover { color: var(--ttu-dark-green); }
-.innovator-record-hero { align-items: center; background: linear-gradient(120deg, var(--ttu-white) 55%, var(--ttu-light-green)); border: 1px solid rgba(0,100,0,.1); border-radius: 1rem; box-shadow: 0 10px 30px rgba(31,55,31,.07); display: flex; gap: 1.5rem; justify-content: space-between; padding: 1.5rem; }
+.innovator-record-hero { align-items: center; background: linear-gradient(120deg, var(--ttu-dark-green), var(--ttu-primary-green) 72%, #28772d); border: 1px solid rgba(0,77,0,.35); border-radius: 1rem; box-shadow: 0 14px 36px rgba(0,77,0,.2); display: flex; gap: 1.5rem; justify-content: space-between; padding: 1.5rem; }
 .innovator-record-identity { align-items: center; display: flex; gap: 1.15rem; min-width: 0; }
 .innovator-record-avatar { border: 3px solid var(--ttu-gold); border-radius: 50%; flex: 0 0 92px; height: 92px; object-fit: cover; width: 92px; }
-.innovator-record-initials { align-items: center; background: var(--ttu-dark-green); color: var(--ttu-white); display: flex; font-family: var(--font-ui); font-size: 2rem; font-weight: 700; justify-content: center; }
+.innovator-record-initials { align-items: center; background: rgba(255,255,255,.13); color: var(--ttu-white); display: flex; font-family: var(--font-ui); font-size: 2rem; font-weight: 700; justify-content: center; }
 .innovator-record-name { min-width: 0; }
-.innovator-record-name .eyebrow { margin-bottom: .25rem; }
 .innovator-name-line { align-items: center; display: flex; flex-wrap: wrap; gap: .7rem; }
-.innovator-name-line h1 { font-size: 2.15rem; margin: 0; }
-.innovator-record-meta { color: var(--ttu-medium-gray); display: flex; flex-wrap: wrap; font-size: .73rem; gap: .5rem 1rem; margin-top: .45rem; }
-.innovator-record-meta span { align-items: center; display: inline-flex; gap: .38rem; overflow-wrap: anywhere; }
-.innovator-record-meta i { color: var(--ttu-primary-green); }
+.innovator-name-line h1 { color: var(--ttu-white); font-size: 2.15rem; margin: 0; }
 .innovator-record-actions { align-items: stretch; display: flex; flex-wrap: wrap; gap: .55rem; justify-content: flex-end; }
 .innovator-record-actions form { display: flex; }
 .innovator-record-actions .btn { white-space: nowrap; }
@@ -547,7 +543,7 @@ textarea.form-control { min-height: auto; }
 }
 @media (max-width: 767.98px) { .public-navbar { padding: .5rem .75rem; } .public-logo { height: 58px; width: 58px; } .app-topbar { min-height: 64px; padding: .55rem .75rem; } .topbar-title strong { font-size: 1rem; } .topbar-title span { display: none; } .page-heading { align-items: stretch; flex-direction: column; } .page-heading > .btn, .page-heading > div:last-child { width: 100%; } .form-card-heading { align-items: flex-start; } .form-card-icon { flex-basis: 48px; font-size: 1.3rem; height: 48px; } .attendance-search-card { padding: 1rem; } .attendance-name-form { grid-template-columns: 1fr; } .attendance-name-field { max-width: none; } .attendance-search-actions { flex-wrap: wrap; } .attendance-search-actions .btn:first-child { flex: 1; } .attendance-results-header, .presence-dashboard-heading, .presence-table-header, .student-dashboard-heading, .student-history-header { align-items: flex-start; flex-direction: column; } .presence-stat-card { min-height: 130px; } .presence-updated, .student-dashboard-date { align-self: flex-start; } .daily-attendance-header { align-items: flex-start; padding: 1rem; } .daily-attendance-form { padding: 1rem; } .daily-form-footer { align-items: stretch; flex-direction: column; } .daily-form-footer .btn { width: 100%; } .detail-list { grid-template-columns: 1fr; gap: .2rem; } .detail-list dd { margin-bottom: .7rem; } .content-card > .table-responsive { border-radius: .9rem; } }
 @media (max-width: 767.98px) { .password-auth-heading h1 { font-size: 1.75rem; } .password-auth-footer a { flex-basis: 100%; margin-left: 0; } }
-@media (max-width: 767.98px) { .innovator-record-toolbar > span { display: none; } .innovator-record-hero, .innovator-record-identity, .record-attendance-heading, .record-access-card { align-items: flex-start; flex-direction: column; } .innovator-record-hero { padding: 1.15rem; } .innovator-record-avatar { flex-basis: 76px; height: 76px; width: 76px; } .innovator-name-line h1 { font-size: 1.8rem; } .innovator-record-actions, .innovator-record-actions form, .innovator-record-actions .btn, .record-access-card form, .record-access-card .btn { width: 100%; } .record-detail-list > div { grid-template-columns: 1fr; gap: .25rem; } .record-attendance-heading { gap: .8rem; } }
+@media (max-width: 767.98px) { .innovator-record-hero, .innovator-record-identity, .record-attendance-heading, .record-access-card { align-items: flex-start; flex-direction: column; } .innovator-record-hero { padding: 1.15rem; } .innovator-record-avatar { flex-basis: 76px; height: 76px; width: 76px; } .innovator-name-line h1 { font-size: 1.8rem; } .innovator-record-actions, .innovator-record-actions form, .innovator-record-actions .btn, .record-access-card form, .record-access-card .btn { width: 100%; } .record-detail-list > div { grid-template-columns: 1fr; gap: .25rem; } .record-attendance-heading { gap: .8rem; } }
 @media (max-width: 575.98px) { .critical-action-footer { align-items: stretch; flex-direction: column-reverse; } .critical-action-footer form, .critical-action-footer .btn { width: 100%; } }
 @media (max-width: 575.98px) { .profile-edit-actions { display: grid; grid-template-columns: 1fr 1fr; } }
 @media (max-width: 767.98px) { .self-profile-hero, .self-profile-identity, .self-project-action { align-items: flex-start; flex-direction: column; } .self-profile-hero { padding: 1.15rem; } .self-profile-avatar { flex-basis: 84px; height: 84px; width: 84px; } .self-profile-name-line h2 { font-size: 1.75rem; } .self-profile-edit-action { justify-content: center; width: 100%; } .self-profile-detail-list > div { grid-template-columns: 1fr; gap: .25rem; } }
@@ -621,8 +617,8 @@ textarea.form-control { min-height: auto; }
     .not-found-action { min-width: 0; width: 100%; }
     .record-detail-card, .self-profile-card { padding: 1.05rem; }
     .record-project-name, .self-project-name { font-size: 1.28rem; overflow-wrap: anywhere; }
-    .self-profile-meta, .innovator-record-meta, .attendance-record-meta { align-items: flex-start; flex-direction: column; }
-    .self-profile-meta span, .innovator-record-meta span, .attendance-record-meta span { width: 100%; }
+    .self-profile-meta, .attendance-record-meta { align-items: flex-start; flex-direction: column; }
+    .self-profile-meta span, .attendance-record-meta span { width: 100%; }
     .session-timing-card strong { white-space: normal; }
     .attendance-correction-note { padding: .9rem; }
 

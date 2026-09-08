@@ -23,11 +23,11 @@
         </div>
     </div>
     <div class="innovator-record-actions">
-        <a class="btn btn-primary" href="{% url 'innovators:update' profile.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Edit innovator</a>
+        <a class="btn btn-light" href="{% url 'innovators:update' profile.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Edit innovator</a>
         {% if profile.user.must_change_password %}
             <form method="post" action="{% url 'innovators:admin-reissue-credentials' profile.pk %}">
                 {% csrf_token %}
-                <button class="btn btn-outline-primary" type="submit"><i class="bi bi-envelope-arrow-up me-2" aria-hidden="true"></i>Reissue login credentials</button>
+                <button class="btn btn-outline-light" type="submit"><i class="bi bi-envelope-arrow-up me-2" aria-hidden="true"></i>Reissue login credentials</button>
             </form>
         {% endif %}
     </div>
