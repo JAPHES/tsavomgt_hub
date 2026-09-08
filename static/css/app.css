@@ -299,10 +299,10 @@ a { color: var(--ttu-primary-green); }
 .directory-project-list { display: flex; flex-wrap: wrap; gap: .35rem; max-width: 330px; }
 .directory-project-list > span { background: var(--ttu-light-green); border-radius: .45rem; color: var(--ttu-dark-green); display: inline-flex; flex-direction: column; font-size: .7rem; padding: .3rem .5rem; }
 .directory-project-list small { color: var(--ttu-medium-gray); font-size: .58rem; }
-.attendance-history-heading { margin: 0 auto 1.5rem; max-width: 720px; text-align: center; }
-.attendance-history-heading .eyebrow { background: var(--ttu-light-green); border: 1px solid rgba(0,100,0,.1); border-radius: 999px; display: inline-flex; margin-bottom: .7rem !important; padding: .35rem .75rem; }
-.attendance-history-heading h1 { font-size: clamp(2rem, 4vw, 2.8rem); margin-bottom: .55rem; }
-.attendance-history-heading > p:last-child { color: var(--ttu-medium-gray); font-size: .8rem; line-height: 1.65; margin: 0; }
+.attendance-history-heading { background: linear-gradient(120deg, var(--ttu-dark-green), var(--ttu-primary-green) 72%, #28772d); border: 1px solid rgba(0,77,0,.35); border-radius: 1rem; box-shadow: 0 14px 36px rgba(0,77,0,.2); margin: 0 0 1.5rem; padding: 1.4rem; text-align: center; }
+.attendance-history-heading .eyebrow { color: var(--ttu-gold) !important; margin-bottom: .7rem !important; }
+.attendance-history-heading h1 { color: var(--ttu-white); font-size: clamp(2rem, 4vw, 2.8rem); margin-bottom: .55rem; }
+.attendance-history-heading > p:last-child { color: rgba(255,255,255,.82); font-size: .8rem; line-height: 1.65; margin: 0; }
 .attendance-history-card { background: var(--ttu-white); border: 1px solid rgba(0,100,0,.09); border-radius: 1rem; box-shadow: 0 10px 30px rgba(31,55,31,.07); overflow: hidden; }
 .attendance-history-table tbody tr { transition: background-color .15s ease; }
 .attendance-history-table tbody tr:hover { background: #fbfdfb; }
