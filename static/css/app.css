@@ -373,7 +373,7 @@ textarea.form-control { min-height: auto; }
 .innovator-record-actions { align-items: stretch; display: flex; flex-wrap: wrap; gap: .55rem; justify-content: flex-end; }
 .innovator-record-actions form { display: flex; }
 .innovator-record-actions .btn { white-space: nowrap; }
-.innovator-record-grid { margin-bottom: 1.5rem; }
+.innovator-record-grid { margin-bottom: 1.5rem; margin-top: 1rem; }
 .record-detail-card, .record-attendance-card, .record-access-card { background: var(--ttu-white); border: 1px solid rgba(0,100,0,.09); border-radius: 1rem; box-shadow: 0 8px 26px rgba(31,55,31,.06); }
 .record-detail-card { padding: 1.35rem; }
 .record-card-heading { align-items: center; border-bottom: 1px solid #e7eee7; display: flex; justify-content: space-between; margin-bottom: 1rem; padding-bottom: .9rem; }
