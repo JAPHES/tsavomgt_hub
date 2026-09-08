@@ -282,9 +282,6 @@ a { color: var(--ttu-primary-green); }
 .attendance-history-heading h1 { font-size: clamp(2rem, 4vw, 2.8rem); margin-bottom: .55rem; }
 .attendance-history-heading > p:last-child { color: var(--ttu-medium-gray); font-size: .8rem; line-height: 1.65; margin: 0; }
 .attendance-history-card { background: var(--ttu-white); border: 1px solid rgba(0,100,0,.09); border-radius: 1rem; box-shadow: 0 10px 30px rgba(31,55,31,.07); overflow: hidden; }
-.attendance-history-card-header { align-items: center; background: linear-gradient(120deg, var(--ttu-light-green), var(--ttu-white)); border-bottom: 1px solid #e5ece5; display: flex; gap: 1rem; justify-content: space-between; padding: 1.2rem 1.35rem; }
-.attendance-history-card-header h2 { font-size: 1.55rem; margin: 0 0 .18rem; }
-.attendance-history-card-header p { color: var(--ttu-medium-gray); font-size: .72rem; margin: 0; }
 .attendance-history-table tbody tr { transition: background-color .15s ease; }
 .attendance-history-table tbody tr:hover { background: #fbfdfb; }
 .history-date-cell strong, .history-date-cell small { display: block; white-space: nowrap; }
@@ -554,7 +551,6 @@ textarea.form-control { min-height: auto; }
 @media (max-width: 575.98px) { .critical-action-footer { align-items: stretch; flex-direction: column-reverse; } .critical-action-footer form, .critical-action-footer .btn { width: 100%; } }
 @media (max-width: 575.98px) { .profile-edit-actions { display: grid; grid-template-columns: 1fr 1fr; } }
 @media (max-width: 767.98px) { .self-profile-hero, .self-profile-identity, .self-project-action { align-items: flex-start; flex-direction: column; } .self-profile-hero { padding: 1.15rem; } .self-profile-avatar { flex-basis: 84px; height: 84px; width: 84px; } .self-profile-name-line h2 { font-size: 1.75rem; } .self-profile-edit-action { justify-content: center; width: 100%; } .self-profile-detail-list > div { grid-template-columns: 1fr; gap: .25rem; } }
-@media (max-width: 767.98px) { .attendance-history-card-header { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 767.98px) { .presence-dashboard-heading { align-items: center; display: flex; text-align: center; } .presence-updated { align-self: center; } }
 @media (max-width: 767.98px) { .student-dashboard-heading { align-items: center; flex-direction: column; text-align: center; } .student-dashboard-date { align-self: center; } }
 @media (max-width: 991.98px) { .session-timing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -605,7 +601,7 @@ textarea.form-control { min-height: auto; }
     .attendance-search-intro, .daily-attendance-header { align-items: flex-start; }
     .attendance-search-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
     .attendance-search-actions .btn { width: 100%; }
-    .attendance-results-header, .presence-table-header, .student-history-header, .attendance-history-card-header, .record-attendance-heading { padding: 1rem; }
+    .attendance-results-header, .presence-table-header, .student-history-header, .record-attendance-heading { padding: 1rem; }
     .presence-title-line { align-items: flex-start; flex-wrap: wrap; }
     .presence-stat-card { padding: 1.1rem; }
     .presence-stat-card strong { font-size: 2.3rem; }

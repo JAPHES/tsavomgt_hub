@@ -7,14 +7,7 @@
     <p>Your planned visits and the arrivals confirmed by a hub administrator.</p>
 </header>
 
-<section class="attendance-history-card" aria-labelledby="booking-records-heading">
-    <div class="attendance-history-card-header">
-        <div>
-            <h2 id="booking-records-heading">Hub visit bookings</h2>
-            <p>Your newest bookings appear first.</p>
-        </div>
-        <span class="record-count"><i class="bi bi-calendar2-check" aria-hidden="true"></i>{{ page_obj.paginator.count }} booking{{ page_obj.paginator.count|pluralize }}</span>
-    </div>
+<section class="attendance-history-card" aria-label="Booking records">
     <div class="table-responsive mobile-card-table-wrap">
         <table class="table attendance-history-table mobile-card-table align-middle mb-0">
             <thead><tr><th>Visit date</th><th>Expected arrival</th><th>Intended activity</th><th>Status</th><th>Admitted at</th></tr></thead>
