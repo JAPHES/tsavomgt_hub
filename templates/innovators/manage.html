@@ -24,18 +24,19 @@
 <div class="card content-card innovator-directory-table-card">
     <div class="table-responsive mobile-card-table-wrap">
         <table class="table mobile-card-table align-middle mb-0">
-            <thead><tr><th>Name</th><th>Registration</th><th>Email</th><th>Status</th><th><span class="visually-hidden">Action</span></th></tr></thead>
+            <thead><tr><th>Name</th><th>Registration</th><th>Email</th><th>Mobile number</th><th>Status</th><th><span class="visually-hidden">Action</span></th></tr></thead>
             <tbody>
             {% for profile in page_obj %}
                 <tr>
                     <td data-label="Name"><strong>{{ profile.user.get_full_name }}</strong></td>
                     <td data-label="Registration">{{ profile.registration_number }}</td>
                     <td class="innovator-email-cell" data-label="Email"><a href="mailto:{{ profile.user.email }}">{{ profile.user.email }}</a></td>
+                    <td class="innovator-phone-cell" data-label="Mobile number"><a href="tel:{{ profile.phone_number }}">{{ profile.phone_number }}</a></td>
                     <td data-label="Status"><span class="status-badge status-{{ profile.user.account_status|lower }}">{{ profile.user.get_account_status_display }}</span></td>
                     <td data-label="Action"><a class="btn btn-sm btn-outline-primary" href="{% url 'innovators:detail' profile.pk %}">View innovator</a></td>
                 </tr>
             {% empty %}
-                <tr><td colspan="5" class="empty-cell">No innovators found.</td></tr>
+                <tr><td colspan="6" class="empty-cell">No innovators found.</td></tr>
             {% endfor %}
             </tbody>
         </table>
