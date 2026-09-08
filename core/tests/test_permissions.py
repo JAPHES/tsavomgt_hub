@@ -65,8 +65,10 @@ class PermissionTests(TestCase):
         response = self.client.get(reverse("innovators:profile"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Contact details")
-        self.assertContains(response, "My project portfolio")
+        self.assertContains(response, "Personal information")
+        self.assertContains(response, "Innovations")
+        self.assertNotContains(response, "Contact details")
+        self.assertNotContains(response, "My project portfolio")
         self.assertContains(response, self.innovator.innovator_profile.registration_number)
 
     def test_administrator_can_access_management_pages(self):
@@ -76,10 +78,23 @@ class PermissionTests(TestCase):
         self.assertEqual(manage_response.status_code, 200)
         self.assertContains(manage_response, "Download innovators")
         self.assertContains(manage_response, 'class="innovator-directory-page"')
+        self.assertContains(manage_response, 'class="innovator-management-card"')
+        self.assertContains(manage_response, 'class="innovator-management-search"')
+        self.assertNotContains(
+            manage_response,
+            '<p class="eyebrow">Administration</p>',
+            html=True,
+        )
         self.assertContains(manage_response, "<th>Name</th>", html=True)
         self.assertContains(manage_response, "<th>Registration</th>", html=True)
+        self.assertContains(manage_response, "<th>Email</th>", html=True)
         self.assertContains(manage_response, "<th>Status</th>", html=True)
         self.assertNotContains(manage_response, "<th>Projects</th>", html=True)
+        self.assertContains(
+            manage_response,
+            f'<a href="mailto:{self.innovator.email}">{self.innovator.email}</a>',
+            html=True,
+        )
         self.assertContains(manage_response, "View innovator")
         self.assertContains(manage_response, 'class="hub-footer')
         rendered_html = manage_response.content.decode()
@@ -180,7 +195,8 @@ class PermissionTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.other.get_full_name())
-        self.assertContains(response, "Project portfolio")
+        self.assertContains(response, "Innovations")
+        self.assertNotContains(response, "Project portfolio")
         self.assertContains(response, "Climate technology")
         self.assertContains(response, "Market Bridge")
         self.assertContains(response, "Agricultural technology")
