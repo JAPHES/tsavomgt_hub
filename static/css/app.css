@@ -591,6 +591,20 @@ textarea.form-control { min-height: auto; }
     .presence-table, .attendance-records-table { min-width: 940px; }
     .attendance-history-table, .record-attendance-table { min-width: 720px; }
     .innovator-directory-table-card .table { min-width: 940px; }
+
+    .mobile-card-table-wrap { overflow: visible; }
+    .mobile-card-table { display: block; min-width: 0 !important; width: 100%; }
+    .mobile-card-table > thead { display: none; }
+    .mobile-card-table > tbody { display: grid; gap: .9rem; padding: .9rem; width: 100%; }
+    .mobile-card-table > tbody > tr { background: var(--ttu-white); border: 1px solid #dfe8df; border-radius: .8rem; box-shadow: 0 5px 16px rgba(31,55,31,.05); display: block; overflow: hidden; width: 100%; }
+    .mobile-card-table > tbody > tr > td { align-items: start; border-bottom: 1px solid #edf1ed; display: grid; gap: .75rem; grid-template-columns: minmax(92px, 34%) minmax(0, 1fr); padding: .7rem .8rem; text-align: left; width: 100%; }
+    .mobile-card-table > tbody > tr > td:last-child { border-bottom: 0; }
+    .mobile-card-table > tbody > tr > td[data-label]::before { color: var(--ttu-medium-gray); content: attr(data-label); font-size: .64rem; font-weight: 600; letter-spacing: .04em; padding-top: .12rem; text-transform: uppercase; }
+    .mobile-card-table > tbody > tr > td:not([data-label]) { display: block; padding: 0; }
+    .mobile-card-table > tbody > tr > td:not([data-label])::before { display: none; }
+    .mobile-card-table .attendance-person, .mobile-card-table .work-done-summary, .mobile-card-table .record-work-summary { min-width: 0; width: 100%; }
+    .mobile-card-table .record-view-button { border-radius: .5rem; height: 38px; width: 100%; }
+    .mobile-card-table .presence-empty-state, .mobile-card-table .attendance-empty-state, .mobile-card-table .attendance-history-empty, .mobile-card-table .record-attendance-empty, .mobile-card-table .student-history-empty { padding: 2.2rem 1rem; }
 }
 
 @media (max-width: 767.98px) {
@@ -650,19 +664,6 @@ textarea.form-control { min-height: auto; }
     .session-timing-card strong { white-space: normal; }
     .attendance-correction-note { padding: .9rem; }
 
-    .mobile-card-table-wrap { overflow: visible; }
-    .mobile-card-table { display: block; min-width: 0 !important; width: 100%; }
-    .mobile-card-table > thead { display: none; }
-    .mobile-card-table > tbody { display: grid; gap: .9rem; padding: .9rem; width: 100%; }
-    .mobile-card-table > tbody > tr { background: var(--ttu-white); border: 1px solid #dfe8df; border-radius: .8rem; box-shadow: 0 5px 16px rgba(31,55,31,.05); display: block; overflow: hidden; width: 100%; }
-    .mobile-card-table > tbody > tr > td { align-items: start; border-bottom: 1px solid #edf1ed; display: grid; gap: .75rem; grid-template-columns: minmax(92px, 34%) minmax(0, 1fr); padding: .7rem .8rem; text-align: left; width: 100%; }
-    .mobile-card-table > tbody > tr > td:last-child { border-bottom: 0; }
-    .mobile-card-table > tbody > tr > td[data-label]::before { color: var(--ttu-medium-gray); content: attr(data-label); font-size: .64rem; font-weight: 600; letter-spacing: .04em; padding-top: .12rem; text-transform: uppercase; }
-    .mobile-card-table > tbody > tr > td:not([data-label]) { display: block; padding: 0; }
-    .mobile-card-table > tbody > tr > td:not([data-label])::before { display: none; }
-    .mobile-card-table .attendance-person, .mobile-card-table .work-done-summary, .mobile-card-table .record-work-summary { min-width: 0; width: 100%; }
-    .mobile-card-table .record-view-button { border-radius: .5rem; height: 38px; width: 100%; }
-    .mobile-card-table .presence-empty-state, .mobile-card-table .attendance-empty-state, .mobile-card-table .attendance-history-empty, .mobile-card-table .record-attendance-empty, .mobile-card-table .student-history-empty { padding: 2.2rem 1rem; }
 }
 
 @media (max-width: 575.98px) {
