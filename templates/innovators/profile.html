@@ -1,10 +1,6 @@
 {% extends "base.html" %}
 {% block title %}My profile{% endblock %}
 {% block content %}
-<div class="self-profile-toolbar">
-    <a class="btn btn-primary" href="{% url 'innovators:profile-edit' %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Edit profile</a>
-</div>
-
 <section class="self-profile-hero">
     <div class="self-profile-identity">
         {% if profile.profile_photo %}
@@ -24,10 +20,7 @@
             </div>
         </div>
     </div>
-    <div class="self-profile-verification">
-        <span><i class="bi bi-patch-check-fill" aria-hidden="true"></i></span>
-        <div><small>Email access</small><strong>{% if profile.user.email_verified %}Confirmed{% else %}Pending{% endif %}</strong></div>
-    </div>
+    <a class="btn btn-light self-profile-edit-action" href="{% url 'innovators:profile-edit' %}"><i class="bi bi-pencil-square" aria-hidden="true"></i>Edit profile</a>
 </section>
 
 <div class="row g-4 self-profile-grid">
