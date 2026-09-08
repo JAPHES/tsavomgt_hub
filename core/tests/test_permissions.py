@@ -88,11 +88,20 @@ class PermissionTests(TestCase):
         self.assertContains(manage_response, "<th>Name</th>", html=True)
         self.assertContains(manage_response, "<th>Registration</th>", html=True)
         self.assertContains(manage_response, "<th>Email</th>", html=True)
+        self.assertContains(manage_response, "<th>Mobile number</th>", html=True)
         self.assertContains(manage_response, "<th>Status</th>", html=True)
         self.assertNotContains(manage_response, "<th>Projects</th>", html=True)
         self.assertContains(
             manage_response,
             f'<a href="mailto:{self.innovator.email}">{self.innovator.email}</a>',
+            html=True,
+        )
+        self.assertContains(
+            manage_response,
+            (
+                f'<a href="tel:{self.innovator.innovator_profile.phone_number}">'
+                f"{self.innovator.innovator_profile.phone_number}</a>"
+            ),
             html=True,
         )
         self.assertContains(manage_response, "View innovator")
