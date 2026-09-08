@@ -504,7 +504,6 @@ textarea.form-control { min-height: auto; }
 .self-profile-grid { margin-top: 1.5rem; }
 .self-profile-card { background: var(--ttu-white); border: 1px solid rgba(0,100,0,.09); border-radius: 1rem; box-shadow: 0 8px 26px rgba(31,55,31,.06); padding: 1.35rem; }
 .self-profile-card-heading { align-items: center; border-bottom: 1px solid #e7eee7; display: flex; justify-content: space-between; margin-bottom: .9rem; padding-bottom: .85rem; }
-.self-profile-card-heading .eyebrow { margin-bottom: .12rem !important; }
 .self-profile-card-heading h2 { font-size: 1.5rem; margin: 0; }
 .self-profile-card-heading > i { color: var(--ttu-primary-green); font-size: 1.15rem; }
 .self-profile-detail-list { margin: 0; }
