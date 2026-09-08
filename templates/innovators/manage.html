@@ -2,8 +2,25 @@
 {% block title %}Manage innovators{% endblock %}
 {% block content %}
 <section class="innovator-directory-page" aria-labelledby="innovators-heading">
-<div class="page-heading"><div><p class="eyebrow">Administration</p><h1 id="innovators-heading">Innovators</h1><p>Manage innovator access and profile information.</p></div><div class="innovator-list-actions"><a class="btn btn-outline-primary" href="{% url 'innovators:export' %}"><i class="bi bi-download me-2" aria-hidden="true"></i>Download innovators</a><a class="btn btn-primary" href="{% url 'innovators:create' %}"><i class="bi bi-person-plus me-2" aria-hidden="true"></i>Add innovator</a></div></div>
-<div class="card content-card mb-4"><div class="card-body"><form class="row g-2" method="get"><div class="col-md-9"><label class="visually-hidden" for="innovator-search">Search innovators</label><input id="innovator-search" class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search name, email, registration number or project"></div><div class="col-md-3 d-grid"><button class="btn btn-outline-primary">Search</button></div></form></div></div>
+<section class="innovator-management-card" aria-labelledby="innovators-heading">
+    <div class="innovator-management-header">
+        <div class="innovator-management-copy">
+            <h1 id="innovators-heading">Innovators</h1>
+            <p>Manage innovator access and profile information.</p>
+        </div>
+        <div class="innovator-list-actions">
+            <a class="btn btn-outline-primary" href="{% url 'innovators:export' %}"><i class="bi bi-download me-2" aria-hidden="true"></i>Download innovators</a>
+            <a class="btn btn-primary" href="{% url 'innovators:create' %}"><i class="bi bi-person-plus me-2" aria-hidden="true"></i>Add innovator</a>
+        </div>
+    </div>
+    <form class="innovator-management-search" method="get" role="search">
+        <div>
+            <label class="visually-hidden" for="innovator-search">Search innovators</label>
+            <input id="innovator-search" class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search name, email, registration number or project">
+        </div>
+        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search me-2" aria-hidden="true"></i>Search</button>
+    </form>
+</section>
 <div class="card content-card innovator-directory-table-card">
     <div class="table-responsive mobile-card-table-wrap">
         <table class="table mobile-card-table align-middle mb-0">
