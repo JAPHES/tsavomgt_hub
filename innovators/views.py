@@ -261,10 +261,6 @@ def innovator_create(request):
                 return redirect("innovators:detail", pk=profile.pk)
             form.add_error(None, str(exc))
             return render(request, "innovators/create.html", {"form": form})
-        messages.success(
-            request,
-            f"Account added for {profile.user.get_full_name()}. Temporary login credentials were emailed.",
-        )
         return redirect("innovators:create-success", pk=profile.pk)
     return render(request, "innovators/create.html", {"form": form})
 

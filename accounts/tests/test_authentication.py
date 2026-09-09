@@ -378,6 +378,24 @@ class AdministratorAccountCreationTests(TestCase):
         )
         self.assertNotContains(response, "Initial project")
 
+    def test_account_creation_success_page_has_only_simple_next_actions(self):
+        innovator = create_innovator(
+            email="success-page@students.ttu.ac.ke",
+            registration_number="TTU/INN/100",
+        )
+        profile = innovator.innovator_profile
+
+        response = self.client.get(
+            reverse("innovators:create-success", kwargs={"pk": profile.pk})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Innovator added successfully")
+        self.assertContains(response, "Go back to innovators")
+        self.assertContains(response, "Add another innovator")
+        self.assertNotContains(response, profile.registration_number)
+        self.assertNotContains(response, profile.user.email)
+
     @patch("accounts.services.generate_temporary_password", return_value=TEMPORARY_PASSWORD)
     def test_administrator_creates_account_and_emails_hashed_temporary_password(self, generator):
         with self.captureOnCommitCallbacks(execute=True):
