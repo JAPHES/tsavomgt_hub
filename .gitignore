@@ -11,6 +11,7 @@ staticfiles/
 .coverage
 htmlcov/
 .pytest_cache/
+.responsive-audit/
 .idea/
 .vscode/
 *.log
