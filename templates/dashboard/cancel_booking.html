@@ -4,8 +4,8 @@
 
 {% block content %}
 <div class="innovator-record-toolbar">
-    <a class="innovator-back-link" href="{% url 'dashboard:admin' %}">
-        <i class="bi bi-arrow-left" aria-hidden="true"></i>Back to administrator dashboard
+    <a class="innovator-back-link" href="{{ return_url }}">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>Back to {{ return_label }}
     </a>
     <span>Booking administration</span>
 </div>
@@ -20,6 +20,7 @@
     </div>
     <form method="post" novalidate>
         {% csrf_token %}
+        {% if return_to %}<input type="hidden" name="next" value="{{ return_to }}">{% endif %}
         <div class="critical-action-body">
             <p>You are cancelling the following visit for <strong>{{ booking.innovator.get_full_name }}</strong>. The booking will remain in the innovator's history as cancelled.</p>
             <div class="booking-cancellation-summary">
@@ -35,7 +36,7 @@
             </div>
         </div>
         <div class="critical-action-footer d-flex flex-wrap justify-content-end">
-            <a class="btn btn-light" href="{% url 'dashboard:admin' %}">Keep this booking</a>
+            <a class="btn btn-light" href="{{ return_url }}">Keep this booking</a>
             <button class="btn btn-danger" type="submit"><i class="bi bi-envelope-x me-2" aria-hidden="true"></i>Cancel visit and notify innovator</button>
         </div>
     </form>

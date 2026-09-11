@@ -60,22 +60,40 @@ class AdministratorDashboardTests(TestCase):
             },
         )
 
-    def test_future_booking_is_shown_separately_then_moves_to_todays_queue(self):
+    def test_future_booking_has_separate_page_then_moves_to_todays_queue(self):
         visit_date = timezone.localdate() + timedelta(days=1)
         booking = self.create_booking(visit_date=visit_date)
-        response = self.client.get(reverse("dashboard:admin"))
+        dashboard_response = self.client.get(reverse("dashboard:admin"))
+        future_response = self.client.get(reverse("dashboard:future-bookings"))
 
-        self.assertEqual(list(response.context["today_bookings"]), [])
-        self.assertEqual(list(response.context["future_bookings"]), [booking])
-        self.assertContains(response, "Future planned visits")
-        self.assertContains(response, self.user.get_full_name())
-        self.assertEqual(response.context["summary"]["bookings_today"], 0)
+        self.assertEqual(list(dashboard_response.context["today_bookings"]), [])
+        self.assertNotIn("future_bookings", dashboard_response.context)
+        self.assertNotContains(dashboard_response, "Future planned visits")
+        self.assertNotContains(dashboard_response, self.user.get_full_name())
+        self.assertEqual(dashboard_response.context["summary"]["bookings_today"], 0)
+        self.assertEqual(
+            list(future_response.context["page_obj"].object_list),
+            [booking],
+        )
+        self.assertContains(future_response, "Future planned visits")
+        self.assertContains(future_response, self.user.get_full_name())
+        self.assertContains(
+            future_response,
+            '<span>Future bookings</span>',
+            html=True,
+        )
 
         with patch("dashboard.views.timezone.localdate", return_value=visit_date):
             visit_day_response = self.client.get(reverse("dashboard:admin"))
+            future_visit_day_response = self.client.get(
+                reverse("dashboard:future-bookings")
+            )
 
         self.assertEqual(list(visit_day_response.context["today_bookings"]), [booking])
-        self.assertEqual(list(visit_day_response.context["future_bookings"]), [])
+        self.assertEqual(
+            list(future_visit_day_response.context["page_obj"].object_list),
+            [],
+        )
         self.assertEqual(visit_day_response.context["summary"]["bookings_today"], 1)
 
     def test_administrator_can_admit_todays_booking_once(self):
@@ -120,15 +138,20 @@ class AdministratorDashboardTests(TestCase):
             visit_date=timezone.localdate() + timedelta(days=2),
         )
         cancel_url = reverse("dashboard:cancel-booking", kwargs={"pk": booking.pk})
+        future_cancel_url = f"{cancel_url}?next=future"
 
-        confirmation = self.client.get(cancel_url)
+        confirmation = self.client.get(future_cancel_url)
         self.assertEqual(confirmation.status_code, 200)
         self.assertContains(confirmation, "Cancel this booking?")
         self.assertContains(confirmation, "Reason for cancellation")
+        self.assertContains(confirmation, "Back to future bookings")
 
         response = self.client.post(
             cancel_url,
-            {"reason": "The hub will be closed for a scheduled electrical inspection."},
+            {
+                "reason": "The hub will be closed for a scheduled electrical inspection.",
+                "next": "future",
+            },
             follow=True,
         )
 
@@ -149,7 +172,8 @@ class AdministratorDashboardTests(TestCase):
                 target_id=str(booking.pk),
             ).exists()
         )
-        self.assertNotIn(booking, response.context["future_bookings"])
+        self.assertRedirects(response, reverse("dashboard:future-bookings"))
+        self.assertNotIn(booking, response.context["page_obj"].object_list)
 
     def test_cancellation_requires_reason_and_admitted_visit_cannot_be_cancelled(self):
         booking = self.create_booking()

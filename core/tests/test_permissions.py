@@ -38,6 +38,10 @@ class PermissionTests(TestCase):
         self.client.force_login(self.innovator)
         self.assertEqual(self.client.get(reverse("dashboard:admin")).status_code, 403)
         self.assertEqual(
+            self.client.get(reverse("dashboard:future-bookings")).status_code,
+            403,
+        )
+        self.assertEqual(
             self.client.get(
                 reverse("dashboard:cancel-booking", kwargs={"pk": self.other_booking.pk})
             ).status_code,
@@ -80,6 +84,10 @@ class PermissionTests(TestCase):
     def test_administrator_can_access_management_pages(self):
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get(reverse("dashboard:admin")).status_code, 200)
+        self.assertEqual(
+            self.client.get(reverse("dashboard:future-bookings")).status_code,
+            200,
+        )
         manage_response = self.client.get(reverse("innovators:manage"))
         self.assertEqual(manage_response.status_code, 200)
         self.assertContains(manage_response, "Download innovators")

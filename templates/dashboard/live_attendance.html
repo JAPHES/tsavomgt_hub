@@ -50,7 +50,7 @@
                     <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|truncatechars:120 }}</span></td>
                     <td data-label="Action">
                         {% if booking.status == 'BOOKED' %}
-                            <a class="btn btn-sm btn-outline-danger booking-action-button" href="{% url 'dashboard:cancel-booking' booking.pk %}"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel visit</a>
+                            <a class="btn btn-sm btn-outline-danger booking-action-button" href="{% url 'dashboard:cancel-booking' booking.pk %}?next=bookings"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel visit</a>
                         {% else %}
                             <span class="text-muted">No action</span>
                         {% endif %}

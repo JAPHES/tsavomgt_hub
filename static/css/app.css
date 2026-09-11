@@ -217,8 +217,6 @@ a { color: var(--ttu-primary-green); }
 .booking-action-group { align-items: center; display: flex; flex-wrap: wrap; gap: .45rem; }
 .booking-action-group form { display: flex; }
 .booking-action-button { align-items: center; display: inline-flex; justify-content: center; white-space: nowrap; }
-.future-bookings-footer { align-items: center; background: #f8fbf9; border-top: 1px solid #e8eee8; color: var(--ttu-medium-gray); display: flex; font-size: .74rem; gap: 1rem; justify-content: space-between; padding: .85rem 1.4rem; }
-.future-bookings-footer a { font-weight: 600; text-decoration: none; }
 .student-dashboard-heading { align-items: center; background: linear-gradient(120deg, var(--ttu-dark-green), var(--ttu-primary-green) 72%, #28772d); border: 1px solid rgba(0,77,0,.35); border-radius: 1rem; box-shadow: 0 14px 36px rgba(0,77,0,.2); display: grid; gap: 1rem; grid-template-columns: minmax(9rem, 1fr) minmax(0, 2fr) minmax(9rem, 1fr); margin: 0 0 1.5rem; padding: 1.4rem; text-align: center; }
 .student-dashboard-heading > div { grid-column: 2; }
 .student-dashboard-heading .eyebrow { color: var(--ttu-gold) !important; margin-bottom: .7rem !important; }
@@ -697,7 +695,6 @@ textarea.form-control { min-height: auto; }
     .self-profile-meta span, .attendance-record-meta span { width: 100%; }
     .session-timing-card strong { white-space: normal; }
     .attendance-correction-note { padding: .9rem; }
-    .future-bookings-footer { align-items: flex-start; flex-direction: column; }
     .booking-cancellation-summary > div { gap: .2rem; grid-template-columns: 1fr; }
 
 }

@@ -4,6 +4,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
@@ -87,19 +88,12 @@ def admin_dashboard(request):
         .exclude(status=HubBooking.Status.CANCELLED)
         .order_by("arrival_time")
     )
-    future_booking_queryset = _base_bookings().filter(
-        visit_date__gt=today,
-        status=HubBooking.Status.BOOKED,
-    ).order_by("visit_date", "arrival_time")
-    future_booking_count = future_booking_queryset.count()
     return render(
         request,
         "dashboard/admin.html",
         {
             "today": today,
             "today_bookings": today_bookings,
-            "future_bookings": future_booking_queryset[:10],
-            "future_booking_count": future_booking_count,
             "summary": {
                 "active_innovators": User.objects.filter(
                     role=User.Role.INNOVATOR,
@@ -115,6 +109,21 @@ def admin_dashboard(request):
                 ).count(),
             },
         },
+    )
+
+
+@admin_required
+def future_bookings(request):
+    today = timezone.localdate()
+    bookings = _base_bookings().filter(
+        visit_date__gt=today,
+        status=HubBooking.Status.BOOKED,
+    ).order_by("visit_date", "arrival_time")
+    page_obj = Paginator(bookings, 30).get_page(request.GET.get("page"))
+    return render(
+        request,
+        "dashboard/future_bookings.html",
+        {"page_obj": page_obj},
     )
 
 
@@ -138,13 +147,23 @@ def admit_booking_view(request, pk):
 @admin_required
 @require_http_methods(["GET", "POST"])
 def cancel_booking_view(request, pk):
+    return_targets = {
+        "future": ("dashboard:future-bookings", "future bookings"),
+        "bookings": ("dashboard:bookings", "booking records"),
+    }
+    return_to = request.POST.get("next") or request.GET.get("next") or ""
+    return_view, return_label = return_targets.get(
+        return_to,
+        ("dashboard:admin", "administrator dashboard"),
+    )
+    return_url = reverse(return_view)
     booking = get_object_or_404(
         _base_bookings(),
         pk=pk,
     )
     if booking.status != HubBooking.Status.BOOKED:
         messages.error(request, "Only a booking awaiting admission can be cancelled.")
-        return redirect("dashboard:admin")
+        return redirect(return_url)
 
     form = BookingCancellationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -157,7 +176,7 @@ def cancel_booking_view(request, pk):
             )
         except BookingError as exc:
             messages.error(request, str(exc))
-            return redirect("dashboard:admin")
+            return redirect(return_url)
 
         try:
             send_booking_cancellation_email(cancelled)
@@ -169,12 +188,18 @@ def cancel_booking_view(request, pk):
                 f"The visit for {cancelled.innovator.get_full_name()} was cancelled "
                 "and the innovator was notified by email.",
             )
-        return redirect("dashboard:admin")
+        return redirect(return_url)
 
     return render(
         request,
         "dashboard/cancel_booking.html",
-        {"booking": booking, "form": form},
+        {
+            "booking": booking,
+            "form": form,
+            "return_to": return_to if return_to in return_targets else "",
+            "return_url": return_url,
+            "return_label": return_label,
+        },
     )
 
 
