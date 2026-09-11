@@ -113,8 +113,8 @@ The innovator workspace provides:
 - Hub booking form
 - Sidebar access to the dedicated project creation and portfolio page
 - Monthly booking and admitted-visit totals
-- A future-visits list with edit actions for bookings that still await admission
-- A private booking-history page separating upcoming visits from admitted and cancelled records
+- A dashboard-only future-visits list with edit actions for bookings that still await admission
+- A private booking-history page limited to admitted, cancelled, and earlier visit records
 
 The administrator dashboard provides:
 
