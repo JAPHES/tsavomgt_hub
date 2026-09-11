@@ -1,0 +1,28 @@
+Hello {{ user.first_name|default:"there" }},
+
+A hub administrator has cancelled your planned Tsavo Hub visit.
+
+Visit date: {{ booking.visit_date|date:"d F Y" }}
+Expected arrival: {{ booking.arrival_time|time:"H:i" }}
+Planned activity: {{ booking.purpose }}
+
+Reason for cancellation:
+{{ booking.cancellation_reason }}
+
+View your bookings: {{ booking_history_url }}
+
+{% if support_email or assistant_support_email or support_phone %}
+If you need clarification, contact:
+{% if support_email %}
+Tsavo Hub Administration
+Email: {{ support_email }}
+{% endif %}{% if assistant_support_email %}
+Assistant Hub Administrator
+Email: {{ assistant_support_email }}
+{% endif %}{% if support_phone %}
+Phone: {{ support_phone }}
+{% endif %}
+{% endif %}
+This is an automated email. Please do not reply directly.
+
+Tsavo Innovation & Incubation Hub

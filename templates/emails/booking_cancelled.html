@@ -1,0 +1,44 @@
+{% extends "emails/base.html" %}
+
+{% block email_title %}Your Tsavo Hub visit was cancelled{% endblock %}
+{% block preheader %}An administrator has cancelled one of your planned Tsavo Hub visits.{% endblock %}
+{% block header_label %}Booking update{% endblock %}
+{% block header_title %}Your planned hub visit was cancelled{% endblock %}
+
+{% block email_content %}
+<p style="margin:0 0 18px;font-size:18px;font-weight:700;">Hello {{ user.first_name|default:"there" }},</p>
+<p style="margin:0 0 22px;line-height:1.65;color:#40584f;">A hub administrator has cancelled the visit shown below.</p>
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f5f9f6;border:1px solid #dce8e1;border-radius:10px;">
+    <tr>
+        <td style="padding:12px 16px;border-bottom:1px solid #dce8e1;color:#60736b;width:34%;">Visit date</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #dce8e1;color:#17352a;font-weight:700;">{{ booking.visit_date|date:"d F Y" }}</td>
+    </tr>
+    <tr>
+        <td style="padding:12px 16px;border-bottom:1px solid #dce8e1;color:#60736b;">Expected arrival</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #dce8e1;color:#17352a;font-weight:700;">{{ booking.arrival_time|time:"H:i" }}</td>
+    </tr>
+    <tr>
+        <td style="padding:12px 16px;color:#60736b;vertical-align:top;">Planned activity</td>
+        <td style="padding:12px 16px;color:#17352a;line-height:1.55;">{{ booking.purpose|linebreaksbr }}</td>
+    </tr>
+</table>
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin-top:20px;background:#fff3f1;border-left:4px solid #b42318;border-radius:8px;">
+    <tr>
+        <td style="padding:16px 18px;line-height:1.6;color:#6f342f;"><strong style="color:#8d1f16;">Reason for cancellation</strong><br>{{ booking.cancellation_reason }}</td>
+    </tr>
+</table>
+
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0 4px;">
+    <tr>
+        <td style="background:#12633f;border-radius:8px;">
+            <a href="{{ booking_history_url }}" style="display:inline-block;padding:12px 20px;color:#ffffff;text-decoration:none;font-weight:700;">View your bookings</a>
+        </td>
+    </tr>
+</table>
+
+{% if support_email or assistant_support_email or support_phone %}
+    {% include "emails/includes/support_contacts.html" with heading="Need clarification?" introduction="Contact the hub administration using the details below:" %}
+{% endif %}
+{% endblock %}

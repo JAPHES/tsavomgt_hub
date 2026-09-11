@@ -12,6 +12,8 @@ class HubBookingAdmin(admin.ModelAdmin):
         "status",
         "admitted_at",
         "admitted_by",
+        "cancelled_at",
+        "cancelled_by",
     )
     list_filter = ("status", "visit_date")
     search_fields = (
@@ -29,6 +31,9 @@ class HubBookingAdmin(admin.ModelAdmin):
         "status",
         "admitted_at",
         "admitted_by",
+        "cancelled_at",
+        "cancelled_by",
+        "cancellation_reason",
         "created_at",
         "updated_at",
     )

@@ -1,0 +1,36 @@
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ("auditlog", "0007_add_project_updated_action"),
+    ]
+
+    operations = [
+        migrations.AlterField(
+            model_name="auditlog",
+            name="action",
+            field=models.CharField(
+                choices=[
+                    ("ACCOUNT_CREATED", "Innovator account added"),
+                    ("ACCOUNT_UPDATED", "Account updated"),
+                    ("ACCOUNT_ACTIVATED", "Account activated"),
+                    ("ACCOUNT_DEACTIVATED", "Account deactivated"),
+                    ("ACCOUNT_DELETED", "Innovator account permanently deleted"),
+                    (
+                        "TEMPORARY_CREDENTIALS_REISSUED",
+                        "Temporary login credentials reissued",
+                    ),
+                    ("ATTENDANCE_CORRECTED", "Attendance corrected"),
+                    ("INCOMPLETE_SESSION_CLOSED", "Incomplete session closed"),
+                    ("BOOKING_ADMITTED", "Hub booking admitted"),
+                    ("BOOKING_UPDATED", "Hub booking updated"),
+                    ("BOOKING_CANCELLED", "Hub booking cancelled"),
+                    ("PROJECT_CREATED", "Innovator project added"),
+                    ("PROJECT_UPDATED", "Innovator project updated"),
+                    ("ROLE_CHANGED", "User role changed"),
+                ],
+                max_length=40,
+            ),
+        ),
+    ]

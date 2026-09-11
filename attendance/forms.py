@@ -30,7 +30,8 @@ class HubBookingForm(BootstrapFormMixin, forms.ModelForm):
         self.innovator = innovator
         super().__init__(*args, **kwargs)
         today = timezone.localdate()
-        self.fields["visit_date"].initial = today
+        if not self.instance.pk:
+            self.fields["visit_date"].initial = today
         self.fields["visit_date"].widget.attrs["min"] = today.isoformat()
         self.apply_bootstrap()
 
@@ -49,12 +50,34 @@ class HubBookingForm(BootstrapFormMixin, forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
         visit_date = cleaned.get("visit_date")
-        if (
-            self.innovator
-            and visit_date
-            and HubBooking.objects.filter(
-                innovator=self.innovator, visit_date=visit_date
-            ).exists()
-        ):
-            self.add_error("visit_date", "You already have a hub booking for this date.")
+        if self.innovator and visit_date:
+            duplicate = HubBooking.objects.filter(
+                innovator=self.innovator,
+                visit_date=visit_date,
+            ).exclude(status=HubBooking.Status.CANCELLED)
+            if self.instance.pk:
+                duplicate = duplicate.exclude(pk=self.instance.pk)
+            if duplicate.exists():
+                self.add_error("visit_date", "You already have a hub booking for this date.")
         return cleaned
+
+
+class BookingCancellationForm(BootstrapFormMixin, forms.Form):
+    reason = forms.CharField(
+        min_length=10,
+        max_length=1000,
+        label="Reason for cancellation",
+        widget=forms.Textarea(
+            attrs={
+                "rows": 5,
+                "placeholder": "Explain clearly why this hub visit is being cancelled.",
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_bootstrap()
+
+    def clean_reason(self):
+        return " ".join(self.cleaned_data["reason"].split())

@@ -106,6 +106,7 @@ class HubBooking(models.Model):
     class Status(models.TextChoices):
         BOOKED = "BOOKED", "Booked"
         ADMITTED = "ADMITTED", "Admitted"
+        CANCELLED = "CANCELLED", "Cancelled"
 
     innovator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -124,6 +125,15 @@ class HubBooking(models.Model):
         on_delete=models.PROTECT,
         related_name="admitted_hub_bookings",
     )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="cancelled_hub_bookings",
+    )
+    cancellation_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -132,19 +142,40 @@ class HubBooking(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["innovator", "visit_date"],
-                name="unique_daily_booking_per_innovator",
+                condition=~Q(status="CANCELLED"),
+                name="unique_active_daily_booking_per_innovator",
                 violation_error_message="You already have a hub booking for this date.",
             ),
             models.CheckConstraint(
                 condition=(
-                    Q(status="BOOKED", admitted_at__isnull=True, admitted_by__isnull=True)
+                    Q(
+                        status="BOOKED",
+                        admitted_at__isnull=True,
+                        admitted_by__isnull=True,
+                        cancelled_at__isnull=True,
+                        cancelled_by__isnull=True,
+                        cancellation_reason="",
+                    )
                     | Q(
                         status="ADMITTED",
                         admitted_at__isnull=False,
                         admitted_by__isnull=False,
+                        cancelled_at__isnull=True,
+                        cancelled_by__isnull=True,
+                        cancellation_reason="",
+                    )
+                    | (
+                        Q(
+                            status="CANCELLED",
+                            admitted_at__isnull=True,
+                            admitted_by__isnull=True,
+                            cancelled_at__isnull=False,
+                            cancelled_by__isnull=False,
+                        )
+                        & ~Q(cancellation_reason="")
                     )
                 ),
-                name="booking_admission_fields_match_status",
+                name="booking_lifecycle_fields_match_status",
             ),
         ]
         indexes = [
@@ -156,8 +187,17 @@ class HubBooking(models.Model):
         errors = {}
         if self.innovator_id and self.innovator.role != self.innovator.Role.INNOVATOR:
             errors["innovator"] = "Hub bookings can only be made for an innovator."
-        if self.status == self.Status.BOOKED and (self.admitted_at or self.admitted_by_id):
-            errors["status"] = "A booked visit cannot contain admission details."
+        has_admission_details = bool(self.admitted_at or self.admitted_by_id)
+        has_cancellation_details = bool(
+            self.cancelled_at
+            or self.cancelled_by_id
+            or self.cancellation_reason.strip()
+        )
+        if self.status == self.Status.BOOKED:
+            if has_admission_details:
+                errors["status"] = "A booked visit cannot contain admission details."
+            if has_cancellation_details:
+                errors["status"] = "A booked visit cannot contain cancellation details."
         if self.status == self.Status.ADMITTED:
             if not self.admitted_at:
                 errors["admitted_at"] = "An admitted booking requires an admission time."
@@ -165,6 +205,19 @@ class HubBooking(models.Model):
                 errors["admitted_by"] = "An admitted booking requires an administrator."
             elif self.admitted_by.role != self.admitted_by.Role.ADMIN:
                 errors["admitted_by"] = "Only an administrator can admit a booking."
+            if has_cancellation_details:
+                errors["status"] = "An admitted booking cannot contain cancellation details."
+        if self.status == self.Status.CANCELLED:
+            if has_admission_details:
+                errors["status"] = "A cancelled booking cannot contain admission details."
+            if not self.cancelled_at:
+                errors["cancelled_at"] = "A cancelled booking requires a cancellation time."
+            if not self.cancelled_by_id:
+                errors["cancelled_by"] = "A cancelled booking requires an administrator."
+            elif self.cancelled_by.role != self.cancelled_by.Role.ADMIN:
+                errors["cancelled_by"] = "Only an administrator can cancel a booking."
+            if not self.cancellation_reason.strip():
+                errors["cancellation_reason"] = "Explain why the booking was cancelled."
         if errors:
             raise ValidationError(errors)
 

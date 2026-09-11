@@ -1,14 +1,22 @@
 from datetime import time, timedelta
 
+from django.core import mail
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
 from attendance.models import AttendanceSession, HubBooking
-from attendance.services import BookingError, admit_booking, create_booking
+from attendance.services import (
+    BookingError,
+    admit_booking,
+    cancel_booking,
+    create_booking,
+    send_booking_cancellation_email,
+    update_booking,
+)
 from auditlog.models import AuditLog
 from core.tests.factories import create_admin, create_innovator
 
@@ -138,6 +146,150 @@ class HubBookingServiceTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             booking.full_clean()
+
+    def test_innovator_can_update_own_booking_while_awaiting_admission(self):
+        booking = create_booking(
+            self.innovator,
+            visit_date=timezone.localdate() + timedelta(days=1),
+            arrival_time=time(10, 0),
+            purpose="Prepare the original prototype demonstration.",
+        )
+        new_date = timezone.localdate() + timedelta(days=2)
+
+        updated = update_booking(
+            self.innovator,
+            booking,
+            visit_date=new_date,
+            arrival_time=time(14, 30),
+            purpose="  Present the revised prototype to the incubation team.  ",
+        )
+
+        self.assertEqual(updated.visit_date, new_date)
+        self.assertEqual(updated.arrival_time, time(14, 30))
+        self.assertEqual(
+            updated.purpose,
+            "Present the revised prototype to the incubation team.",
+        )
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.innovator,
+                action=AuditLog.Action.BOOKING_UPDATED,
+                target_id=str(booking.pk),
+            ).exists()
+        )
+
+    def test_innovator_cannot_update_another_or_admitted_booking(self):
+        booking = create_booking(
+            self.innovator,
+            visit_date=timezone.localdate(),
+            arrival_time=time(10, 0),
+            purpose="Review the prototype with the incubation team.",
+        )
+        other = create_innovator(
+            email="booking-owner-check@example.com",
+            registration_number="TTU/INN/020",
+        )
+        with self.assertRaises(BookingError):
+            update_booking(
+                other,
+                booking,
+                visit_date=timezone.localdate() + timedelta(days=1),
+                arrival_time=time(11, 0),
+                purpose="Attempt to change another innovator booking.",
+            )
+
+        admitted = admit_booking(self.admin, booking)
+        with self.assertRaises(BookingError):
+            update_booking(
+                self.innovator,
+                admitted,
+                visit_date=timezone.localdate() + timedelta(days=1),
+                arrival_time=time(11, 0),
+                purpose="Attempt to change a booking after admission.",
+            )
+
+    def test_admin_can_cancel_booking_with_reason_and_date_can_be_rebooked(self):
+        visit_date = timezone.localdate() + timedelta(days=1)
+        booking = create_booking(
+            self.innovator,
+            visit_date=visit_date,
+            arrival_time=time(10, 0),
+            purpose="Test the prototype in the electronics workshop.",
+        )
+
+        cancelled = cancel_booking(
+            self.admin,
+            booking,
+            reason="The electronics workshop will be closed for maintenance.",
+        )
+
+        self.assertEqual(cancelled.status, HubBooking.Status.CANCELLED)
+        self.assertEqual(cancelled.cancelled_by, self.admin)
+        self.assertIsNotNone(cancelled.cancelled_at)
+        self.assertEqual(
+            cancelled.cancellation_reason,
+            "The electronics workshop will be closed for maintenance.",
+        )
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.admin,
+                action=AuditLog.Action.BOOKING_CANCELLED,
+                target_id=str(booking.pk),
+                reason=cancelled.cancellation_reason,
+            ).exists()
+        )
+        replacement = create_booking(
+            self.innovator,
+            visit_date=visit_date,
+            arrival_time=time(14, 0),
+            purpose="Use the collaboration room after the workshop maintenance.",
+        )
+        self.assertEqual(replacement.status, HubBooking.Status.BOOKED)
+        with self.assertRaises(BookingError):
+            admit_booking(self.admin, cancelled)
+
+    def test_non_admin_and_blank_reason_cannot_cancel_booking(self):
+        booking = create_booking(
+            self.innovator,
+            visit_date=timezone.localdate() + timedelta(days=1),
+            arrival_time=time(10, 0),
+            purpose="Review project milestones with the incubation team.",
+        )
+        with self.assertRaises(BookingError):
+            cancel_booking(
+                self.innovator,
+                booking,
+                reason="I want to cancel this visit.",
+            )
+        with self.assertRaises(BookingError):
+            cancel_booking(self.admin, booking, reason="Too short")
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        SITE_URL="https://hub.example.com",
+        SUPPORT_EMAIL="hub-support@example.com",
+    )
+    def test_cancellation_email_contains_booking_and_reason(self):
+        booking = create_booking(
+            self.innovator,
+            visit_date=timezone.localdate() + timedelta(days=1),
+            arrival_time=time(10, 0),
+            purpose="Demonstrate the community health referral prototype.",
+        )
+        cancelled = cancel_booking(
+            self.admin,
+            booking,
+            reason="The hub will be unavailable during a scheduled safety inspection.",
+        )
+
+        send_booking_cancellation_email(cancelled)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(message.to, [self.innovator.email])
+        self.assertIn("scheduled safety inspection", message.body)
+        self.assertIn("https://hub.example.com/attendance/bookings/", message.body)
+        self.assertIn("Booking update", message.alternatives[0].content)
 
 
 class BookingViewTests(TestCase):
