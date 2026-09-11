@@ -121,14 +121,15 @@ The administrator dashboard provides:
 - Total active innovator accounts
 - Total bookings, awaiting admissions, and admitted innovators today
 - A time-ordered table of today's expected innovators
-- A future planned-visits table that displays bookings immediately and orders them by visit date
 - Expected arrival time, intended activity, admission status, and admission time
 - A POST-only action for admitting an innovator upon arrival
 - A confirmation workflow for cancelling a visit with a required reason and innovator notification
 
-Because the dashboard queries by the current server date, a future booking automatically leaves the planned-visits table and appears in today's admission queue when its visit date arrives.
+The administrator sidebar links to a separate **Future bookings** page. It displays new future bookings immediately, orders them by visit date, supports pagination, and provides cancellation actions without crowding the main dashboard.
 
-The separate booking-records page searches by innovator name and shows booked, admitted, and cancelled outcomes. Administrators can start a cancellation from either the dashboard or this records page.
+Because the administrator views query by the current server date, a booking automatically leaves the future-bookings page and appears in today's dashboard admission queue when its visit date arrives.
+
+The separate booking-records page searches by innovator name and shows booked, admitted, and cancelled outcomes. Administrators can start a cancellation from today's dashboard, the future-bookings page, or the records page and return to the page where they started.
 
 ## Project structure
 
@@ -347,6 +348,7 @@ before onboarding real users.
 /dashboard/
 /dashboard/innovator/
 /dashboard/admin/
+/dashboard/admin/future-bookings/
 /dashboard/admin/bookings/<id>/admit/
 /dashboard/admin/bookings/<id>/cancel/
 /dashboard/bookings/
