@@ -199,7 +199,8 @@ a { color: var(--ttu-primary-green); }
 .presence-table-header > div { grid-column: 2; text-align: center; }
 .presence-title-line { align-items: center; display: flex; flex-direction: column; gap: .4rem; justify-content: center; }
 .presence-title-line h2 { font-size: 1.6rem; margin: 0; }
-.today-indicator { background: #fff7d9; border: 1px solid rgba(212, 175, 55, .45); border-radius: 999px; color: #725900; font-size: .68rem; font-weight: 800; letter-spacing: .08em; padding: .28rem .62rem; text-transform: uppercase; }
+.today-indicator, .future-indicator { background: #fff7d9; border: 1px solid rgba(212, 175, 55, .45); border-radius: 999px; color: #725900; font-size: .68rem; font-weight: 800; letter-spacing: .08em; padding: .28rem .62rem; text-transform: uppercase; }
+.future-indicator { background: #e6f1fb; border-color: #bdd8eb; color: #17547b; }
 .still-in-hub { align-items: center; color: var(--ttu-primary-green); display: inline-flex; font-size: .76rem; font-weight: 700; gap: .4rem; white-space: nowrap; }
 .still-in-hub i { font-size: .48rem; }
 .session-duration { color: var(--ttu-dark-green); font-size: .85rem; white-space: nowrap; }
@@ -213,6 +214,10 @@ a { color: var(--ttu-primary-green); }
 .presence-empty-icon { align-items: center; background: var(--ttu-light-green); border-radius: 50%; color: var(--ttu-primary-green); display: flex; font-size: 1.7rem; height: 68px; justify-content: center; margin: 0 auto .9rem; width: 68px; }
 .presence-empty-state h3 { font-size: 1.45rem; margin: 0 0 .35rem; }
 .presence-empty-state p { color: var(--ttu-medium-gray); margin: 0; }
+.booking-action-group { align-items: center; display: flex; flex-wrap: wrap; gap: .45rem; }
+.booking-action-group form { display: flex; }
+.future-bookings-footer { align-items: center; background: #f8fbf9; border-top: 1px solid #e8eee8; color: var(--ttu-medium-gray); display: flex; font-size: .74rem; gap: 1rem; justify-content: space-between; padding: .85rem 1.4rem; }
+.future-bookings-footer a { font-weight: 600; text-decoration: none; }
 .student-dashboard-heading { align-items: center; background: linear-gradient(120deg, var(--ttu-dark-green), var(--ttu-primary-green) 72%, #28772d); border: 1px solid rgba(0,77,0,.35); border-radius: 1rem; box-shadow: 0 14px 36px rgba(0,77,0,.2); display: grid; gap: 1rem; grid-template-columns: minmax(9rem, 1fr) minmax(0, 2fr) minmax(9rem, 1fr); margin: 0 0 1.5rem; padding: 1.4rem; text-align: center; }
 .student-dashboard-heading > div { grid-column: 2; }
 .student-dashboard-heading .eyebrow { color: var(--ttu-gold) !important; margin-bottom: .7rem !important; }
@@ -315,6 +320,15 @@ a { color: var(--ttu-primary-green); }
 .attendance-history-empty > span { align-items: center; background: var(--ttu-light-green); border-radius: 50%; color: var(--ttu-primary-green); display: flex; font-size: 1.45rem; height: 62px; justify-content: center; margin-bottom: .75rem; width: 62px; }
 .attendance-history-empty h3 { font-size: 1.35rem; margin: 0 0 .3rem; }
 .attendance-history-empty p { color: var(--ttu-medium-gray); font-size: .73rem; margin: 0; }
+.booking-outcome { color: #5a4b47; display: block; font-size: .74rem; line-height: 1.55; max-width: 320px; }
+.booking-outcome strong, .booking-outcome small { display: block; }
+.booking-outcome strong { color: #8d1f16; }
+.booking-outcome small { color: var(--ttu-medium-gray); margin-top: .2rem; }
+.booking-cancellation-summary { background: var(--ttu-off-white); border: 1px solid #e1e8e2; border-radius: .75rem; overflow: hidden; }
+.booking-cancellation-summary > div { border-bottom: 1px solid #e1e8e2; display: grid; gap: .8rem; grid-template-columns: minmax(120px, 30%) minmax(0, 1fr); padding: .8rem .9rem; }
+.booking-cancellation-summary > div:last-child { border-bottom: 0; }
+.booking-cancellation-summary span { color: var(--ttu-medium-gray); font-size: .72rem; }
+.booking-cancellation-summary strong { color: var(--ttu-dark-gray); font-size: .78rem; overflow-wrap: anywhere; }
 .auth-wrap { align-items: center; display: flex; justify-content: center; min-height: 65vh; }
 .auth-card { max-width: 520px; width: 100%; }
 .password-auth-card { border-top: 4px solid var(--ttu-primary-green); overflow: hidden; }
@@ -378,6 +392,7 @@ textarea.form-control { min-height: auto; }
 .status-admin_closed, .status-pending { background: #fff3cd; color: #6b5509; }
 .status-booked { background: #fff3cd; color: #6b5509; }
 .status-admitted { background: #d9f5df; color: #075e18; }
+.status-cancelled { background: #fde3e6; color: #9e1c2b; }
 .admit-booking-button { white-space: nowrap; }
 .detail-list { display: grid; gap: .8rem; grid-template-columns: minmax(120px, 35%) 1fr; margin-bottom: 0; }
 .detail-list dt { color: var(--ttu-medium-gray); font-size: .78rem; }
@@ -604,6 +619,8 @@ textarea.form-control { min-height: auto; }
     .mobile-card-table > tbody > tr > td:not([data-label])::before { display: none; }
     .mobile-card-table .attendance-person, .mobile-card-table .work-done-summary, .mobile-card-table .record-work-summary { min-width: 0; width: 100%; }
     .mobile-card-table .record-view-button { border-radius: .5rem; height: 38px; width: 100%; }
+    .mobile-card-table .booking-action-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+    .mobile-card-table .booking-action-group form, .mobile-card-table .booking-action-group .btn { justify-content: center; width: 100%; }
     .mobile-card-table .presence-empty-state, .mobile-card-table .attendance-empty-state, .mobile-card-table .attendance-history-empty, .mobile-card-table .record-attendance-empty, .mobile-card-table .student-history-empty { padding: 2.2rem 1rem; }
 }
 
@@ -663,6 +680,8 @@ textarea.form-control { min-height: auto; }
     .self-profile-meta span, .attendance-record-meta span { width: 100%; }
     .session-timing-card strong { white-space: normal; }
     .attendance-correction-note { padding: .9rem; }
+    .future-bookings-footer { align-items: flex-start; flex-direction: column; }
+    .booking-cancellation-summary > div { gap: .2rem; grid-template-columns: 1fr; }
 
 }
 
@@ -685,6 +704,7 @@ textarea.form-control { min-height: auto; }
     .presence-stat-icon { flex-basis: 52px; height: 52px; }
     .mobile-card-table > tbody { padding: .7rem; }
     .mobile-card-table > tbody > tr > td { gap: .55rem; grid-template-columns: minmax(82px, 31%) minmax(0, 1fr); padding: .65rem .7rem; }
+    .mobile-card-table .booking-action-group { grid-template-columns: 1fr; }
     .pagination { flex-wrap: wrap; row-gap: .4rem; }
 }
 

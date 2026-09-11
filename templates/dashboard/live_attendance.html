@@ -29,7 +29,7 @@
     </div>
     <div class="table-responsive mobile-card-table-wrap">
         <table class="table attendance-records-table mobile-card-table align-middle mb-0">
-            <thead><tr><th>Innovator</th><th>Registration</th><th>Visit date</th><th>Expected</th><th>Intended activity</th><th>Status</th><th>Admitted at</th></tr></thead>
+            <thead><tr><th>Innovator</th><th>Registration</th><th>Visit date</th><th>Expected</th><th>Intended activity</th><th>Status</th><th>Outcome</th><th>Action</th></tr></thead>
             <tbody>
             {% for booking in page_obj %}
                 <tr>
@@ -39,10 +39,25 @@
                     <td data-label="Expected"><strong>{{ booking.arrival_time|time:"H:i" }}</strong></td>
                     <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|truncatechars:120 }}</span></td>
                     <td data-label="Status"><span class="status-badge status-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></td>
-                    <td data-label="Admitted at">{% if booking.admitted_at %}<span class="date-stack"><strong>{{ booking.admitted_at|date:"d M Y" }}</strong><small>{{ booking.admitted_at|time:"H:i" }}</small></span>{% else %}<span class="text-muted">Not yet admitted</span>{% endif %}</td>
+                    <td data-label="Outcome">
+                        {% if booking.status == 'CANCELLED' %}
+                            <span class="booking-outcome"><strong>Reason:</strong> {{ booking.cancellation_reason }}<small>Cancelled {{ booking.cancelled_at|date:"d M Y, H:i" }}</small></span>
+                        {% elif booking.admitted_at %}
+                            <span class="date-stack"><strong>{{ booking.admitted_at|date:"d M Y" }}</strong><small>Admitted at {{ booking.admitted_at|time:"H:i" }}</small></span>
+                        {% else %}
+                            <span class="text-muted">Awaiting visit</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Action">
+                        {% if booking.status == 'BOOKED' %}
+                            <a class="btn btn-sm btn-outline-danger record-view-button" href="{% url 'dashboard:cancel-booking' booking.pk %}"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel visit</a>
+                        {% else %}
+                            <span class="text-muted">No action</span>
+                        {% endif %}
+                    </td>
                 </tr>
             {% empty %}
-                <tr><td colspan="7"><div class="attendance-empty-state"><i class="bi bi-search" aria-hidden="true"></i><h3>No booking records found</h3><p>{% if filter_applied %}Try checking the spelling of the innovator's name.{% else %}Bookings will appear here after innovators plan a hub visit.{% endif %}</p></div></td></tr>
+                <tr><td colspan="8"><div class="attendance-empty-state"><i class="bi bi-search" aria-hidden="true"></i><h3>No booking records found</h3><p>{% if filter_applied %}Try checking the spelling of the innovator's name.{% else %}Bookings will appear here after innovators plan a hub visit.{% endif %}</p></div></td></tr>
             {% endfor %}
             </tbody>
         </table>

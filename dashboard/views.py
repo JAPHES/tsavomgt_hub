@@ -5,12 +5,19 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from accounts.models import User
-from attendance.forms import HubBookingForm
+from attendance.forms import BookingCancellationForm, HubBookingForm
 from attendance.models import HubBooking
-from attendance.services import BookingError, admit_booking, create_booking
+from attendance.services import (
+    BookingError,
+    BookingNotificationError,
+    admit_booking,
+    cancel_booking,
+    create_booking,
+    send_booking_cancellation_email,
+)
 from core.permissions import admin_required, innovator_required
 
 from .forms import AttendanceFilterForm
@@ -18,7 +25,7 @@ from .forms import AttendanceFilterForm
 
 def _base_bookings():
     return HubBooking.objects.select_related(
-        "innovator", "innovator__innovator_profile", "admitted_by"
+        "innovator", "innovator__innovator_profile", "admitted_by", "cancelled_by"
     )
 
 
@@ -74,13 +81,25 @@ def innovator_dashboard(request):
 @admin_required
 def admin_dashboard(request):
     today = timezone.localdate()
-    today_bookings = _base_bookings().filter(visit_date=today).order_by("arrival_time")
+    today_bookings = (
+        _base_bookings()
+        .filter(visit_date=today)
+        .exclude(status=HubBooking.Status.CANCELLED)
+        .order_by("arrival_time")
+    )
+    future_booking_queryset = _base_bookings().filter(
+        visit_date__gt=today,
+        status=HubBooking.Status.BOOKED,
+    ).order_by("visit_date", "arrival_time")
+    future_booking_count = future_booking_queryset.count()
     return render(
         request,
         "dashboard/admin.html",
         {
             "today": today,
             "today_bookings": today_bookings,
+            "future_bookings": future_booking_queryset[:10],
+            "future_booking_count": future_booking_count,
             "summary": {
                 "active_innovators": User.objects.filter(
                     role=User.Role.INNOVATOR,
@@ -114,6 +133,49 @@ def admit_booking_view(request, pk):
             f"{timezone.localtime(admitted.admitted_at):%H:%M}.",
         )
     return redirect("dashboard:admin")
+
+
+@admin_required
+@require_http_methods(["GET", "POST"])
+def cancel_booking_view(request, pk):
+    booking = get_object_or_404(
+        _base_bookings(),
+        pk=pk,
+    )
+    if booking.status != HubBooking.Status.BOOKED:
+        messages.error(request, "Only a booking awaiting admission can be cancelled.")
+        return redirect("dashboard:admin")
+
+    form = BookingCancellationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            cancelled = cancel_booking(
+                request.user,
+                booking,
+                reason=form.cleaned_data["reason"],
+                request=request,
+            )
+        except BookingError as exc:
+            messages.error(request, str(exc))
+            return redirect("dashboard:admin")
+
+        try:
+            send_booking_cancellation_email(cancelled)
+        except BookingNotificationError as exc:
+            messages.warning(request, str(exc))
+        else:
+            messages.success(
+                request,
+                f"The visit for {cancelled.innovator.get_full_name()} was cancelled "
+                "and the innovator was notified by email.",
+            )
+        return redirect("dashboard:admin")
+
+    return render(
+        request,
+        "dashboard/cancel_booking.html",
+        {"booking": booking, "form": form},
+    )
 
 
 def filter_bookings(queryset, cleaned):

@@ -92,7 +92,7 @@
     </div>
     <div class="table-responsive mobile-card-table-wrap">
         <table class="table record-attendance-table mobile-card-table align-middle mb-0">
-            <thead><tr><th>Visit date</th><th>Expected arrival</th><th>Intended activity</th><th>Status</th><th>Admitted at</th></tr></thead>
+            <thead><tr><th>Visit date</th><th>Expected arrival</th><th>Intended activity</th><th>Status</th><th>Outcome</th></tr></thead>
             <tbody>
                 {% for booking in recent_bookings %}
                     <tr>
@@ -100,7 +100,7 @@
                         <td data-label="Expected arrival">{{ booking.arrival_time|time:"H:i" }}</td>
                         <td data-label="Intended activity"><span class="record-work-summary">{{ booking.purpose|truncatechars:100 }}</span></td>
                         <td data-label="Status"><span class="status-badge status-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></td>
-                        <td data-label="Admitted at">{% if booking.admitted_at %}{{ booking.admitted_at|date:"d M Y, H:i" }}{% else %}<span class="text-muted">Not yet admitted</span>{% endif %}</td>
+                        <td data-label="Outcome">{% if booking.status == 'CANCELLED' %}<span class="booking-outcome"><strong>Reason:</strong> {{ booking.cancellation_reason }}<small>Cancelled {{ booking.cancelled_at|date:"d M Y, H:i" }}</small></span>{% elif booking.admitted_at %}{{ booking.admitted_at|date:"d M Y, H:i" }}{% else %}<span class="text-muted">Awaiting visit</span>{% endif %}</td>
                     </tr>
                 {% empty %}
                     <tr><td colspan="5"><div class="record-attendance-empty"><i class="bi bi-calendar2" aria-hidden="true"></i><strong>No bookings recorded</strong><span>This innovator's planned hub visits will appear here.</span></div></td></tr>

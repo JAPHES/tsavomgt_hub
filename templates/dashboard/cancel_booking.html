@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Cancel hub visit{% endblock %}
+
+{% block content %}
+<div class="innovator-record-toolbar">
+    <a class="innovator-back-link" href="{% url 'dashboard:admin' %}">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>Back to administrator dashboard
+    </a>
+    <span>Booking administration</span>
+</div>
+
+<section class="content-card narrow-card overflow-hidden" aria-labelledby="cancel-booking-heading">
+    <div class="critical-action-header">
+        <span class="critical-warning-icon"><i class="bi bi-calendar-x-fill" aria-hidden="true"></i></span>
+        <div>
+            <p class="eyebrow">Cancel planned visit</p>
+            <h1 id="cancel-booking-heading">Cancel this booking?</h1>
+        </div>
+    </div>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="critical-action-body">
+            <p>You are cancelling the following visit for <strong>{{ booking.innovator.get_full_name }}</strong>. The booking will remain in the innovator's history as cancelled.</p>
+            <div class="booking-cancellation-summary">
+                <div><span>Visit date</span><strong>{{ booking.visit_date|date:"l, d F Y" }}</strong></div>
+                <div><span>Expected arrival</span><strong>{{ booking.arrival_time|time:"H:i" }}</strong></div>
+                <div><span>Intended activity</span><strong>{{ booking.purpose }}</strong></div>
+            </div>
+            <div class="mt-4">
+                <label class="form-label" for="{{ form.reason.id_for_label }}">{{ form.reason.label }} <span class="text-danger" aria-label="required">*</span></label>
+                {{ form.reason }}
+                <div class="form-text">This explanation will be saved and included in the email sent to the innovator.</div>
+                {% for error in form.reason.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+        <div class="critical-action-footer d-flex flex-wrap justify-content-end">
+            <a class="btn btn-light" href="{% url 'dashboard:admin' %}">Keep this booking</a>
+            <button class="btn btn-danger" type="submit"><i class="bi bi-envelope-x me-2" aria-hidden="true"></i>Cancel visit and notify innovator</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -1,11 +1,14 @@
 from datetime import time, timedelta
+from unittest.mock import patch
 
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from attendance.models import HubBooking
+from attendance.services import BookingNotificationError
 from auditlog.models import AuditLog
 from core.tests.factories import create_admin, create_innovator
 from innovators.models import InnovatorProject, ProjectFocusArea
@@ -57,12 +60,23 @@ class AdministratorDashboardTests(TestCase):
             },
         )
 
-    def test_future_bookings_are_not_shown_in_todays_queue(self):
-        self.create_booking(visit_date=timezone.localdate() + timedelta(days=1))
+    def test_future_booking_is_shown_separately_then_moves_to_todays_queue(self):
+        visit_date = timezone.localdate() + timedelta(days=1)
+        booking = self.create_booking(visit_date=visit_date)
         response = self.client.get(reverse("dashboard:admin"))
 
-        self.assertNotContains(response, self.user.get_full_name())
+        self.assertEqual(list(response.context["today_bookings"]), [])
+        self.assertEqual(list(response.context["future_bookings"]), [booking])
+        self.assertContains(response, "Future planned visits")
+        self.assertContains(response, self.user.get_full_name())
         self.assertEqual(response.context["summary"]["bookings_today"], 0)
+
+        with patch("dashboard.views.timezone.localdate", return_value=visit_date):
+            visit_day_response = self.client.get(reverse("dashboard:admin"))
+
+        self.assertEqual(list(visit_day_response.context["today_bookings"]), [booking])
+        self.assertEqual(list(visit_day_response.context["future_bookings"]), [])
+        self.assertEqual(visit_day_response.context["summary"]["bookings_today"], 1)
 
     def test_administrator_can_admit_todays_booking_once(self):
         booking = self.create_booking()
@@ -97,6 +111,83 @@ class AdministratorDashboardTests(TestCase):
         )
         self.assertEqual(response.status_code, 405)
 
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        SITE_URL="https://hub.example.com",
+    )
+    def test_administrator_cancels_future_booking_with_reason_and_email(self):
+        booking = self.create_booking(
+            visit_date=timezone.localdate() + timedelta(days=2),
+        )
+        cancel_url = reverse("dashboard:cancel-booking", kwargs={"pk": booking.pk})
+
+        confirmation = self.client.get(cancel_url)
+        self.assertEqual(confirmation.status_code, 200)
+        self.assertContains(confirmation, "Cancel this booking?")
+        self.assertContains(confirmation, "Reason for cancellation")
+
+        response = self.client.post(
+            cancel_url,
+            {"reason": "The hub will be closed for a scheduled electrical inspection."},
+            follow=True,
+        )
+
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, HubBooking.Status.CANCELLED)
+        self.assertEqual(booking.cancelled_by, self.admin)
+        self.assertEqual(
+            booking.cancellation_reason,
+            "The hub will be closed for a scheduled electrical inspection.",
+        )
+        self.assertContains(response, "was cancelled and the innovator was notified")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.user.email])
+        self.assertIn("scheduled electrical inspection", mail.outbox[0].body)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action=AuditLog.Action.BOOKING_CANCELLED,
+                target_id=str(booking.pk),
+            ).exists()
+        )
+        self.assertNotIn(booking, response.context["future_bookings"])
+
+    def test_cancellation_requires_reason_and_admitted_visit_cannot_be_cancelled(self):
+        booking = self.create_booking()
+        cancel_url = reverse("dashboard:cancel-booking", kwargs={"pk": booking.pk})
+
+        invalid_response = self.client.post(cancel_url, {"reason": "short"})
+        self.assertEqual(invalid_response.status_code, 200)
+        self.assertContains(invalid_response, "at least 10 characters")
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, HubBooking.Status.BOOKED)
+
+        self.client.post(reverse("dashboard:admit-booking", kwargs={"pk": booking.pk}))
+        response = self.client.get(cancel_url, follow=True)
+        self.assertRedirects(response, reverse("dashboard:admin"))
+        self.assertContains(response, "Only a booking awaiting admission can be cancelled")
+
+    @patch(
+        "dashboard.views.send_booking_cancellation_email",
+        side_effect=BookingNotificationError(
+            "The booking was cancelled, but the notification email could not be delivered."
+        ),
+    )
+    def test_email_failure_does_not_restore_cancelled_booking(self, sender):
+        booking = self.create_booking(
+            visit_date=timezone.localdate() + timedelta(days=2),
+        )
+
+        response = self.client.post(
+            reverse("dashboard:cancel-booking", kwargs={"pk": booking.pk}),
+            {"reason": "The hub is unavailable because of an emergency maintenance issue."},
+            follow=True,
+        )
+
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, HubBooking.Status.CANCELLED)
+        self.assertContains(response, "notification email could not be delivered")
+        sender.assert_called_once()
+
     def test_filter_returns_bookings_for_matching_innovator_name(self):
         matching = self.create_booking()
         other_user = create_innovator(
@@ -130,6 +221,23 @@ class AdministratorDashboardTests(TestCase):
         self.assertContains(response, "Find innovator bookings")
         self.assertNotContains(response, "Booking management")
         self.assertNotContains(response, "Hub booking records")
+
+    def test_cancelled_booking_reason_is_visible_in_booking_records(self):
+        booking = self.create_booking(
+            status=HubBooking.Status.CANCELLED,
+            cancelled_at=timezone.now(),
+            cancelled_by=self.admin,
+            cancellation_reason="The meeting room is unavailable for scheduled maintenance.",
+        )
+
+        response = self.client.get(reverse("dashboard:bookings"))
+
+        self.assertContains(response, "Cancelled")
+        self.assertContains(response, booking.cancellation_reason)
+        self.assertNotContains(
+            response,
+            reverse("dashboard:cancel-booking", kwargs={"pk": booking.pk}),
+        )
 
 
 class InnovatorDashboardTests(TestCase):

@@ -37,6 +37,12 @@ class PermissionTests(TestCase):
     def test_innovator_cannot_access_admin_dashboard_or_create_accounts(self):
         self.client.force_login(self.innovator)
         self.assertEqual(self.client.get(reverse("dashboard:admin")).status_code, 403)
+        self.assertEqual(
+            self.client.get(
+                reverse("dashboard:cancel-booking", kwargs={"pk": self.other_booking.pk})
+            ).status_code,
+            403,
+        )
         self.assertEqual(self.client.get(reverse("innovators:create")).status_code, 403)
         self.assertEqual(self.client.get(reverse("innovators:export")).status_code, 403)
         self.assertEqual(
