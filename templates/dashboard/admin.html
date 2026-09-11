@@ -99,7 +99,7 @@
                     <td data-label="Expected"><strong>{{ booking.arrival_time|time:"H:i" }}</strong></td>
                     <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|truncatechars:120 }}</span></td>
                     <td data-label="Booked on"><span class="date-stack"><strong>{{ booking.created_at|date:"d M Y" }}</strong><small>{{ booking.created_at|time:"H:i" }}</small></span></td>
-                    <td data-label="Action"><a class="btn btn-sm btn-outline-danger record-view-button" href="{% url 'dashboard:cancel-booking' booking.pk %}"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel visit</a></td>
+                    <td data-label="Action"><a class="btn btn-sm btn-outline-danger booking-action-button" href="{% url 'dashboard:cancel-booking' booking.pk %}"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel visit</a></td>
                 </tr>
             {% empty %}
                 <tr><td colspan="7"><div class="presence-empty-state"><div class="presence-empty-icon"><i class="bi bi-calendar2-week" aria-hidden="true"></i></div><h3>No future visits planned</h3><p>Bookings for tomorrow and later will appear here as soon as innovators submit them.</p></div></td></tr>

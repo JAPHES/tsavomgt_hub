@@ -82,7 +82,7 @@
                     <td data-label="Arrival time"><strong>{{ booking.arrival_time|time:"H:i" }}</strong></td>
                     <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|truncatechars:120 }}</span></td>
                     <td data-label="Status"><span class="status-badge status-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></td>
-                    <td data-label="Action"><a class="btn btn-sm btn-outline-primary record-view-button" href="{% url 'attendance:booking-edit' booking.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit visit</a></td>
+                    <td data-label="Action"><a class="btn btn-sm btn-outline-primary booking-action-button" href="{% url 'attendance:booking-edit' booking.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit visit</a></td>
                 </tr>
             {% empty %}
                 <tr><td colspan="5"><div class="student-history-empty"><i class="bi bi-calendar2" aria-hidden="true"></i><p>You have no future visits awaiting admission.</p></div></td></tr>

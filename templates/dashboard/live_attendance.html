@@ -29,7 +29,7 @@
     </div>
     <div class="table-responsive mobile-card-table-wrap">
         <table class="table attendance-records-table mobile-card-table align-middle mb-0">
-            <thead><tr><th>Innovator</th><th>Registration</th><th>Visit date</th><th>Expected</th><th>Intended activity</th><th>Status</th><th>Outcome</th><th>Action</th></tr></thead>
+            <thead><tr><th>Innovator</th><th>Registration</th><th>Visit date</th><th>Expected</th><th>Status</th><th>Outcome</th><th>Intended activity</th><th>Action</th></tr></thead>
             <tbody>
             {% for booking in page_obj %}
                 <tr>
@@ -37,7 +37,6 @@
                     <td data-label="Registration"><span class="registration-pill">{{ booking.innovator.innovator_profile.registration_number }}</span></td>
                     <td data-label="Visit date"><span class="date-stack"><strong>{{ booking.visit_date|date:"d M Y" }}</strong><small>{{ booking.visit_date|date:"l" }}</small></span></td>
                     <td data-label="Expected"><strong>{{ booking.arrival_time|time:"H:i" }}</strong></td>
-                    <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|truncatechars:120 }}</span></td>
                     <td data-label="Status"><span class="status-badge status-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></td>
                     <td data-label="Outcome">
                         {% if booking.status == 'CANCELLED' %}
@@ -48,9 +47,10 @@
                             <span class="text-muted">Awaiting visit</span>
                         {% endif %}
                     </td>
+                    <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|truncatechars:120 }}</span></td>
                     <td data-label="Action">
                         {% if booking.status == 'BOOKED' %}
-                            <a class="btn btn-sm btn-outline-danger record-view-button" href="{% url 'dashboard:cancel-booking' booking.pk %}"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel visit</a>
+                            <a class="btn btn-sm btn-outline-danger booking-action-button" href="{% url 'dashboard:cancel-booking' booking.pk %}"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancel visit</a>
                         {% else %}
                             <span class="text-muted">No action</span>
                         {% endif %}

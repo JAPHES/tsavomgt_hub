@@ -25,7 +25,7 @@
                     <td data-label="Expected arrival"><span class="history-time">{{ booking.arrival_time|time:"H:i" }}</span></td>
                     <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|linebreaksbr }}</span></td>
                     <td data-label="Status"><span class="status-badge status-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></td>
-                    <td data-label="Action"><a class="btn btn-sm btn-outline-primary record-view-button" href="{% url 'attendance:booking-edit' booking.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit visit</a></td>
+                    <td data-label="Action"><a class="btn btn-sm btn-outline-primary booking-action-button" href="{% url 'attendance:booking-edit' booking.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit visit</a></td>
                 </tr>
             {% empty %}
                 <tr><td colspan="5"><div class="attendance-history-empty"><span><i class="bi bi-calendar2-plus" aria-hidden="true"></i></span><h3>No future visits</h3><p>Use your dashboard to plan your next hub visit.</p></div></td></tr>

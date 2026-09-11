@@ -216,6 +216,7 @@ a { color: var(--ttu-primary-green); }
 .presence-empty-state p { color: var(--ttu-medium-gray); margin: 0; }
 .booking-action-group { align-items: center; display: flex; flex-wrap: wrap; gap: .45rem; }
 .booking-action-group form { display: flex; }
+.booking-action-button { align-items: center; display: inline-flex; justify-content: center; white-space: nowrap; }
 .future-bookings-footer { align-items: center; background: #f8fbf9; border-top: 1px solid #e8eee8; color: var(--ttu-medium-gray); display: flex; font-size: .74rem; gap: 1rem; justify-content: space-between; padding: .85rem 1.4rem; }
 .future-bookings-footer a { font-weight: 600; text-decoration: none; }
 .student-dashboard-heading { align-items: center; background: linear-gradient(120deg, var(--ttu-dark-green), var(--ttu-primary-green) 72%, #28772d); border: 1px solid rgba(0,77,0,.35); border-radius: 1rem; box-shadow: 0 14px 36px rgba(0,77,0,.2); display: grid; gap: 1rem; grid-template-columns: minmax(9rem, 1fr) minmax(0, 2fr) minmax(9rem, 1fr); margin: 0 0 1.5rem; padding: 1.4rem; text-align: center; }
@@ -397,7 +398,8 @@ textarea.form-control { min-height: auto; }
 .detail-list { display: grid; gap: .8rem; grid-template-columns: minmax(120px, 35%) 1fr; margin-bottom: 0; }
 .detail-list dt { color: var(--ttu-medium-gray); font-size: .78rem; }
 .detail-list dd { margin: 0; }
-.innovator-record-toolbar { align-items: center; color: var(--ttu-medium-gray); display: flex; font-size: .7rem; margin-bottom: .8rem; }
+.innovator-record-toolbar { align-items: center; color: var(--ttu-medium-gray); display: flex; font-size: .7rem; gap: .75rem; justify-content: space-between; margin-bottom: .8rem; }
+.innovator-record-toolbar > span { margin-left: auto; text-align: right; }
 .innovator-back-link { align-items: center; color: var(--ttu-primary-green); display: inline-flex; font-weight: 600; gap: .4rem; text-decoration: none; }
 .innovator-back-link:hover { color: var(--ttu-dark-green); }
 .innovator-record-hero { align-items: center; background: linear-gradient(120deg, var(--ttu-dark-green), var(--ttu-primary-green) 72%, #28772d); border: 1px solid rgba(0,77,0,.35); border-radius: 1rem; box-shadow: 0 14px 36px rgba(0,77,0,.2); display: flex; gap: 1.5rem; justify-content: space-between; padding: 1.5rem; }
@@ -600,6 +602,20 @@ textarea.form-control { min-height: auto; }
     .student-stat-card, .attendance-guidance-card { min-height: 126px; }
 }
 
+@media (min-width: 992px) {
+    .attendance-records-table { min-width: 1160px; }
+    .attendance-records-table th:nth-child(6), .attendance-records-table td:nth-child(6) { min-width: 170px; }
+    .attendance-records-table th:last-child, .attendance-records-table td:last-child { position: sticky; right: 0; z-index: 2; }
+    .attendance-records-table th:last-child { background: var(--ttu-light-green); z-index: 3; }
+    .attendance-records-table td:last-child { background: var(--ttu-white); box-shadow: -8px 0 12px rgba(31,55,31,.04); }
+    .attendance-records-table tbody tr:hover td:last-child { background: #fbfdfb; }
+}
+
+@media (min-width: 992px) and (max-width: 1399.98px) {
+    .attendance-records-table { min-width: 980px; }
+    .attendance-records-table th:nth-child(2), .attendance-records-table td:nth-child(2) { display: none; }
+}
+
 @media (max-width: 991.98px) {
     .app-main { width: 100%; }
     .sidebar-inner { height: auto; max-height: calc(100dvh - 61px); overflow-y: auto; }
@@ -619,6 +635,7 @@ textarea.form-control { min-height: auto; }
     .mobile-card-table > tbody > tr > td:not([data-label])::before { display: none; }
     .mobile-card-table .attendance-person, .mobile-card-table .work-done-summary, .mobile-card-table .record-work-summary { min-width: 0; width: 100%; }
     .mobile-card-table .record-view-button { border-radius: .5rem; height: 38px; width: 100%; }
+    .mobile-card-table .booking-action-button { width: 100%; }
     .mobile-card-table .booking-action-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
     .mobile-card-table .booking-action-group form, .mobile-card-table .booking-action-group .btn { justify-content: center; width: 100%; }
     .mobile-card-table .presence-empty-state, .mobile-card-table .attendance-empty-state, .mobile-card-table .attendance-history-empty, .mobile-card-table .record-attendance-empty, .mobile-card-table .student-history-empty { padding: 2.2rem 1rem; }
@@ -694,6 +711,7 @@ textarea.form-control { min-height: auto; }
     .form-card-icon { flex-basis: 46px; height: 46px; width: 46px; }
     .narrow-card form > .btn { margin: .2rem 0; width: 100%; }
     .profile-edit-actions { grid-template-columns: 1fr; }
+    .innovator-record-toolbar > span { display: none; }
     .login-welcome-panel { min-height: 350px; padding: 1.35rem 1rem; }
     .login-logo-frame { height: 122px; width: 122px; }
     .login-welcome-content h1 { font-size: 1.95rem; }
