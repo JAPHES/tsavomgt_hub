@@ -63,6 +63,12 @@ class PermissionTests(TestCase):
         self.assertNotContains(response, "AgriSense monitoring prototype")
 
     def test_innovator_can_view_own_structured_booking_history(self):
+        self.other_booking.status = HubBooking.Status.ADMITTED
+        self.other_booking.admitted_at = timezone.now()
+        self.other_booking.admitted_by = self.admin
+        self.other_booking.save(
+            update_fields=["status", "admitted_at", "admitted_by", "updated_at"]
+        )
         self.client.force_login(self.other)
         response = self.client.get(reverse("attendance:booking-history"))
 

@@ -4,36 +4,8 @@
 <header class="attendance-history-heading attendance-history-heading-card" aria-labelledby="booking-history-heading">
     <p class="eyebrow">My bookings</p>
     <h1 id="booking-history-heading">Hub booking history</h1>
-    <p>Review future plans, edit visits awaiting admission, and see the outcome of earlier bookings.</p>
+    <p>Review admitted, cancelled and earlier hub visit records.</p>
 </header>
-
-<section class="attendance-history-card mb-4" aria-labelledby="future-visits-heading">
-    <div class="attendance-results-header">
-        <div>
-            <h2 id="future-visits-heading">Future planned visits</h2>
-            <p>Bookings for today and later remain editable until admission or cancellation.</p>
-        </div>
-        <span class="record-count"><i class="bi bi-calendar2-week" aria-hidden="true"></i>{{ future_bookings|length }} planned</span>
-    </div>
-    <div class="table-responsive mobile-card-table-wrap">
-        <table class="table attendance-history-table mobile-card-table align-middle mb-0">
-            <thead><tr><th>Visit date</th><th>Expected arrival</th><th>Intended activity</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody>
-            {% for booking in future_bookings %}
-                <tr>
-                    <td data-label="Visit date"><span class="history-date-cell"><strong>{{ booking.visit_date|date:"d M Y" }}</strong><small>{{ booking.visit_date|date:"l" }}</small></span></td>
-                    <td data-label="Expected arrival"><span class="history-time">{{ booking.arrival_time|time:"H:i" }}</span></td>
-                    <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|linebreaksbr }}</span></td>
-                    <td data-label="Status"><span class="status-badge status-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></td>
-                    <td data-label="Action"><a class="btn btn-sm btn-outline-primary booking-action-button" href="{% url 'attendance:booking-edit' booking.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit visit</a></td>
-                </tr>
-            {% empty %}
-                <tr><td colspan="5"><div class="attendance-history-empty"><span><i class="bi bi-calendar2-plus" aria-hidden="true"></i></span><h3>No future visits</h3><p>Use your dashboard to plan your next hub visit.</p></div></td></tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
 
 <section class="attendance-history-card" aria-labelledby="previous-bookings-heading">
     <div class="attendance-results-header">

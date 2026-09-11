@@ -15,10 +15,6 @@ from .services import BookingError, update_booking
 def booking_history(request):
     bookings = HubBooking.objects.filter(innovator=request.user)
     today = timezone.localdate()
-    future_bookings = bookings.filter(
-        visit_date__gte=today,
-        status=HubBooking.Status.BOOKED,
-    ).order_by("visit_date", "arrival_time")
     history = bookings.exclude(
         visit_date__gte=today,
         status=HubBooking.Status.BOOKED,
@@ -27,10 +23,7 @@ def booking_history(request):
     return render(
         request,
         "attendance/history.html",
-        {
-            "future_bookings": future_bookings,
-            "page_obj": page_obj,
-        },
+        {"page_obj": page_obj},
     )
 
 
@@ -62,7 +55,7 @@ def booking_edit(request, pk):
                 request,
                 f"Your hub visit for {updated.visit_date:%d %B %Y} was updated.",
             )
-            return redirect("attendance:booking-history")
+            return redirect("dashboard:innovator")
     return render(
         request,
         "attendance/booking_edit.html",

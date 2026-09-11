@@ -298,11 +298,21 @@ class BookingViewTests(TestCase):
         self.client.force_login(self.innovator)
 
     def test_booking_history_is_scoped_to_logged_in_innovator(self):
-        own_booking = HubBooking.objects.create(
+        admin = create_admin()
+        admitted_booking = HubBooking.objects.create(
             innovator=self.innovator,
             visit_date=timezone.localdate(),
             arrival_time=time(10, 0),
-            purpose="Test the innovator's own device prototype.",
+            purpose="Test the innovator's admitted device prototype.",
+            status=HubBooking.Status.ADMITTED,
+            admitted_at=timezone.now(),
+            admitted_by=admin,
+        )
+        future_booking = HubBooking.objects.create(
+            innovator=self.innovator,
+            visit_date=timezone.localdate() + timedelta(days=1),
+            arrival_time=time(14, 0),
+            purpose="Continue testing the innovator's future device prototype.",
         )
         other = create_innovator(
             email="other@example.com", registration_number="TTU/INN/009"
@@ -316,8 +326,11 @@ class BookingViewTests(TestCase):
 
         response = self.client.get(reverse("attendance:booking-history"))
 
-        self.assertEqual(list(response.context["future_bookings"]), [own_booking])
-        self.assertEqual(list(response.context["page_obj"].object_list), [])
+        self.assertNotIn("future_bookings", response.context)
+        self.assertEqual(
+            list(response.context["page_obj"].object_list),
+            [admitted_booking],
+        )
         self.assertContains(
             response,
             'class="attendance-history-heading attendance-history-heading-card"',
@@ -326,11 +339,12 @@ class BookingViewTests(TestCase):
         self.assertContains(response, "Hub booking history")
         self.assertContains(
             response,
-            "Review future plans, edit visits awaiting admission, and see the outcome",
+            "Review admitted, cancelled and earlier hub visit records.",
         )
-        self.assertContains(response, "Future planned visits")
-        self.assertContains(response, "Edit visit")
-        self.assertContains(response, "own device prototype")
+        self.assertNotContains(response, "Future planned visits")
+        self.assertNotContains(response, "Edit visit")
+        self.assertContains(response, "admitted device prototype")
+        self.assertNotContains(response, future_booking.purpose)
         self.assertNotContains(response, "must remain private")
 
     def test_innovator_can_edit_own_future_booking(self):
@@ -356,7 +370,7 @@ class BookingViewTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse("attendance:booking-history"))
+        self.assertRedirects(response, reverse("dashboard:innovator"))
         booking.refresh_from_db()
         self.assertEqual(booking.visit_date, new_date)
         self.assertEqual(booking.arrival_time, time(14, 45))
