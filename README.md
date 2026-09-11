@@ -66,7 +66,7 @@ Each innovator can own multiple projects. Every project records:
 - Detailed description
 - Area of focus
 
-Innovators add projects from the dedicated **My projects** page linked in their sidebar. Project creation is transactional, duplicate names for the same innovator are rejected case-insensitively, and every successful addition creates an audit record. Administrators can see the innovator's complete project portfolio, including each project's details and area of focus, from the innovator record page. Project names and focus areas are also searchable in the innovator directory and included in the CSV export.
+Innovators add projects from the dedicated **Projects** page linked in their sidebar. Project creation is transactional, duplicate names for the same innovator are rejected case-insensitively, and every successful addition creates an audit record. Administrators can see the innovator's complete project portfolio, including each project's details and area of focus, from the innovator record page. Project names and focus areas are also searchable in the innovator directory and included in the CSV export.
 
 The upgrade copies every existing profile project into the new portfolio model. Existing descriptions are retained; projects created before areas of focus were collected are marked `Not specified` rather than being assigned invented information.
 
@@ -82,19 +82,25 @@ Booking statuses are:
 
 - `BOOKED`
 - `ADMITTED`
+- `CANCELLED`
 
-Booking and admission protections include:
+Booking lifecycle protections include:
 
 - Today or a future date is required when making a booking
-- One booking per innovator per visit date, enforced in service logic and by a database constraint
+- One active booking per innovator per visit date, enforced in service logic and by a database constraint
 - Purpose text must contain a useful description
-- Booking creation and admission transitions are transactional
+- Booking creation, editing, admission, and cancellation transitions are transactional
+- Innovators can edit only their own future bookings, and only while those bookings await admission
 - Only an administrator can admit an innovator
 - Only today's bookings can be admitted
 - Admission uses server time and cannot be back-dated through the form
 - An admitted booking cannot be admitted a second time
+- Only an administrator can cancel a booking, and a meaningful cancellation reason is required
+- Admitted or already-cancelled bookings cannot be cancelled, and cancelled bookings cannot be admitted
+- A cancelled booking remains in history, but its visit date becomes available for a replacement booking
 - Admission status, administrator, and timestamp consistency is enforced at model and database levels
-- Every admission creates an audit record
+- Every booking edit, admission, and cancellation creates an audit record
+- Cancellation details are sent to the innovator using branded HTML and plain-text email templates
 - Innovators can view only their own booking history
 
 The previous innovator self check-in/check-out flow is no longer routed. Existing attendance rows are not deleted during the upgrade; administrators can still open legacy records when historical review is necessary.
@@ -107,18 +113,22 @@ The innovator workspace provides:
 - Hub booking form
 - Sidebar access to the dedicated project creation and portfolio page
 - Monthly booking and admitted-visit totals
-- Recent booking records
-- A private booking-history page
+- A future-visits list with edit actions for bookings that still await admission
+- A private booking-history page separating upcoming visits from admitted and cancelled records
 
 The administrator dashboard provides:
 
 - Total active innovator accounts
 - Total bookings, awaiting admissions, and admitted innovators today
 - A time-ordered table of today's expected innovators
+- A future planned-visits table that displays bookings immediately and orders them by visit date
 - Expected arrival time, intended activity, admission status, and admission time
 - A POST-only action for admitting an innovator upon arrival
+- A confirmation workflow for cancelling a visit with a required reason and innovator notification
 
-The separate booking-records page searches by innovator name only.
+Because the dashboard queries by the current server date, a future booking automatically leaves the planned-visits table and appears in today's admission queue when its visit date arrives.
+
+The separate booking-records page searches by innovator name and shows booked, admitted, and cancelled outcomes. Administrators can start a cancellation from either the dashboard or this records page.
 
 ## Project structure
 
@@ -331,21 +341,23 @@ before onboarding real users.
 /innovators/<id>/delete/
 
 /attendance/bookings/
+/attendance/bookings/<id>/edit/
 /attendance/session/<id>/admin/
 
 /dashboard/
 /dashboard/innovator/
 /dashboard/admin/
 /dashboard/admin/bookings/<id>/admit/
+/dashboard/admin/bookings/<id>/cancel/
 /dashboard/bookings/
 
 /health/
 ```
 
-All management, export, booking, admission, and legacy attendance-review routes enforce authorization on the server.
+All management, export, booking, editing, admission, cancellation, and legacy attendance-review routes enforce authorization on the server.
 Navigation visibility is not treated as a security boundary. Audit records remain available read-only in Django
-Admin. Hub bookings and retained attendance records are read-only there; admission occurs only through the protected
-application workflow.
+Admin. Hub bookings and retained attendance records are read-only there; lifecycle changes occur only through the
+protected application workflows.
 
 ## Tests and verification
 
@@ -359,7 +371,7 @@ py manage.py test
 py manage.py collectstatic --noinput
 ```
 
-Tests cover authentication, secure temporary-password generation and hashing, emailed credentials, mandatory first-login routing, password workflows, permissions, multi-project portfolios and migration, booking validation, admission rules and auditing, legacy attendance retention, dashboards, professional record pages, and CSV export.
+Tests cover authentication, secure temporary-password generation and hashing, emailed credentials, mandatory first-login routing, password workflows, permissions, multi-project portfolios and migration, booking validation and editing, date-based dashboard rollover, cancellation notifications, admission and cancellation rules, auditing, legacy attendance retention, dashboards, professional record pages, and CSV export.
 
 For a production configuration review, provide non-placeholder environment values and run:
 
