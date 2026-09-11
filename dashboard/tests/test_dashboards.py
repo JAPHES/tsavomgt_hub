@@ -157,8 +157,11 @@ class InnovatorDashboardTests(TestCase):
         )
         self.assertContains(response, 'class="student-dashboard-date"')
         self.assertContains(response, 'class="student-history-header"')
-        self.assertContains(response, "Recent bookings")
-        self.assertContains(response, "Your latest planned and admitted hub visits.")
+        self.assertContains(response, "Future planned visits")
+        self.assertContains(
+            response,
+            "Your bookings for today and later that are still awaiting admission.",
+        )
         self.assertContains(response, "Book a hub visit")
         self.assertContains(response, "<span>Projects</span>", html=True)
         self.assertContains(response, "<span>Booking</span>", html=True)
@@ -168,6 +171,23 @@ class InnovatorDashboardTests(TestCase):
         self.assertNotContains(response, "<span>My profile</span>", html=True)
         self.assertNotContains(response, 'id="add-project-title"')
         self.assertNotContains(response, "Work done during this period")
+
+    def test_future_booking_is_visible_with_edit_action(self):
+        booking = HubBooking.objects.create(
+            innovator=self.user,
+            visit_date=timezone.localdate() + timedelta(days=2),
+            arrival_time=time(13, 15),
+            purpose="Meet mentors to review the next prototype milestone.",
+        )
+
+        response = self.client.get(reverse("dashboard:innovator"))
+
+        self.assertContains(response, "Meet mentors to review")
+        self.assertContains(
+            response,
+            reverse("attendance:booking-edit", kwargs={"pk": booking.pk}),
+        )
+        self.assertContains(response, "Edit visit")
 
     def test_projects_have_a_dedicated_page(self):
         response = self.client.get(reverse("innovators:projects"))

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Edit hub visit{% endblock %}
+
+{% block content %}
+<header class="attendance-history-heading attendance-history-heading-card" aria-labelledby="booking-edit-heading">
+    <p class="eyebrow">Planned visit</p>
+    <h1 id="booking-edit-heading">Edit hub visit</h1>
+    <p>You can update this plan until a hub administrator admits you.</p>
+</header>
+
+<section class="card content-card narrow-card booking-edit-card">
+    <div class="card-body p-4 p-lg-5">
+        <div class="daily-attendance-header">
+            <div class="daily-attendance-icon"><i class="bi bi-calendar2-week-fill" aria-hidden="true"></i></div>
+            <div>
+                <h2>Visit information</h2>
+                <p>Keep the expected date, arrival time and planned activity accurate.</p>
+            </div>
+        </div>
+        <form method="post" class="daily-attendance-form" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.visit_date.id_for_label }}">{{ form.visit_date.label }} <span class="text-danger" aria-label="required">*</span></label>
+                    <div class="time-field-wrap"><i class="bi bi-calendar3" aria-hidden="true"></i>{{ form.visit_date }}</div>
+                    {% for error in form.visit_date.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.arrival_time.id_for_label }}">{{ form.arrival_time.label }} <span class="text-danger" aria-label="required">*</span></label>
+                    <div class="time-field-wrap"><i class="bi bi-clock" aria-hidden="true"></i>{{ form.arrival_time }}</div>
+                    {% for error in form.arrival_time.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="{{ form.purpose.id_for_label }}">{{ form.purpose.label }} <span class="text-danger" aria-label="required">*</span></label>
+                    {{ form.purpose }}
+                    {% for error in form.purpose.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            <div class="daily-form-footer">
+                <span><i class="bi bi-shield-check" aria-hidden="true"></i>Admitted and cancelled bookings cannot be changed.</span>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-light" href="{% url 'attendance:booking-history' %}">Cancel editing</a>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle me-2" aria-hidden="true"></i>Save visit changes</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

@@ -53,7 +53,10 @@ def innovator_dashboard(request):
         visit_date__gte=today, status=HubBooking.Status.BOOKED
     ).order_by("visit_date", "arrival_time")
     bookings_this_month = bookings.filter(
-        visit_date__year=today.year, visit_date__month=today.month
+        visit_date__year=today.year,
+        visit_date__month=today.month,
+    ).exclude(
+        status=HubBooking.Status.CANCELLED,
     )
     return render(
         request,
@@ -62,7 +65,6 @@ def innovator_dashboard(request):
             "now": now,
             "booking_form": booking_form,
             "upcoming_bookings": upcoming_bookings[:5],
-            "recent_bookings": bookings[:7],
             "bookings_this_month": bookings_this_month.count(),
             "admitted_visits": bookings.filter(status=HubBooking.Status.ADMITTED).count(),
         },

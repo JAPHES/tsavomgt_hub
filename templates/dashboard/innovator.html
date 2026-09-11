@@ -69,23 +69,23 @@
 
 <section class="card content-card student-history-card">
     <div class="student-history-header">
-        <div><h2>Recent bookings</h2><p>Your latest planned and admitted hub visits.</p></div>
-        <a href="{% url 'attendance:booking-history' %}">View all bookings <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+        <div><h2>Future planned visits</h2><p>Your bookings for today and later that are still awaiting admission.</p></div>
+        <a href="{% url 'attendance:booking-history' %}">View booking history <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
     </div>
     <div class="table-responsive mobile-card-table-wrap">
         <table class="table mobile-card-table align-middle mb-0">
-            <thead><tr><th>Visit date</th><th>Arrival time</th><th>Intended activity</th><th>Status</th><th>Admitted at</th></tr></thead>
+            <thead><tr><th>Visit date</th><th>Arrival time</th><th>Intended activity</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>
-            {% for booking in recent_bookings %}
+            {% for booking in upcoming_bookings %}
                 <tr>
                     <td data-label="Visit date">{{ booking.visit_date|date:"d M Y" }}</td>
                     <td data-label="Arrival time"><strong>{{ booking.arrival_time|time:"H:i" }}</strong></td>
                     <td data-label="Intended activity"><span class="work-done-summary">{{ booking.purpose|truncatechars:120 }}</span></td>
                     <td data-label="Status"><span class="status-badge status-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></td>
-                    <td data-label="Admitted at">{% if booking.admitted_at %}{{ booking.admitted_at|date:"d M Y, H:i" }}{% else %}<span class="text-muted">Not yet admitted</span>{% endif %}</td>
+                    <td data-label="Action"><a class="btn btn-sm btn-outline-primary record-view-button" href="{% url 'attendance:booking-edit' booking.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Edit visit</a></td>
                 </tr>
             {% empty %}
-                <tr><td colspan="5"><div class="student-history-empty"><i class="bi bi-calendar2" aria-hidden="true"></i><p>Your hub bookings will appear here.</p></div></td></tr>
+                <tr><td colspan="5"><div class="student-history-empty"><i class="bi bi-calendar2" aria-hidden="true"></i><p>You have no future visits awaiting admission.</p></div></td></tr>
             {% endfor %}
             </tbody>
         </table>

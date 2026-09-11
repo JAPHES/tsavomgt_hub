@@ -316,7 +316,8 @@ class BookingViewTests(TestCase):
 
         response = self.client.get(reverse("attendance:booking-history"))
 
-        self.assertEqual(list(response.context["page_obj"].object_list), [own_booking])
+        self.assertEqual(list(response.context["future_bookings"]), [own_booking])
+        self.assertEqual(list(response.context["page_obj"].object_list), [])
         self.assertContains(
             response,
             'class="attendance-history-heading attendance-history-heading-card"',
@@ -325,10 +326,83 @@ class BookingViewTests(TestCase):
         self.assertContains(response, "Hub booking history")
         self.assertContains(
             response,
-            "Your planned visits and the arrivals confirmed by a hub administrator.",
+            "Review future plans, edit visits awaiting admission, and see the outcome",
         )
+        self.assertContains(response, "Future planned visits")
+        self.assertContains(response, "Edit visit")
         self.assertContains(response, "own device prototype")
         self.assertNotContains(response, "must remain private")
+
+    def test_innovator_can_edit_own_future_booking(self):
+        booking = HubBooking.objects.create(
+            innovator=self.innovator,
+            visit_date=timezone.localdate() + timedelta(days=1),
+            arrival_time=time(10, 0),
+            purpose="Test the first version of the prototype.",
+        )
+        edit_url = reverse("attendance:booking-edit", kwargs={"pk": booking.pk})
+
+        response = self.client.get(edit_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Edit hub visit")
+
+        new_date = timezone.localdate() + timedelta(days=2)
+        response = self.client.post(
+            edit_url,
+            {
+                "visit_date": new_date.isoformat(),
+                "arrival_time": "14:45",
+                "purpose": "Test the revised version of the prototype with mentors.",
+            },
+        )
+
+        self.assertRedirects(response, reverse("attendance:booking-history"))
+        booking.refresh_from_db()
+        self.assertEqual(booking.visit_date, new_date)
+        self.assertEqual(booking.arrival_time, time(14, 45))
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.innovator,
+                action=AuditLog.Action.BOOKING_UPDATED,
+                target_id=str(booking.pk),
+            ).exists()
+        )
+
+    def test_innovator_cannot_edit_another_innovators_booking(self):
+        other = create_innovator(
+            email="private-booking@example.com",
+            registration_number="TTU/INN/030",
+        )
+        booking = HubBooking.objects.create(
+            innovator=other,
+            visit_date=timezone.localdate() + timedelta(days=1),
+            arrival_time=time(10, 0),
+            purpose="This booking belongs to another innovator.",
+        )
+
+        response = self.client.get(
+            reverse("attendance:booking-edit", kwargs={"pk": booking.pk})
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_admitted_booking_is_not_editable(self):
+        admin = create_admin()
+        booking = HubBooking.objects.create(
+            innovator=self.innovator,
+            visit_date=timezone.localdate(),
+            arrival_time=time(10, 0),
+            purpose="Complete the prototype admission test.",
+        )
+        admit_booking(admin, booking)
+
+        response = self.client.get(
+            reverse("attendance:booking-edit", kwargs={"pk": booking.pk}),
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("attendance:booking-history"))
+        self.assertContains(response, "Only a booking awaiting admission can be updated")
 
     def test_old_self_attendance_endpoints_are_removed(self):
         self.assertEqual(self.client.get("/attendance/check-in/").status_code, 404)
