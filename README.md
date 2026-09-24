@@ -215,11 +215,16 @@ DEBUG
 ALLOWED_HOSTS
 RENDER_EXTERNAL_HOSTNAME
 DATABASE_URL
+DATABASE_URL_UNPOOLED
+DATABASE_CONN_MAX_AGE
 EMAIL_BACKEND
 BREVO_API_KEY
 SUPPORT_EMAIL
 ASSISTANT_SUPPORT_EMAIL
 SUPPORT_PHONE
+OUTAGE_ADMIN_EMAILS
+DATABASE_OUTAGE_ALERT_COOLDOWN_SECONDS
+DATABASE_OUTAGE_STATE_FILE
 EMAIL_HOST
 EMAIL_PORT
 EMAIL_HOST_USER
@@ -241,6 +246,18 @@ INITIAL_ADMIN_FIRST_NAME
 INITIAL_ADMIN_LAST_NAME
 MEDIA_ROOT
 ```
+
+`DATABASE_CONN_MAX_AGE` defaults to `0` for PostgreSQL. This closes Django's
+request connection instead of retaining an idle direct connection, which is a
+better tradeoff for this low-traffic Neon Free deployment. The production
+`DATABASE_URL` should use Neon's pooled hostname so opening short-lived Django
+connections does not create unnecessary PostgreSQL backend processes.
+
+`OUTAGE_ADMIN_EMAILS` is a comma-separated list of operational recipients. It
+must be configured outside PostgreSQL so an alert can still be addressed while
+PostgreSQL is unavailable. `DATABASE_OUTAGE_ALERT_COOLDOWN_SECONDS` defaults to
+`3600`. `DATABASE_OUTAGE_STATE_FILE` is optional and normally uses the operating
+system's temporary directory.
 
 `SITE_LOGO_URL` may point to an authorized deployment-specific logo. When it is blank, the application uses `static/image/tsavo_logo.jpeg`.
 
@@ -305,9 +322,12 @@ DEBUG=False
 SECRET_KEY=
 ALLOWED_HOSTS=tsavohub.secora.dev
 DATABASE_URL=postgresql://tsavo_user@database-host:5432/tsavo_hub
+DATABASE_CONN_MAX_AGE=0
 EMAIL_BACKEND=anymail.backends.brevo.EmailBackend
 BREVO_API_KEY=
 DEFAULT_FROM_EMAIL=Tsavo Innovation & Incubation Hub <noreply@secora.dev>
+OUTAGE_ADMIN_EMAILS=tiih@ttu.ac.ke,japhesmurithi@gmail.com
+DATABASE_OUTAGE_ALERT_COOLDOWN_SECONDS=3600
 CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
 SECURE_SSL_REDIRECT=True
 TRUST_PROXY_SSL_HEADER=True
@@ -354,6 +374,8 @@ before onboarding real users.
 /dashboard/bookings/
 
 /health/
+/health/database/
+/status/
 ```
 
 All management, export, booking, editing, admission, cancellation, and legacy attendance-review routes enforce authorization on the server.
@@ -410,9 +432,15 @@ when requested, and runs Django's deployment checks.
 2. Keep the Blueprint file path as `render.yaml` and apply it.
 3. Render will ask for each protected value marked `sync: false`. Enter:
 
-   - `DATABASE_URL`: the Neon **direct** connection string, including
-     `sslmode=require`. Use the direct rather than pooled hostname because the
-     build runs database migrations.
+   - `DATABASE_URL`: the Neon **pooled** connection string, including
+     `sslmode=require`. In Neon's connection widget, enable **Pooled connection**;
+     the hostname contains `-pooler`.
+   - `DATABASE_URL_UNPOOLED`: the matching Neon direct connection string. The
+     build script uses it only for migrations and initial administrator setup;
+     if omitted, it safely falls back to `DATABASE_URL`.
+   - `OUTAGE_ADMIN_EMAILS`: a comma-separated list such as the Hub administrator
+     and technical support addresses. Do not retrieve this list from the user
+     database during an outage.
    - `BREVO_API_KEY`: the transactional-email API key created in Brevo.
    - `SUPPORT_EMAIL`: the primary Hub Administration support address.
    - `ASSISTANT_SUPPORT_EMAIL`: the assistant administrator's support address.
@@ -442,9 +470,12 @@ message, Django deployment checks, and a running Gunicorn process. Then:
 
 1. Open the service's temporary `.onrender.com` URL.
 2. Open `/health/` and confirm the response is `{"status": "ok"}`.
-3. Sign in with `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD`.
-4. Change the administrator password from the application.
-5. In Render's **Environment** page, delete both `INITIAL_ADMIN_EMAIL` and
+3. Open `/health/database/` once and confirm the response reports the database
+   as available. Do not use this endpoint for Render's frequent liveness probe.
+4. Open `/status/` and confirm it renders without signing in.
+5. Sign in with `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD`.
+6. Change the administrator password from the application.
+7. In Render's **Environment** page, delete both `INITIAL_ADMIN_EMAIL` and
    `INITIAL_ADMIN_PASSWORD`, save, and redeploy. Later deployments safely skip
    bootstrap when these values are absent; they never replace an existing
    administrator or password.
@@ -470,6 +501,69 @@ authoritative stores for records and uploads. Watch the usage dashboards and set
 up exports or backups appropriate for the data: a free deployment has availability,
 capacity, and support limits and should be upgraded before it becomes operationally
 critical.
+
+### Health checks, degraded mode, and outage alerts
+
+`/health/` is a shallow liveness endpoint. It confirms only that Django and
+Gunicorn can answer HTTP requests and never queries PostgreSQL. Keep Render's
+**Settings > Health Check Path** set to `/health/`.
+
+`/health/database/` is the separate database-readiness endpoint. It returns HTTP
+200 while PostgreSQL is reachable and HTTP 503 with a small, non-sensitive JSON
+response during a connectivity failure. `/status/` reads the last observed state
+from a local file and therefore remains renderable without PostgreSQL. Model-backed
+requests that encounter `OperationalError` or `InterfaceError` receive the branded
+503 page; unrelated programming errors continue to use the normal 500 handler.
+
+The first detected outage sends one Brevo alert to `OUTAGE_ADMIN_EMAILS`.
+Repeated failures are deduplicated, and a recovery message is sent after the next
+successful database readiness check or database-backed request. Render Free has
+an ephemeral filesystem, so a service restart clears the remembered state and can
+allow one additional alert. It still prevents request-by-request email storms.
+
+Registered user email addresses live in PostgreSQL's `accounts_user` table. They
+cannot be enumerated reliably while that database is unavailable. Consequently,
+the application deliberately does not attempt a mass user email during an outage.
+If user-wide incident messaging becomes necessary, maintain an explicit opt-in
+audience in the existing email provider outside Neon, or notify users after
+connectivity has been restored and the recipient list can be read safely.
+
+For UptimeRobot or a similar service, monitor `/health/`, not a dashboard, login
+page, or `/health/database/`. A database-readiness monitor is optional and should
+run no more often than hourly on this free-tier system. Every readiness check can
+wake a scaled-to-zero Neon compute; frequent checks defeat scale-to-zero.
+
+### Test a database interruption locally
+
+The automated test does not require Neon:
+
+```powershell
+py manage.py test core.tests.test_health
+```
+
+For a manual test, use a separate terminal and a deliberately unreachable local
+PostgreSQL address; never alter the production database or production URL:
+
+```powershell
+$env:DATABASE_URL="postgresql://test:test@127.0.0.1:65432/test?connect_timeout=2"
+$env:EMAIL_BACKEND="django.core.mail.backends.console.EmailBackend"
+py manage.py runserver
+```
+
+Confirm that `/health/` returns 200, `/health/database/` returns 503, `/status/`
+shows degraded service, and a login attempt receives the friendly 503 page. Stop
+the server, remove those two temporary shell variables, restore the normal local
+configuration, restart, and open `/health/database/` to record recovery.
+
+### Neon free-tier checks
+
+In Neon, open the production branch's **Computes** tab. Keep **Scale to zero**
+enabled, use the smallest suitable minimum compute size, and review **Monitoring**
+for active/idle periods and CU-hour consumption. In the connection widget, verify
+that Render's `DATABASE_URL` is the pooled value. Check `pg_stat_activity` for
+unrecognized clients or repeated queries before assuming this web service is the
+only consumer. Also review other branches, integrations, SQL clients, and preview
+deployments connected to the project.
 
 ## Production deployment considerations
 
