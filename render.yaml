@@ -40,6 +40,8 @@ services:
         sync: false
       - key: DATABASE_URL_UNPOOLED
         sync: false
+      - key: ALLOW_DEPLOY_WITHOUT_DATABASE
+        sync: false
       - key: OUTAGE_ADMIN_EMAILS
         sync: false
       - key: BREVO_API_KEY

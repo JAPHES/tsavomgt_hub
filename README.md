@@ -217,6 +217,7 @@ RENDER_EXTERNAL_HOSTNAME
 DATABASE_URL
 DATABASE_URL_UNPOOLED
 DATABASE_CONN_MAX_AGE
+ALLOW_DEPLOY_WITHOUT_DATABASE
 EMAIL_BACKEND
 BREVO_API_KEY
 SUPPORT_EMAIL
@@ -258,6 +259,9 @@ must be configured outside PostgreSQL so an alert can still be addressed while
 PostgreSQL is unavailable. `DATABASE_OUTAGE_ALERT_COOLDOWN_SECONDS` defaults to
 `3600`. `DATABASE_OUTAGE_STATE_FILE` is optional and normally uses the operating
 system's temporary directory.
+
+`ALLOW_DEPLOY_WITHOUT_DATABASE` defaults to false. It is an emergency-only
+deployment switch described below; never leave it enabled for a normal release.
 
 `SITE_LOGO_URL` may point to an authorized deployment-specific logo. When it is blank, the application uses `static/image/tsavo_logo.jpeg`.
 
@@ -522,6 +526,17 @@ Repeated failures are deduplicated, and a recovery message is sent after the nex
 successful database readiness check or database-backed request. Render Free has
 an ephemeral filesystem, so a service restart clears the remembered state and can
 allow one additional alert. It still prevents request-by-request email storms.
+
+If Neon is already rejecting every connection because its quota is exhausted,
+Render cannot run the normal `migrate` step and therefore cannot deploy the
+resilience release. When a release has **no model or migration changes**, set
+`ALLOW_DEPLOY_WITHOUT_DATABASE=True` in Render and redeploy. The build then skips
+only migrations and initial administrator bootstrapping; it still installs
+dependencies, collects static files, and runs Django's deployment checks. The
+application can start in degraded mode with `/health/` available. As soon as Neon
+connectivity returns, delete the variable (or set it to `False`) and redeploy so
+the normal migration and bootstrap checks run. Never use this switch for a
+release that contains unapplied migrations.
 
 Registered user email addresses live in PostgreSQL's `accounts_user` table. They
 cannot be enumerated reliably while that database is unavailable. Consequently,
