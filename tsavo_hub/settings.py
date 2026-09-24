@@ -1,4 +1,5 @@
 import os
+import tempfile
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -65,7 +66,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
+    "core.middleware.DatabaseFailureMiddleware",
+    "core.middleware.DatabaseResilientSessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -130,7 +132,8 @@ def database_from_url(url):
         "PASSWORD": unquote(parsed.password or ""),
         "HOST": parsed.hostname or "",
         "PORT": parsed.port or "",
-        "CONN_MAX_AGE": 60,
+        # Serverless Postgres should be able to become idle between requests.
+        "CONN_MAX_AGE": int(os.getenv("DATABASE_CONN_MAX_AGE", "0")),
     }
     if options:
         config["OPTIONS"] = options
@@ -208,6 +211,13 @@ SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000").rstrip("/")
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "").strip()
 ASSISTANT_SUPPORT_EMAIL = os.getenv("ASSISTANT_SUPPORT_EMAIL", "").strip()
 SUPPORT_PHONE = os.getenv("SUPPORT_PHONE", "").strip()
+OUTAGE_ADMIN_EMAILS = env_list("OUTAGE_ADMIN_EMAILS")
+DATABASE_OUTAGE_ALERT_COOLDOWN_SECONDS = int(
+    os.getenv("DATABASE_OUTAGE_ALERT_COOLDOWN_SECONDS", "3600")
+)
+DATABASE_OUTAGE_STATE_FILE = os.getenv("DATABASE_OUTAGE_STATE_FILE", "").strip() or str(
+    Path(tempfile.gettempdir()) / "tsavo_hub_database_status.json"
+)
 
 LOGGING = {
     "version": 1,
@@ -226,6 +236,11 @@ LOGGING = {
         "attendance.services": {
             "handlers": ["console"],
             "level": "ERROR",
+            "propagate": False,
+        },
+        "core.service_status": {
+            "handlers": ["console"],
+            "level": "WARNING",
             "propagate": False,
         },
         "django.request": {

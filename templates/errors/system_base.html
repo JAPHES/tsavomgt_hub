@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#006400">
+    <title>{% block title %}System status{% endblock %} | Tsavo Hub</title>
+    <link rel="icon" type="image/jpeg" href="/static/image/tsavo_logo.jpeg">
+    <style>
+        :root { color-scheme: light; --hub-green: #075b36; --hub-gold: #d6a62e; --ink: #183229; --muted: #5d7169; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1.25rem; background: #f3f7f4; color: var(--ink); font-family: Arial, Helvetica, sans-serif; }
+        .status-shell { width: min(100%, 680px); overflow: hidden; border: 1px solid #d9e4dd; border-radius: 18px; background: #fff; box-shadow: 0 18px 50px rgba(7, 63, 39, .11); }
+        .status-header { display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; background: var(--hub-green); color: #fff; }
+        .status-header img { width: 58px; height: 58px; border-radius: 50%; object-fit: cover; background: #fff; border: 3px solid rgba(255,255,255,.78); }
+        .status-header strong { display: block; font-size: clamp(1rem, 3vw, 1.25rem); }
+        .status-header span { display: block; margin-top: .2rem; color: #dbece3; font-size: .88rem; }
+        .status-body { padding: clamp(1.5rem, 5vw, 2.5rem); }
+        .status-mark { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 1rem; border-radius: 50%; background: #fff4d8; color: #805b00; font-size: 1.6rem; font-weight: 700; }
+        h1 { margin: 0 0 .75rem; color: var(--hub-green); font-size: clamp(1.65rem, 5vw, 2.25rem); line-height: 1.15; }
+        p { margin: 0 0 1.35rem; color: var(--muted); font-size: 1rem; line-height: 1.7; }
+        .status-action { display: inline-block; border-radius: 9px; padding: .75rem 1rem; background: var(--hub-green); color: #fff; font-weight: 700; text-decoration: none; }
+        .status-action:hover, .status-action:focus { background: #044a2b; }
+        .status-footer { padding: 1rem 1.5rem; border-top: 1px solid #e3ebe6; color: #6a7c74; font-size: .85rem; }
+    </style>
+</head>
+<body>
+    <main class="status-shell">
+        <header class="status-header">
+            <img src="/static/image/tsavo_logo.jpeg" alt="Tsavo Innovation and Incubation Hub logo">
+            <div><strong>Tsavo Innovation &amp; Incubation Hub</strong><span>Tsavo Hub Management System</span></div>
+        </header>
+        <section class="status-body">
+            {% block content %}{% endblock %}
+        </section>
+        <footer class="status-footer">Taita Taveta University &middot; Home of Ideas</footer>
+    </main>
+</body>
+</html>
