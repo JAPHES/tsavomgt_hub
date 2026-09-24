@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.template.loader import get_template
 
 from .service_status import (
-    UNAVAILABLE,
+    AVAILABLE,
     database_status,
     mark_database_available,
     mark_database_unavailable,
@@ -32,7 +32,7 @@ class DatabaseFailureMiddleware:
         if (
             response.status_code < 500
             and connection.connection is not None
-            and database_status() == UNAVAILABLE
+            and database_status() != AVAILABLE
         ):
             mark_database_available()
         return response

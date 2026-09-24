@@ -8,7 +8,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from .service_status import (
-    UNAVAILABLE,
+    AVAILABLE,
     database_status,
     mark_database_available,
     mark_database_unavailable,
@@ -50,7 +50,7 @@ def database_health_check(request):
 @never_cache
 def status_view(request):
     """Render service status using only filesystem-backed outage state."""
-    is_degraded = database_status() == UNAVAILABLE
+    is_degraded = database_status() != AVAILABLE
     template = get_template("core/status.html")
     return HttpResponse(
         template.render({"is_degraded": is_degraded}),

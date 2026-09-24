@@ -78,12 +78,25 @@ class HealthCheckTests(TemporaryOutageStateMixin, TestCase):
     def test_status_page_does_not_query_database(self):
         administrator = create_admin()
         self.client.force_login(administrator)
+        mark_database_available()
 
         with CaptureQueriesContext(connection) as queries:
             response = self.client.get(reverse("core:status"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "All systems operational")
+        self.assertEqual(len(queries), 0)
+
+    def test_status_page_is_conservatively_degraded_before_first_database_check(self):
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.get(reverse("core:status"))
+
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(
+            response,
+            "Some services are temporarily unavailable",
+            status_code=503,
+        )
         self.assertEqual(len(queries), 0)
 
     def test_status_page_reflects_last_observed_outage_without_database_access(self):
