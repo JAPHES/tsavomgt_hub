@@ -32,7 +32,15 @@ services:
         value: "Tsavo Innovation & Incubation Hub <noreply@secora.dev>"
       - key: STATIC_VERSION
         value: "20260911.2"
+      - key: DATABASE_CONN_MAX_AGE
+        value: "0"
+      - key: DATABASE_OUTAGE_ALERT_COOLDOWN_SECONDS
+        value: "3600"
       - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: OUTAGE_ADMIN_EMAILS
         sync: false
       - key: BREVO_API_KEY
         sync: false
