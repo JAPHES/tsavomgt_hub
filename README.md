@@ -514,6 +514,8 @@ response during a connectivity failure. `/status/` reads the last observed state
 from a local file and therefore remains renderable without PostgreSQL. Model-backed
 requests that encounter `OperationalError` or `InterfaceError` receive the branded
 503 page; unrelated programming errors continue to use the normal 500 handler.
+After a process restart, status remains conservatively degraded until the first
+successful readiness check or database-backed request confirms recovery.
 
 The first detected outage sends one Brevo alert to `OUTAGE_ADMIN_EMAILS`.
 Repeated failures are deduplicated, and a recovery message is sent after the next
