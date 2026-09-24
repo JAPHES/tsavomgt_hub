@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -60,11 +60,18 @@ def innovator_dashboard(request):
     upcoming_bookings = bookings.filter(
         visit_date__gte=today, status=HubBooking.Status.BOOKED
     ).order_by("visit_date", "arrival_time")
-    bookings_this_month = bookings.filter(
-        visit_date__year=today.year,
-        visit_date__month=today.month,
-    ).exclude(
-        status=HubBooking.Status.CANCELLED,
+    booking_counts = bookings.aggregate(
+        bookings_this_month=Count(
+            "pk",
+            filter=(
+                Q(visit_date__year=today.year, visit_date__month=today.month)
+                & ~Q(status=HubBooking.Status.CANCELLED)
+            ),
+        ),
+        admitted_visits=Count(
+            "pk",
+            filter=Q(status=HubBooking.Status.ADMITTED),
+        ),
     )
     return render(
         request,
@@ -73,8 +80,7 @@ def innovator_dashboard(request):
             "now": now,
             "booking_form": booking_form,
             "upcoming_bookings": upcoming_bookings[:5],
-            "bookings_this_month": bookings_this_month.count(),
-            "admitted_visits": bookings.filter(status=HubBooking.Status.ADMITTED).count(),
+            **booking_counts,
         },
     )
 
@@ -88,6 +94,17 @@ def admin_dashboard(request):
         .exclude(status=HubBooking.Status.CANCELLED)
         .order_by("arrival_time")
     )
+    booking_counts = today_bookings.aggregate(
+        bookings_today=Count("pk"),
+        awaiting_admission=Count(
+            "pk",
+            filter=Q(status=HubBooking.Status.BOOKED),
+        ),
+        admitted_today=Count(
+            "pk",
+            filter=Q(status=HubBooking.Status.ADMITTED),
+        ),
+    )
     return render(
         request,
         "dashboard/admin.html",
@@ -100,13 +117,7 @@ def admin_dashboard(request):
                     account_status=User.AccountStatus.ACTIVE,
                     is_active=True,
                 ).count(),
-                "bookings_today": today_bookings.count(),
-                "awaiting_admission": today_bookings.filter(
-                    status=HubBooking.Status.BOOKED
-                ).count(),
-                "admitted_today": today_bookings.filter(
-                    status=HubBooking.Status.ADMITTED
-                ).count(),
+                **booking_counts,
             },
         },
     )
